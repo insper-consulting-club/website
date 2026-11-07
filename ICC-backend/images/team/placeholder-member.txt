@@ -1,7 +1,0 @@
-[PLACEHOLDER IMAGE]
-Esta é uma imagem placeholder para foto de membro da equipe.
-Em um projeto real, substitua por uma foto JPG/PNG real.
-
-Dimensões recomendadas: 300x300px
-Formato: JPG
-Orientação: Retrato

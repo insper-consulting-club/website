@@ -1,6 +1,0 @@
-[PLACEHOLDER IMAGE]
-Esta é uma imagem placeholder para o logo do parceiro.
-Em um projeto real, substitua por uma imagem JPG/PNG real.
-
-Dimensões recomendadas: 200x200px
-Formato: PNG com fundo transparente
