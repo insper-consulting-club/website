@@ -1,8 +1,8 @@
 # Dependências e licenças
 
-Bibliotecas usadas pelo projeto, com a versão e a licença declaradas por cada pacote (levantadas em 26/10/2026 a partir dos pacotes instalados). As versões exatas ficam em `ICC-backend/requirements.txt` e `ICC-frontend/package-lock.json`.
+Bibliotecas usadas pelo projeto, com a versão e a licença declaradas por cada pacote. As versões do backend vêm de `backend/requirements.txt` (todas fixadas) e as do frontend vêm do `frontend/package-lock.json`. As licenças do backend foram conferidas em 26/10/2026 nos pacotes instalados, e as do frontend foram lidas do `package-lock.json`.
 
-Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL permite usar a biblioteca, sem modificá-la, dentro de um projeto com outra licença, que é o nosso caso. Ao adicionar uma dependência nova, confira a licença e inclua uma linha aqui.
+Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL permite usar a biblioteca, sem modificá-la, dentro de um projeto com outra licença, que é o caso do ICC. Ao adicionar uma dependência, confira a licença e inclua uma linha aqui. Para atualizar versões, veja [`desenvolvimento.md`](desenvolvimento.md#atualizar-dependências).
 
 ## Backend (Python)
 
@@ -17,29 +17,25 @@ Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL perm
 | whitenoise | 6.12.0 | MIT | Servir os arquivos estáticos do `/admin` |
 | cloudinary | 1.42.1 | MIT | Cliente do Cloudinary |
 | django-cloudinary-storage | 0.3.0 | MIT | Salvar os uploads do Django no Cloudinary |
+| requests | 2.33.0 | Apache-2.0 | Requisições HTTP. Fixado aqui porque o django-cloudinary-storage depende dele |
 | pillow | 12.3.0 | MIT-CMU | Validar e processar imagens |
 | python-dotenv | 1.2.2 | BSD-3-Clause | Carregar o `.env` em desenvolvimento |
-| requests | 2.33.0 | Apache-2.0 | Requisições HTTP (só no comando legado `download_photos`) |
-| icalendar | 7.3.0 | BSD-2-Clause | Ler arquivos `.ics` do calendário |
-| recurring-ical-events | 3.8.2 | LGPL-3.0-or-later | Expandir eventos recorrentes do calendário |
-| sendgrid | 6.11.0 | MIT | E-mail do formulário de contato (sem uso desde a remoção do formulário) |
 | asgiref | 3.11.1 | BSD-3-Clause | Dependência do Django |
 | sqlparse | 0.6.0 | BSD | Dependência do Django |
-| typing_extensions | 4.15.0 | PSF-2.0 | Dependência de tipagem |
 
-## Frontend (JavaScript/TypeScript)
+## Frontend (JavaScript e TypeScript)
 
 | Pacote | Versão | Licença | Para quê |
 |---|---|---|---|
 | react | 19.2.5 | MIT | Interface |
 | react-dom | 19.2.5 | MIT | Renderização no navegador |
-| react-router-dom | 7.18.4 | MIT | Rotas e navegação |
+| react-router-dom | 7.14.2 | MIT | Rotas e navegação |
 | react-markdown | 10.1.0 | MIT | Exibir o texto dos artigos, escrito em Markdown, sem executar HTML |
 | remark-gfm | 4.0.1 | MIT | Tabelas, listas de tarefas e links automáticos no Markdown dos artigos |
 | remark-math | 6.0.0 | MIT | Reconhecer fórmulas (`$$...$$`) no Markdown dos artigos |
 | rehype-katex | 7.0.1 | MIT | Desenhar essas fórmulas com o KaTeX |
-| katex | 0.16.47 | MIT | Biblioteca que desenha fórmulas em LaTeX (e o CSS e as fontes delas) |
-| vite | 8.3.4 | MIT | Servidor de desenvolvimento e build (dev) |
+| katex | 0.16.47 | MIT | Biblioteca que desenha fórmulas em LaTeX (inclui o CSS e as fontes delas) |
+| vite | 8.0.10 | MIT | Servidor de desenvolvimento e build (dev) |
 | @vitejs/plugin-react | 6.0.1 | MIT | Suporte a React no Vite (dev) |
 | typescript | 5.9.3 | Apache-2.0 | Tipagem (dev) |
 | eslint, @eslint/js | 9.39.4 | MIT | Lint (dev) |
@@ -49,14 +45,22 @@ Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL perm
 | globals | 17.6.0 | MIT | Variáveis globais para o lint (dev) |
 | @types/node, @types/react, @types/react-dom | 24.12.2, 19.2.14, 19.2.3 | MIT | Tipos (dev) |
 
-As dependências marcadas com "(dev)" só são usadas para desenvolver e gerar o site; não vão para o navegador do visitante.
+As dependências marcadas com "(dev)" só servem para desenvolver e gerar o site. Elas ficam fora do navegador do visitante.
+
+## Imagens Docker
+
+| Imagem | Onde | Observação |
+|---|---|---|
+| `python:3.12-slim` | `backend/Dockerfile` | Base do backend, em desenvolvimento e em produção |
+| `node:20-slim` | `frontend/Dockerfile` | Base do frontend em desenvolvimento |
+| `postgres:18` | `docker-compose.yml` | Banco local, na mesma versão do Neon (licença PostgreSQL) |
 
 ## Outros recursos
 
 | Recurso | Licença | Onde |
 |---|---|---|
 | Fonte Poppins (Google Fonts) | SIL Open Font License 1.1 | Tipografia do site |
-| Ícone do GitHub (Simple Icons) | CC0 1.0 | `ICC-frontend/src/components/Icons.tsx` |
+| Ícones SVG de interface e das redes sociais (GitHub, Instagram e LinkedIn) | Incluídos no próprio código. O desenho do GitHub é do Simple Icons (CC0 1.0), e os demais são desenhos do projeto. Os nomes e logotipos Instagram, LinkedIn e GitHub são marcas das respectivas empresas | `frontend/src/components/Icons.tsx` |
 | Logos dos parceiros e do ICC | Pertencem às respectivas empresas e ao ICC | Fornecidos pelo ICC |
 
 ## Serviços externos
@@ -68,5 +72,6 @@ As dependências marcadas com "(dev)" só são usadas para desenvolver e gerar o
 | Cloudinary | Armazenamento de imagens | Gratuito |
 | UptimeRobot | Monitor de uptime (mantém o backend acordado e avisa se cair) | Gratuito |
 | GitHub | Código-fonte | Gratuito |
+| Registro.br | Domínio `insperconsultingclub.com.br` | Pago (anual) |
 
-Detalhes de acesso e de deploy estão na seção "Produção" do [README](../README.md#produção).
+Detalhes de acesso, deploy e domínio estão em [`operacao.md`](operacao.md).
