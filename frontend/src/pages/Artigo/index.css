@@ -61,6 +61,12 @@
   margin: 2rem 0 0.75rem;
 }
 
+.artigo__texto h4 {
+  font-size: var(--fs-body);
+  font-style: italic;
+  margin: 1.5rem 0 0.5rem;
+}
+
 .artigo__texto ul,
 .artigo__texto ol {
   margin: 0 0 1.25rem;
