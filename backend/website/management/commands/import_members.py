@@ -2,7 +2,7 @@ import sqlite3
 from datetime import date
 from pathlib import Path
 from django.core.management.base import BaseCommand
-from website.models import Member_Position, Team_Member
+from website.models import Position, Member
 
 SQL_FILE = Path(__file__).parents[3] / "membros_icc.sql"
 
@@ -56,8 +56,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options["limpar"]:
-            Team_Member.objects.all().delete()
-            Member_Position.objects.all().delete()
+            Member.objects.all().delete()
+            Position.objects.all().delete()
             self.stdout.write("Membros e cargos removidos.")
 
         membros = _carregar_membros()
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         cargos_unicos = {m["cargo_atual"] for m in membros}
         posicoes = {}
         for cargo in cargos_unicos:
-            pos, created = Member_Position.objects.get_or_create(
+            pos, created = Position.objects.get_or_create(
                 title=cargo,
                 defaults={"power": _power_for(cargo)},
             )
@@ -79,7 +79,7 @@ class Command(BaseCommand):
         ignorados = 0
         for m in membros:
             ano, mes, dia = m["data_entrada"].split("-")
-            _, created = Team_Member.objects.get_or_create(
+            _, created = Member.objects.get_or_create(
                 name=m["nome"],
                 defaults={
                     # "foto" no SQL legado é um link do Google Drive, que não

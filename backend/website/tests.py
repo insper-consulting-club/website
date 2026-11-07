@@ -1,13 +1,13 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from website.models import Media
+from website.models import Article
 
 
-class MediaDetailSlugTests(TestCase):
+class ArticleDetailSlugTests(TestCase):
 	def setUp(self):
 		self.client = APIClient()
-		self.article = Media.objects.create(
+		self.article = Article.objects.create(
 			title="Artigo de teste",
 			description="Resumo de teste",
 			link="",
@@ -16,14 +16,14 @@ class MediaDetailSlugTests(TestCase):
 		)
 
 	def test_article_is_retrievable_by_slug(self):
-		response = self.client.get("/api/news/artigo-de-teste/")
+		response = self.client.get("/api/articles/artigo-de-teste/")
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["id"], self.article.id)
 		self.assertEqual(response.data["slug"], "artigo-de-teste")
 
 	def test_article_remains_retrievable_by_numeric_id(self):
-		response = self.client.get(f"/api/news/{self.article.id}/")
+		response = self.client.get(f"/api/articles/{self.article.id}/")
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["id"], self.article.id)
@@ -33,7 +33,7 @@ class MediaDetailSlugTests(TestCase):
 		self.article.slug = None
 		self.article.save(update_fields=["slug"])
 
-		response = self.client.get(f"/api/news/{self.article.id}/")
+		response = self.client.get(f"/api/articles/{self.article.id}/")
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["id"], self.article.id)
@@ -43,6 +43,6 @@ class MediaDetailSlugTests(TestCase):
 		self.article.published = False
 		self.article.save(update_fields=["published"])
 
-		response = self.client.get("/api/news/artigo-de-teste/")
+		response = self.client.get("/api/articles/artigo-de-teste/")
 
 		self.assertEqual(response.status_code, 404)

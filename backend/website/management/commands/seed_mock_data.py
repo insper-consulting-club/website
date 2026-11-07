@@ -3,14 +3,14 @@ from datetime import date
 from django.core.management.base import BaseCommand
 
 from website.models import (
-    Activity,
-    ActivityCategory,
+    ProgramComponent,
+    Program,
     ActivityContentBlock,
     CalendarMonth,
-    Media,
-    Member_Position,
+    Article,
+    Position,
     Partner,
-    Partner_Category,
+    PartnerCategory,
     PreparationMaterial,
     PreparationMaterialItem,
     Project,
@@ -21,7 +21,7 @@ from website.models import (
     SelectionProcessStage,
     SelectionProcessStep,
     Statistic,
-    Team_Member,
+    Member,
 )
 
 
@@ -350,14 +350,14 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 "Mock concluido: "
                 f"{len(members)} membros, {len(partners)} parceiros, "
-                f"{len(categories)} categorias e {len(projects)} projetos prontos."
+                f"{len(categories)} programas e {len(projects)} projetos prontos."
             )
         )
 
     def _seed_positions(self):
         positions = {}
         for title, power in POSITIONS:
-            position, _ = Member_Position.objects.update_or_create(
+            position, _ = Position.objects.update_or_create(
                 title=title,
                 defaults={"power": power},
             )
@@ -367,7 +367,7 @@ class Command(BaseCommand):
     def _seed_members(self, positions):
         members = {}
         for item in MEMBERS:
-            member, _ = Team_Member.objects.update_or_create(
+            member, _ = Member.objects.update_or_create(
                 name=item["name"],
                 defaults={
                     "biography": item["biography"],
@@ -387,7 +387,7 @@ class Command(BaseCommand):
     def _seed_partner_categories(self):
         categories = {}
         for title in PARTNER_CATEGORIES:
-            category, _ = Partner_Category.objects.get_or_create(title=title)
+            category, _ = PartnerCategory.objects.get_or_create(title=title)
             categories[title] = category
         return categories
 
@@ -410,7 +410,7 @@ class Command(BaseCommand):
     def _seed_categories(self):
         categories = {}
         for item in CATEGORIES:
-            category, _ = ActivityCategory.objects.update_or_create(
+            category, _ = Program.objects.update_or_create(
                 slug=item["slug"],
                 defaults={
                     "label": item["label"],
@@ -446,7 +446,7 @@ class Command(BaseCommand):
                 title=item["title"],
                 defaults={
                     "description": item["description"],
-                    "category": categories[item["category"]],
+                    "program": categories[item["category"]],
                     "start_date": item["start_date"],
                     "end_date": item["end_date"],
                 },
@@ -485,11 +485,11 @@ class Command(BaseCommand):
     def _seed_activities(self, categories, partners):
         for item in ACTIVITIES:
             partner = partners.get(item["partner"]) if item["partner"] else None
-            activity, _ = Activity.objects.update_or_create(
+            activity, _ = ProgramComponent.objects.update_or_create(
                 title=item["title"],
                 defaults={
                     "description": item["description"],
-                    "category": categories[item["category"]],
+                    "program": categories[item["category"]],
                     "responsible_partner": partner,
                 },
             )
@@ -507,7 +507,7 @@ class Command(BaseCommand):
 
     def _seed_news(self):
         for item in NEWS:
-            Media.objects.update_or_create(
+            Article.objects.update_or_create(
                 title=item["title"],
                 defaults={
                     "description": item["description"],

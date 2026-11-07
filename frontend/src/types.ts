@@ -1,4 +1,4 @@
-export interface ActivityCategory {
+export interface Program {
   id: number
   slug: string
   label: string
@@ -12,7 +12,7 @@ export interface ActivityCategory {
   order: number
 }
 
-export interface SuccessCaseParticipant {
+export interface ProgramCaseParticipant {
   member_id: number
   name: string
   linkedin: string | null
@@ -20,9 +20,9 @@ export interface SuccessCaseParticipant {
   order: number
 }
 
-export interface SuccessCase {
+export interface ProgramCase {
   id: number
-  category: string
+  program: string
   semester: string
   title: string
   area: string
@@ -30,7 +30,7 @@ export interface SuccessCase {
   panel: string[]
   award: string
   publication_url: string
-  participants: SuccessCaseParticipant[]
+  participants: ProgramCaseParticipant[]
   order: number
 }
 
@@ -72,7 +72,7 @@ export interface Project {
   id: number
   title: string
   description: string
-  category: string | null
+  program: string | null
   partners: string[]
   start_date: string
   end_date: string | null
@@ -82,7 +82,7 @@ export interface ProjectDetail {
   id: number
   title: string
   description: string
-  category: ActivityCategory | null
+  program: Program | null
   start_date: string
   end_date: string | null
   partners: { id: number; name: string }[]
@@ -99,18 +99,18 @@ export interface ActivityImage {
   order: number
 }
 
-export interface Activity {
+export interface ProgramComponent {
   id: number
   title: string
   description: string
-  category: string | null
+  program: string | null
 }
 
-export interface ActivityDetail {
+export interface ProgramComponentDetail {
   id: number
   title: string
   description: string
-  category: ActivityCategory | null
+  program: Program | null
   images: ActivityImage[]
   content_blocks: ContentBlock[]
   responsible_partner: {
@@ -177,7 +177,7 @@ export interface Statistic {
   order: number
 }
 
-export interface NewsItem {
+export interface Article {
   id: number
   slug: string | null
   title: string

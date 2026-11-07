@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.text import slugify
 
 
-class Partner_Category(models.Model):
+class PartnerCategory(models.Model):
     title = models.CharField(max_length=200)
 
     class Meta:
@@ -33,7 +33,7 @@ class Directorate(models.Model):
         return slugify(self.name)
 
 
-class Member_Position(models.Model):
+class Position(models.Model):
     title = models.CharField(max_length=200, verbose_name='Cargo')
     power = models.IntegerField(
         verbose_name='Prioridade para exibição',
@@ -54,7 +54,7 @@ class Partner(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome')
     description = models.TextField(verbose_name='Descrição')
     category = models.ForeignKey(
-        Partner_Category,
+        PartnerCategory,
         on_delete=models.PROTECT,
         null=True,
         blank=True,
@@ -87,7 +87,7 @@ class Partner(models.Model):
         return self.projects.filter(is_active=True).count()
 
     @property
-    def success_cases_count(self):
+    def completed_projects_count(self):
         return self.projects.filter(is_active=True, end_date__isnull=False).count()
 
 
@@ -111,7 +111,7 @@ IMAGE_ALIGN_CHOICES = [
 ]
 
 
-class ActivityCategory(models.Model):
+class Program(models.Model):
     slug = models.SlugField(max_length=50, unique=True, verbose_name='Slug (identificador na URL)')
     label = models.CharField(max_length=200, verbose_name='Nome')
     subtitle = models.CharField(
@@ -123,7 +123,7 @@ class ActivityCategory(models.Model):
     icon = models.ImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
     badge = models.CharField(
         max_length=50, blank=True, verbose_name='Frequência (badge)',
-        help_text='Opcional. Deixe vazio quando a categoria não tiver uma periodicidade definida.'
+        help_text='Opcional. Deixe vazio quando o programa não tiver uma periodicidade definida.'
     )
     badge_class = models.CharField(max_length=50, choices=BADGE_CHOICES, verbose_name='Estilo do badge', default='badge--semanal')
     signup_url = models.URLField(
@@ -137,8 +137,8 @@ class ActivityCategory(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
-        verbose_name = 'Categoria de Atividade'
-        verbose_name_plural = 'Categorias de Atividades'
+        verbose_name = 'Programa'
+        verbose_name_plural = 'Programas'
         ordering = ['order']
 
     def __str__(self):
@@ -179,9 +179,9 @@ class CalendarMonth(models.Model):
 class Project(models.Model):
     title = models.CharField(max_length=200, verbose_name='Título')
     description = models.TextField(verbose_name='Descrição')
-    category = models.ForeignKey(
-        ActivityCategory, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name='Categoria', related_name='projects'
+    program = models.ForeignKey(
+        Program, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='Programa', related_name='projects'
     )
     partners = models.ManyToManyField(Partner, blank=True, verbose_name='Parceiros envolvidos', related_name='projects')
     start_date = models.DateField(verbose_name='Data de início')
@@ -248,11 +248,11 @@ class ProjectContentBlock(models.Model):
         return f"Bloco {self.order} — {self.project.title}"
 
 
-class Team_Member(models.Model):
+class Member(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome')
     photo = models.ImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
     biography = models.TextField(max_length=200, blank=True, verbose_name='Biografia')
-    position = models.ForeignKey(Member_Position, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Cargo principal')
+    position = models.ForeignKey(Position, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Cargo principal')
     course = models.CharField(max_length=200, null=True, blank=True, verbose_name='Curso')
     year = models.CharField(max_length=50, null=True, blank=True, verbose_name='Período')
     hours = models.IntegerField(null=True, blank=True, verbose_name='Horas dedicadas')
@@ -286,11 +286,11 @@ class DirectorateMembership(models.Model):
     """
     Vincula um membro a uma diretoria com o cargo específico que ele tem
     nela. Existe como model à parte (em vez de M2M direto ou FK único em
-    Team_Member) porque uma pessoa pode estar em mais de uma diretoria ao
+    Member) porque uma pessoa pode estar em mais de uma diretoria ao
     mesmo tempo com cargos diferentes em cada uma (ex: Diretora de
     Pedagógico e, também, Mentora na Escola de Mentores).
     """
-    member = models.ForeignKey(Team_Member, on_delete=models.CASCADE, related_name='directorate_memberships')
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='directorate_memberships')
     directorate = models.ForeignKey(Directorate, on_delete=models.CASCADE, related_name='memberships')
     cargo = models.CharField(max_length=200, verbose_name='Cargo nessa diretoria')
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
@@ -307,24 +307,25 @@ class DirectorateMembership(models.Model):
         return f"{self.member.name} - {self.cargo} ({self.directorate.name})"
 
 
-class Activity(models.Model):
+class ProgramComponent(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
-    category = models.ForeignKey(
-        ActivityCategory, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name='Categoria', related_name='activities'
+    program = models.ForeignKey(
+        Program, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='Programa', related_name='components'
     )
     responsible_partner = models.ForeignKey(Partner, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
-        verbose_name_plural = 'Atividades'
+        verbose_name = 'Componente do programa'
+        verbose_name_plural = 'Componentes dos programas'
 
     def __str__(self):
         return self.title
 
 
 class ActivityImage(models.Model):
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name='images', verbose_name='Atividade')
+    activity = models.ForeignKey(ProgramComponent, on_delete=models.CASCADE, related_name='images', verbose_name='Atividade')
     image = models.ImageField(upload_to='activities/images/', verbose_name='Imagem')
     caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -339,7 +340,7 @@ class ActivityImage(models.Model):
 
 
 class ActivityContentBlock(models.Model):
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Atividade')
+    activity = models.ForeignKey(ProgramComponent, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Atividade')
     title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
     text = models.TextField(blank=True, verbose_name='Texto')
     image = models.ImageField(upload_to='activities/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
@@ -356,7 +357,7 @@ class ActivityContentBlock(models.Model):
         return f"Bloco {self.order} — {self.activity.title}"
 
 
-class Media(models.Model):
+class Article(models.Model):
     title = models.CharField(max_length=200, verbose_name='Título')
     slug = models.SlugField(
         max_length=200, unique=True, null=True, blank=True,
@@ -411,7 +412,7 @@ class ArticleImage(models.Model):
     endereço: assim dá para escrever o texto e enviar as imagens de uma vez,
     sem salvar antes para descobrir o endereço gerado pelo Cloudinary.
     """
-    article = models.ForeignKey(Media, on_delete=models.CASCADE, related_name='images', verbose_name='Artigo')
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='images', verbose_name='Artigo')
     number = models.PositiveIntegerField(
         verbose_name='Número',
         help_text='No texto, escreva ![](imagem-1) para a imagem de número 1.'
@@ -628,15 +629,15 @@ class PreparationMaterialItem(models.Model):
     def __str__(self):
         return self.text
 
-class SuccessCase(models.Model):
+class ProgramCase(models.Model):
     """
     Case resolvido por um grupo de membros dentro de um programa.
     Ex: o case final da Jornada do Consultor de 2025.1.
     """
-    category = models.ForeignKey(
-        ActivityCategory,
+    program = models.ForeignKey(
+        Program,
         on_delete=models.CASCADE,
-        related_name='success_cases',
+        related_name='cases',
         verbose_name='Programa'
     )
     semester = models.CharField(max_length=10, verbose_name='Semestre', help_text='No formato AAAA.S, por exemplo 2025.1.')
@@ -659,8 +660,8 @@ class SuccessCase(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
-        verbose_name = 'Case de Sucesso'
-        verbose_name_plural = 'Cases de Sucesso'
+        verbose_name = 'Case do programa'
+        verbose_name_plural = 'Cases dos programas'
         ordering = ['-semester', 'order']
 
     def __str__(self):
@@ -670,7 +671,7 @@ class SuccessCase(models.Model):
         return [line.strip() for line in self.panel.splitlines() if line.strip()]
 
 
-class SuccessCaseParticipant(models.Model):
+class ProgramCaseParticipant(models.Model):
     """
     Participação de um membro num case, como integrante do grupo ou mentor.
     O vínculo é com o membro, e não com o nome escrito à mão, para que o
@@ -683,15 +684,15 @@ class SuccessCaseParticipant(models.Model):
         MENTOR = 'mentor', 'Mentor'
 
     case = models.ForeignKey(
-        SuccessCase,
+        ProgramCase,
         on_delete=models.CASCADE,
         related_name='participants',
         verbose_name='Case'
     )
     member = models.ForeignKey(
-        Team_Member,
+        Member,
         on_delete=models.PROTECT,
-        related_name='success_cases',
+        related_name='program_cases',
         verbose_name='Membro'
     )
     role = models.CharField(

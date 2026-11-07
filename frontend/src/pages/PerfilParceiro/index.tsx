@@ -11,7 +11,7 @@ type PartnerProject = {
   title: string
   description?: string
   end_date?: string | null
-  category?: string
+  program?: string
 }
 
 type PartnerDetail = {
@@ -126,7 +126,7 @@ export default function PerfilParceiro() {
                   {project.description && <p className="parceiro-caso__descricao">{project.description}</p>}
                   <p className="parceiro-caso__meta">
                     {project.end_date && `Concluído em ${formatDateBR(project.end_date)}`}
-                    {project.category && ` · ${project.category}`}
+                    {project.program && ` · ${project.program}`}
                   </p>
                   <span className="link-arrow">
                     Ver projeto

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { api } from "../../api"
-import type { Activity, Project, SuccessCase, SuccessCaseParticipant } from "../../types"
+import type { Project, ProgramCase, ProgramCaseParticipant, ProgramComponent } from "../../types"
 import PageHero from "../../components/PageHero"
 import ProjetoCard from "../../components/ProjetoCard"
 import NaoEncontrada from "../NaoEncontrada"
@@ -10,7 +10,7 @@ import usePageTitle from "../../hooks/usePageTitle"
 import useProgramas from "../../hooks/useProgramas"
 import "./index.css"
 
-function Pessoas({ pessoas }: { pessoas: SuccessCaseParticipant[] }) {
+function Pessoas({ pessoas }: { pessoas: ProgramCaseParticipant[] }) {
   return (
     <>
       {pessoas.map((pessoa, i) => (
@@ -29,11 +29,11 @@ function Pessoas({ pessoas }: { pessoas: SuccessCaseParticipant[] }) {
   )
 }
 
-export default function ProjetoDetalhe() {
+export default function Programa() {
   const { slug } = useParams()
   const programas = useProgramas()
-  const [componentes, setComponentes] = useState<Activity[]>([])
-  const [cases, setCases] = useState<SuccessCase[]>([])
+  const [componentes, setComponentes] = useState<ProgramComponent[]>([])
+  const [cases, setCases] = useState<ProgramCase[]>([])
   const [projetos, setProjetos] = useState<Project[]>([])
 
   const programa = programas.find((p) => p.slug === slug)
@@ -41,8 +41,8 @@ export default function ProjetoDetalhe() {
 
   useEffect(() => {
     if (!slug) return
-    api.getActivities(slug).then(setComponentes).catch(() => setComponentes([]))
-    api.getSuccessCases(slug).then(setCases).catch(() => setCases([]))
+    api.getComponents(slug).then(setComponentes).catch(() => setComponentes([]))
+    api.getProgramCases(slug).then(setCases).catch(() => setCases([]))
     api.getProjects(slug).then(setProjetos).catch(() => setProjetos([]))
   }, [slug])
 

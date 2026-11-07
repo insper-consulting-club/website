@@ -1,15 +1,15 @@
 from rest_framework import serializers
 from .models import (
-    Team_Member, Partner, Statistic, Project, ProjectImage,
+    Member, Partner, Statistic, Project, ProjectImage,
     Directorate,
     ProjectTimelineEvent, ProjectContentBlock,
-    Activity, ActivityImage, ActivityContentBlock,
-    ActivityCategory, CalendarMonth, DirectorateMembership,
-    Media, ArticleImage, Contact,
+    ProgramComponent, ActivityImage, ActivityContentBlock,
+    Program, CalendarMonth, DirectorateMembership,
+    Article, ArticleImage, Contact,
     SelectionProcess, SelectionProcessRequirement,
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
-    SuccessCase, SuccessCaseParticipant
+    ProgramCase, ProgramCaseParticipant
 )
 
 
@@ -30,12 +30,12 @@ class DirectorateMembershipSerializer(serializers.ModelSerializer):
         fields = ["directorate", "directorate_slug", "cargo", "order"]
 
 
-class ActivityCategorySerializer(serializers.ModelSerializer):
+class ProgramSerializer(serializers.ModelSerializer):
     highlights = serializers.SerializerMethodField()
     icon_url = serializers.SerializerMethodField()
 
     class Meta:
-        model = ActivityCategory
+        model = Program
         fields = ["id", "slug", "label", "subtitle", "description", "highlights",
                   "icon_url", "badge", "badge_class", "signup_url", "order"]
 
@@ -61,18 +61,18 @@ class CalendarMonthSerializer(serializers.ModelSerializer):
 
 
 class PartnerProjectSerializer(serializers.ModelSerializer):
-    category = serializers.StringRelatedField()
+    program = serializers.StringRelatedField()
 
     class Meta:
         model = Project
-        fields = ["id", "title", "description", "category", "start_date", "end_date"]
+        fields = ["id", "title", "description", "program", "start_date", "end_date"]
 
 
 class PartnerSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     logo_url = serializers.SerializerMethodField()
     projects_count = serializers.SerializerMethodField()
-    success_cases_count = serializers.SerializerMethodField()
+    completed_projects_count = serializers.SerializerMethodField()
     projects = serializers.SerializerMethodField()
 
     class Meta:
@@ -85,14 +85,14 @@ class PartnerSerializer(serializers.ModelSerializer):
             "site",
             "logo_url",
             "projects_count",
-            "success_cases_count",
+            "completed_projects_count",
             "projects",
         ]
 
     def get_projects_count(self, obj):
         return obj.projects.filter(is_active=True).count()
 
-    def get_success_cases_count(self, obj):
+    def get_completed_projects_count(self, obj):
         return obj.projects.filter(is_active=True, end_date__isnull=False).count()
 
     def get_projects(self, obj):
@@ -164,16 +164,16 @@ class ActivityImageSerializer(serializers.ModelSerializer):
 
 class ProjectListSerializer(serializers.ModelSerializer):
     partners = serializers.StringRelatedField(many=True)
-    category = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    program = serializers.SlugRelatedField(slug_field='slug', read_only=True)
 
     class Meta:
         model = Project
-        fields = ["id", "title", "description", "category", "partners", "start_date", "end_date"]
+        fields = ["id", "title", "description", "program", "partners", "start_date", "end_date"]
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
     partners = PartnerSerializer(many=True)
-    category = ActivityCategorySerializer()
+    program = ProgramSerializer()
     members = serializers.SerializerMethodField()
     images = ProjectImageSerializer(many=True)
     timeline_events = ProjectTimelineEventSerializer(many=True)
@@ -182,7 +182,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "id", "title", "description", "category",
+            "id", "title", "description", "program",
             "partners", "start_date", "end_date",
             "members", "images", "timeline_events", "content_blocks"
         ]
@@ -191,26 +191,26 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         return [{"id": m.id, "name": m.name} for m in obj.members.all()]
 
 
-class ActivitySerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+class ProgramComponentSerializer(serializers.ModelSerializer):
+    program = serializers.SlugRelatedField(slug_field='slug', read_only=True)
 
     class Meta:
-        model = Activity
-        fields = ["id", "title", "description", "category"]
+        model = ProgramComponent
+        fields = ["id", "title", "description", "program"]
 
 
-class ActivityDetailSerializer(serializers.ModelSerializer):
-    category = ActivityCategorySerializer()
+class ProgramComponentDetailSerializer(serializers.ModelSerializer):
+    program = ProgramSerializer()
     images = ActivityImageSerializer(many=True)
     content_blocks = ActivityContentBlockSerializer(many=True)
     responsible_partner = PartnerSerializer()
 
     class Meta:
-        model = Activity
-        fields = ["id", "title", "description", "category", "images", "content_blocks", "responsible_partner"]
+        model = ProgramComponent
+        fields = ["id", "title", "description", "program", "images", "content_blocks", "responsible_partner"]
 
 
-class TeamMemberListSerializer(serializers.ModelSerializer):
+class MemberListSerializer(serializers.ModelSerializer):
     position = serializers.StringRelatedField()
     # A prioridade do cargo já existe no model e é o que ordena esta listagem.
     # Exposta para que o frontend selecione a liderança por esse número, em vez
@@ -220,7 +220,7 @@ class TeamMemberListSerializer(serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
 
     class Meta:
-        model = Team_Member
+        model = Member
         fields = ["id", "name", "position", "position_power", "directorate_memberships",
                   "photo_url", "course", "year", "linkedin"]
 
@@ -231,7 +231,7 @@ class TeamMemberListSerializer(serializers.ModelSerializer):
         return None
 
 
-class TeamMemberDetailSerializer(serializers.ModelSerializer):
+class MemberDetailSerializer(serializers.ModelSerializer):
     position = serializers.StringRelatedField()
     directorate_memberships = DirectorateMembershipSerializer(many=True)
     photo_url = serializers.SerializerMethodField()
@@ -239,7 +239,7 @@ class TeamMemberDetailSerializer(serializers.ModelSerializer):
     number_of_projects = serializers.IntegerField()
 
     class Meta:
-        model = Team_Member
+        model = Member
         fields = [
             "id", "name", "position", "directorate_memberships", "photo_url", "biography",
             "number_of_projects", "projects", "hours",
@@ -249,7 +249,7 @@ class TeamMemberDetailSerializer(serializers.ModelSerializer):
 
     def get_projects(self, obj):
         # Projetos arquivados não aparecem no perfil do membro.
-        qs = obj.projects.filter(is_active=True).select_related("category").prefetch_related("partners")
+        qs = obj.projects.filter(is_active=True).select_related("program").prefetch_related("partners")
         return ProjectListSerializer(qs, many=True, context=self.context).data
 
     def get_photo_url(self, obj):
@@ -279,13 +279,13 @@ class ArticleImageSerializer(serializers.ModelSerializer):
         return None
 
 
-class MediaSerializer(serializers.ModelSerializer):
+class ArticleSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     # Imagens chamadas no texto como ![](imagem-1); o site troca pelo endereço.
     images = ArticleImageSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Media
+        model = Article
         fields = ["id", "slug", "title", "authors", "topics", "description", "content", "images", "link", "image_url", "source", "date", "order"]
 
     def get_image_url(self, obj):
@@ -367,26 +367,26 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = ['name', 'email', 'phone', 'contact_type', 'message']
 
 
-class SuccessCaseParticipantSerializer(serializers.ModelSerializer):
+class ProgramCaseParticipantSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="member.name", read_only=True)
     linkedin = serializers.CharField(source="member.linkedin", read_only=True)
     member_id = serializers.IntegerField(source="member.id", read_only=True)
 
     class Meta:
-        model = SuccessCaseParticipant
+        model = ProgramCaseParticipant
         fields = ["member_id", "name", "linkedin", "role", "order"]
 
 
-class SuccessCaseSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(slug_field="slug", read_only=True)
-    participants = SuccessCaseParticipantSerializer(many=True, read_only=True)
+class ProgramCaseSerializer(serializers.ModelSerializer):
+    program = serializers.SlugRelatedField(slug_field="slug", read_only=True)
+    participants = ProgramCaseParticipantSerializer(many=True, read_only=True)
 
     panel = serializers.SerializerMethodField()
 
     class Meta:
-        model = SuccessCase
+        model = ProgramCase
         fields = [
-            "id", "category", "semester", "title", "area", "theme", "panel",
+            "id", "program", "semester", "title", "area", "theme", "panel",
             "award", "publication_url", "participants", "order",
         ]
 

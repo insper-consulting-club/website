@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { api } from "../../api"
-import type { ActivityDetail } from "../../types"
+import type { ProgramComponentDetail } from "../../types"
 import ContentBlockComponent from "../../components/ContentBlock/index"
 import "../PerfilAtividade/index.css"
 
 export default function PerfilAtividadeItem() {
   const { id } = useParams()
-  const [activity, setActivity] = useState<ActivityDetail | null>(null)
+  const [activity, setActivity] = useState<ProgramComponentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
 
   useEffect(() => {
     if (id) {
-      api.getActivity(Number(id)).then((data) => {
+      api.getComponent(Number(id)).then((data) => {
         setActivity(data)
         setLoading(false)
       })
@@ -32,11 +32,11 @@ export default function PerfilAtividadeItem() {
       {/* Breadcrumb */}
       <div className="perfil-breadcrumb">
         <Link to="/atividades" className="perfil-breadcrumb__link">Atividades</Link>
-        {activity.category && (
+        {activity.program && (
           <>
             <span className="perfil-breadcrumb__sep">›</span>
-            <Link to={`/atividades/categoria/${activity.category.slug}`} className="perfil-breadcrumb__link">
-              {activity.category.label}
+            <Link to={`/atividades/categoria/${activity.program.slug}`} className="perfil-breadcrumb__link">
+              {activity.program.label}
             </Link>
           </>
         )}
@@ -48,9 +48,9 @@ export default function PerfilAtividadeItem() {
       <header className="perfil-hero">
         <div className="perfil-hero__inner">
           <div className="perfil-hero__meta">
-            {activity.category && (
-              <span className={`cat-badge ${activity.category.badge_class}`}>
-                {activity.category.label}
+            {activity.program && (
+              <span className={`cat-badge ${activity.program.badge_class}`}>
+                {activity.program.label}
               </span>
             )}
           </div>
@@ -119,10 +119,10 @@ export default function PerfilAtividadeItem() {
 
         {/* Voltar */}
         <div className="perfil-footer-nav">
-          {activity.category ? (
-            <Link to={`/atividades/categoria/${activity.category.slug}`} className="perfil-back-btn">
+          {activity.program ? (
+            <Link to={`/atividades/categoria/${activity.program.slug}`} className="perfil-back-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Voltar para {activity.category.label}
+              Voltar para {activity.program.label}
             </Link>
           ) : (
             <Link to="/atividades" className="perfil-back-btn">

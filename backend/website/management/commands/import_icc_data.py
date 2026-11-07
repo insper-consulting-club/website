@@ -10,16 +10,16 @@ from django.db import transaction
 from django.utils.text import slugify
 
 from website.models import (
-    Activity,
-    ActivityCategory,
+    ProgramComponent,
+    Program,
     Directorate,
     DirectorateMembership,
-    Member_Position,
+    Position,
     Partner,
-    Partner_Category,
-    SuccessCase,
-    SuccessCaseParticipant,
-    Team_Member,
+    PartnerCategory,
+    ProgramCase,
+    ProgramCaseParticipant,
+    Member,
 )
 
 # A pasta site-data fica na raiz do repositório e não é versionada (tem dados
@@ -36,7 +36,7 @@ CASES_PROGRAM = "Jornada do Consultor"
 
 def _power(cargo):
     """
-    Prioridade de exibição do cargo (ver Member_Position.power). A Home mostra
+    Prioridade de exibição do cargo (ver Position.power). A Home mostra
     como liderança quem tem prioridade até 2. Só é usada ao criar o cargo: se
     o admin mudar depois, a importação não sobrescreve.
     """
@@ -185,7 +185,7 @@ class Command(BaseCommand):
             "trajetoria": trajetoria,
         }
         if cargo:
-            position, _ = Member_Position.objects.get_or_create(
+            position, _ = Position.objects.get_or_create(
                 title=cargo, defaults={"power": _power(cargo)},
             )
             defaults["position"] = position
@@ -194,10 +194,10 @@ class Command(BaseCommand):
 
         # O LinkedIn é o identificador estável: todo mundo no icc.json tem um,
         # e nome pode ser corrigido pelo admin sem gerar um membro duplicado.
-        member = Team_Member.objects.filter(linkedin=person["linkedin"]).first()
+        member = Member.objects.filter(linkedin=person["linkedin"]).first()
         if member is None:
             first = trajetoria[0]["semestre"] if trajetoria else None
-            member = Team_Member(
+            member = Member(
                 linkedin=person["linkedin"],
                 biography="",
                 entry_date=_semester_start(first) if first else date.today(),
@@ -219,7 +219,7 @@ class Command(BaseCommand):
         for person_id, person in people.items():
             if person_id in current_ids:
                 continue
-            updated = Team_Member.objects.filter(
+            updated = Member.objects.filter(
                 linkedin=person["linkedin"], exit_date__isnull=True,
             ).update(exit_date=date.today())
             if updated:
@@ -231,7 +231,7 @@ class Command(BaseCommand):
     def _import_partners(self, partners):
         saved = []
         for order, item in enumerate(partners):
-            category, _ = Partner_Category.objects.get_or_create(title=item["categoria"])
+            category, _ = PartnerCategory.objects.get_or_create(title=item["categoria"])
             partner = Partner.objects.filter(name=item["nome"]).first() or Partner(name=item["nome"], contato="")
             partner.description = item["descricao"]
             partner.category = category
@@ -250,7 +250,7 @@ class Command(BaseCommand):
             highlights = list(item.get("beneficios", []))
             if item.get("fastPass"):
                 highlights.append(item["fastPass"])
-            program, _ = ActivityCategory.objects.update_or_create(
+            program, _ = Program.objects.update_or_create(
                 slug=slugify(item["nome"]),
                 defaults={
                     "label": item["nome"],
@@ -264,8 +264,8 @@ class Command(BaseCommand):
             # Os componentes viram as atividades do programa, exibidas em
             # "Como funciona" na página do projeto.
             for component in item.get("componentes", []):
-                Activity.objects.update_or_create(
-                    category=program, title=component["nome"],
+                ProgramComponent.objects.update_or_create(
+                    program=program, title=component["nome"],
                     defaults={"description": component["descricao"]},
                 )
             programs[item["nome"]] = program
@@ -275,8 +275,8 @@ class Command(BaseCommand):
         count = 0
         for item in initiatives:
             for order, case_data in enumerate(item.get("cases", [])):
-                case, _ = SuccessCase.objects.update_or_create(
-                    category=programs[item["nome"]],
+                case, _ = ProgramCase.objects.update_or_create(
+                    program=programs[item["nome"]],
                     semester=case_data["semestre"],
                     title=case_data.get("nome", ""),
                     defaults={
@@ -289,9 +289,9 @@ class Command(BaseCommand):
                     },
                 )
                 winners = case_data["vencedores"]
-                participants = [(pid, SuccessCaseParticipant.Role.INTEGRANTE) for pid in winners["equipe"]]
+                participants = [(pid, ProgramCaseParticipant.Role.INTEGRANTE) for pid in winners["equipe"]]
                 if winners.get("mentor"):
-                    participants.append((winners["mentor"], SuccessCaseParticipant.Role.MENTOR))
+                    participants.append((winners["mentor"], ProgramCaseParticipant.Role.MENTOR))
 
                 for p_order, (person_id, role) in enumerate(participants):
                     if person_id not in members:
@@ -300,7 +300,7 @@ class Command(BaseCommand):
                         members[person_id] = self._save_member(
                             person_id, people[person_id], cargo=None, active=False,
                         )
-                    SuccessCaseParticipant.objects.update_or_create(
+                    ProgramCaseParticipant.objects.update_or_create(
                         case=case, member=members[person_id],
                         defaults={"role": role, "order": p_order},
                     )

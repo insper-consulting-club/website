@@ -4,12 +4,12 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from .models import (
-    Partner_Category, Activity, ActivityImage, ActivityContentBlock,
-    Partner, Team_Member, Media, ArticleImage, Member_Position, Directorate,
+    PartnerCategory, ProgramComponent, ActivityImage, ActivityContentBlock,
+    Partner, Member, Article, ArticleImage, Position, Directorate,
     DirectorateMembership, Statistic, Participant,
     Project, ProjectImage, ProjectTimelineEvent, ProjectContentBlock,
-    ActivityCategory, CalendarMonth, Contact,
-    SuccessCase, SuccessCaseParticipant,
+    Program, CalendarMonth, Contact,
+    ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
 )
@@ -34,7 +34,7 @@ def miniatura(imagem, altura=40):
 # Parceiros
 # ---------------------------------------------------------------------------
 
-@admin.register(Partner_Category)
+@admin.register(PartnerCategory)
 class PartnerCategoryAdmin(admin.ModelAdmin):
     list_display = ('title',)
     search_fields = ('title',)
@@ -65,8 +65,8 @@ class PartnerAdmin(admin.ModelAdmin):
 # Equipe
 # ---------------------------------------------------------------------------
 
-@admin.register(Member_Position)
-class MemberPositionAdmin(admin.ModelAdmin):
+@admin.register(Position)
+class PositionAdmin(admin.ModelAdmin):
     list_display = ('title', 'power')
     list_editable = ('power',)
     search_fields = ('title',)
@@ -112,9 +112,9 @@ class SituacaoFilter(admin.SimpleListFilter):
         return queryset
 
 
-class TeamMemberForm(forms.ModelForm):
+class MemberForm(forms.ModelForm):
     class Meta:
-        model = Team_Member
+        model = Member
         fields = '__all__'
         labels = {
             'name': 'Nome',
@@ -133,9 +133,9 @@ class TeamMemberForm(forms.ModelForm):
         }
 
 
-@admin.register(Team_Member)
-class TeamMemberAdmin(admin.ModelAdmin):
-    form = TeamMemberForm
+@admin.register(Member)
+class MemberAdmin(admin.ModelAdmin):
+    form = MemberForm
     inlines = [DirectorateMembershipInline]
     list_display = ('foto', 'name', 'get_directorates', 'position', 'course', 'year', 'atual')
     list_display_links = ('foto', 'name')
@@ -232,13 +232,13 @@ class ProjectContentBlockInline(admin.StackedInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'start_date', 'end_date', 'is_active')
+    list_display = ('title', 'program', 'start_date', 'end_date', 'is_active')
     list_editable = ('is_active',)
-    list_filter = ('is_active', 'category', 'start_date')
+    list_filter = ('is_active', 'program', 'start_date')
     search_fields = ('title', 'description')
     filter_horizontal = ('partners',)
     date_hierarchy = 'start_date'
-    list_select_related = ('category',)
+    list_select_related = ('program',)
     actions = ['arquivar', 'reativar']
     inlines = [ProjectImageInline, ProjectTimelineEventInline, ProjectContentBlockInline]
 
@@ -258,7 +258,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 # ---------------------------------------------------------------------------
-# Atividades e calendário
+# Programas, componentes e calendário
 # ---------------------------------------------------------------------------
 
 class ActivityImageInline(admin.TabularInline):
@@ -275,18 +275,18 @@ class ActivityContentBlockInline(admin.StackedInline):
     ordering = ('order',)
 
 
-@admin.register(Activity)
-class ActivityAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'responsible_partner')
-    list_filter = ('category',)
+@admin.register(ProgramComponent)
+class ProgramComponentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'program', 'responsible_partner')
+    list_filter = ('program',)
     search_fields = ('title', 'description')
     autocomplete_fields = ('responsible_partner',)
-    list_select_related = ('category', 'responsible_partner')
+    list_select_related = ('program', 'responsible_partner')
     inlines = [ActivityImageInline, ActivityContentBlockInline]
 
 
-@admin.register(ActivityCategory)
-class ActivityCategoryAdmin(admin.ModelAdmin):
+@admin.register(Program)
+class ProgramAdmin(admin.ModelAdmin):
     list_display = ('label', 'slug', 'badge', 'is_active', 'order')
     list_editable = ('is_active', 'order')
     list_filter = ('is_active',)
@@ -328,8 +328,8 @@ class ArticleImageInline(admin.TabularInline):
         return miniatura(obj.image if obj.pk else None, 60)
 
 
-@admin.register(Media)
-class MediaAdmin(admin.ModelAdmin):
+@admin.register(Article)
+class ArticleAdmin(admin.ModelAdmin):
     list_display = ('title', 'slug', 'authors', 'published', 'date', 'order')
     search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
     list_editable = ('published', 'order')
@@ -340,25 +340,25 @@ class MediaAdmin(admin.ModelAdmin):
 
 
 # ---------------------------------------------------------------------------
-# Cases de sucesso
+# Cases dos programas
 # ---------------------------------------------------------------------------
 
-class SuccessCaseParticipantInline(admin.TabularInline):
-    model = SuccessCaseParticipant
+class ProgramCaseParticipantInline(admin.TabularInline):
+    model = ProgramCaseParticipant
     extra = 1
     fields = ('member', 'role', 'order')
     ordering = ('role', 'order')
     autocomplete_fields = ('member',)
 
 
-@admin.register(SuccessCase)
-class SuccessCaseAdmin(admin.ModelAdmin):
-    inlines = [SuccessCaseParticipantInline]
-    list_display = ('semester', 'title', 'area', 'category', 'is_active')
+@admin.register(ProgramCase)
+class ProgramCaseAdmin(admin.ModelAdmin):
+    inlines = [ProgramCaseParticipantInline]
+    list_display = ('semester', 'title', 'area', 'program', 'is_active')
     list_editable = ('is_active',)
-    list_filter = ('is_active', 'category', 'semester')
+    list_filter = ('is_active', 'program', 'semester')
     search_fields = ('title', 'area', 'theme', 'award')
-    list_select_related = ('category',)
+    list_select_related = ('program',)
 
 
 # ---------------------------------------------------------------------------

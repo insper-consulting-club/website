@@ -54,8 +54,8 @@ export default function Projeto() {
     )
   }
 
-  const voltar = projeto.category
-    ? { to: `/projetos/${projeto.category.slug}`, label: projeto.category.label }
+  const voltar = projeto.program
+    ? { to: `/projetos/${projeto.program.slug}`, label: projeto.program.label }
     : { to: "/projetos", label: "Todos os projetos" }
   // Evento de um dia só (visita, competição): mostra a data uma vez.
   const umDia = projeto.end_date === projeto.start_date
@@ -67,7 +67,7 @@ export default function Projeto() {
 
   return (
     <div className="projeto-detalhe">
-      <PageHero back={voltar} eyebrow={projeto.category?.label} title={projeto.title} lead={projeto.description} />
+      <PageHero back={voltar} eyebrow={projeto.program?.label} title={projeto.title} lead={projeto.description} />
 
       <section className="section">
         <div className="container projeto-detalhe__corpo">

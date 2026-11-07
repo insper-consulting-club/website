@@ -54,11 +54,11 @@ export default function PerfilAtividade() {
       {/* Breadcrumb */}
       <div className="perfil-breadcrumb">
         <Link to="/atividades" className="perfil-breadcrumb__link">Atividades</Link>
-        {project.category && (
+        {project.program && (
           <>
             <span className="perfil-breadcrumb__sep">›</span>
-            <Link to={`/atividades/categoria/${project.category.slug}`} className="perfil-breadcrumb__link">
-              {project.category.label}
+            <Link to={`/atividades/categoria/${project.program.slug}`} className="perfil-breadcrumb__link">
+              {project.program.label}
             </Link>
           </>
         )}
@@ -71,9 +71,9 @@ export default function PerfilAtividade() {
         <div className="perfil-hero__inner">
           <div className="perfil-hero__meta">
             <StatusBadge endDate={project.end_date} />
-            {project.category && (
-              <span className={`perfil-hero__category cat-badge ${project.category.badge_class}`}>
-                {project.category.label}
+            {project.program && (
+              <span className={`perfil-hero__category cat-badge ${project.program.badge_class}`}>
+                {project.program.label}
               </span>
             )}
             <span className="perfil-hero__duration">{duration}</span>
@@ -227,10 +227,10 @@ export default function PerfilAtividade() {
 
         {/* Voltar */}
         <div className="perfil-footer-nav">
-          {project.category ? (
-            <Link to={`/atividades/categoria/${project.category.slug}`} className="perfil-back-btn">
+          {project.program ? (
+            <Link to={`/atividades/categoria/${project.program.slug}`} className="perfil-back-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Voltar para {project.category.label}
+              Voltar para {project.program.label}
             </Link>
           ) : (
             <Link to="/atividades" className="perfil-back-btn">

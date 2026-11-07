@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { api } from "../../api"
-import type { Project, SuccessCase } from "../../types"
+import type { Project, ProgramCase } from "../../types"
 import PageHero from "../../components/PageHero"
 import ProjetoCard from "../../components/ProjetoCard"
 import { ArrowRightIcon } from "../../components/Icons"
@@ -12,16 +12,16 @@ import "./index.css"
 export default function Projetos() {
   usePageTitle("Projetos", "Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor.")
   const programas = useProgramas()
-  const [cases, setCases] = useState<SuccessCase[]>([])
+  const [cases, setCases] = useState<ProgramCase[]>([])
   const [outrosProjetos, setOutrosProjetos] = useState<Project[]>([])
 
   useEffect(() => {
-    api.getSuccessCases().then(setCases).catch(() => setCases([]))
+    api.getProgramCases().then(setCases).catch(() => setCases([]))
     // Os projetos de um programa aparecem na página dele; aqui ficam os que
     // não pertencem a nenhum, como visitas e capacitações com parceiros.
     api
       .getProjects()
-      .then((data: Project[]) => setOutrosProjetos(data.filter((p) => !p.category)))
+      .then((data: Project[]) => setOutrosProjetos(data.filter((p) => !p.program)))
       .catch(() => setOutrosProjetos([]))
   }, [])
 

@@ -6,7 +6,7 @@ import requests
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 
-from website.models import Team_Member
+from website.models import Member
 
 SQL_FILE = Path(__file__).parents[3] / "membros_icc.sql"
 
@@ -59,7 +59,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         foto_map = _load_sql_foto_map()
-        members = Team_Member.objects.all()
+        members = Member.objects.all()
 
         ok = erros = pulados = 0
 

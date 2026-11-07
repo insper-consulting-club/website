@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { api } from "../../api"
-import type { ActivityCategory, CalendarMonth } from "../../types"
+import type { Program, CalendarMonth } from "../../types"
 import MonthCalendarGrid from "./MonthCalendarGrid"
 import { MESES_ORDER, extractEvents } from "./calendario"
 import PageHero from "../../components/PageHero"
@@ -40,7 +40,7 @@ function defaultViewMode(): ViewMode {
 
 export default function Atividades() {
   usePageTitle("Atividades", "Um calendário completo de desenvolvimento profissional e prático")
-  const [categories, setCategories] = useState<ActivityCategory[]>([])
+  const [categories, setCategories] = useState<Program[]>([])
   const [calendar, setCalendar] = useState<CalendarMonth[]>([])
   const [selectedSemester, setSelectedSemester] = useState<string>('')
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode)
@@ -48,9 +48,9 @@ export default function Atividades() {
 
   useEffect(() => {
     Promise.all([
-      api.getCategories(),
+      api.getPrograms(),
       api.getCalendar(),
-    ]).then(([categoriesData, calendarData]: [ActivityCategory[], CalendarMonth[]]) => {
+    ]).then(([categoriesData, calendarData]: [Program[], CalendarMonth[]]) => {
       setCategories(categoriesData)
       setCalendar(calendarData)
       const keys = Array.from(new Set(calendarData.map(semesterKey).filter((k): k is string => k !== null)))

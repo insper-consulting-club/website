@@ -6,7 +6,7 @@ import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
 import "katex/dist/katex.min.css"
 import { api } from "../../api"
-import type { ArticleImage, NewsItem } from "../../types"
+import type { Article, ArticleImage } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowLeftIcon, ExternalIcon, LinkedInIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
@@ -56,7 +56,7 @@ function componentesMarkdown(imagens: ArticleImage[]): Components {
 
 export default function Artigo() {
   const { slugOrId } = useParams<{ slugOrId: string }>()
-  const [artigo, setArtigo] = useState<NewsItem | null>(null)
+  const [artigo, setArtigo] = useState<Article | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
   const [copiado, setCopiado] = useState(false)
   const loading = loadedId !== slugOrId
@@ -66,8 +66,8 @@ export default function Artigo() {
   useEffect(() => {
     if (!slugOrId) return
     api
-      .getNewsItem(slugOrId)
-      .then((data: NewsItem) => setArtigo(data && data.id ? data : null))
+      .getArticle(slugOrId)
+      .then((data: Article) => setArtigo(data && data.id ? data : null))
       .catch(() => setArtigo(null))
       .finally(() => setLoadedId(slugOrId))
   }, [slugOrId])

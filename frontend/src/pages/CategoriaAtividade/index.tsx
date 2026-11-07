@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { api } from "../../api"
-import type { Project, Activity, ActivityCategory } from "../../types"
+import type { Project, ProgramComponent, Program } from "../../types"
 import "./index.css"
 
 export default function CategoriaAtividade() {
   const { categoria } = useParams<{ categoria: string }>()
-  const [meta, setMeta] = useState<ActivityCategory | null>(null)
+  const [meta, setMeta] = useState<Program | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
-  const [activities, setActivities] = useState<Activity[]>([])
+  const [activities, setActivities] = useState<ProgramComponent[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -16,11 +16,11 @@ export default function CategoriaAtividade() {
     if (!categoria) return
 
     Promise.all([
-      api.getCategories(),
+      api.getPrograms(),
       api.getProjects(categoria),
-      api.getActivities(categoria),
+      api.getComponents(categoria),
     ]).then(([categoriesData, projectsData, activitiesData]) => {
-      const found = categoriesData.find((c: ActivityCategory) => c.slug === categoria)
+      const found = categoriesData.find((c: Program) => c.slug === categoria)
       if (!found) {
         setNotFound(true)
       } else {
