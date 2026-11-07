@@ -42,7 +42,7 @@ function componentesMarkdown(imagens: ArticleImage[]): Components {
       const cadastrada = numero ? imagens.find((img) => img.number === Number(numero)) : undefined
       const endereco = numero ? cadastrada?.image_url : src
       const legenda = alt || cadastrada?.caption || ""
-      // Número sem imagem cadastrada: não mostra nada em vez de imagem quebrada.
+      // Número sem imagem cadastrada: omite o trecho em vez de mostrar imagem quebrada.
       if (typeof endereco !== "string" || !endereco) return null
       return (
         <span className="artigo__figura">

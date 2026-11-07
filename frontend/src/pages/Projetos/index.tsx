@@ -18,7 +18,7 @@ export default function Projetos() {
   useEffect(() => {
     api.getProgramCases().then(setCases).catch(() => setCases([]))
     // Os projetos de um programa aparecem na página dele; aqui ficam os que
-    // não pertencem a nenhum, como visitas e capacitações com parceiros.
+    // estão sem programa, como visitas e capacitações com parceiros.
     api
       .getProjects()
       .then((data: Project[]) => setOutrosProjetos(data.filter((p) => !p.program)))

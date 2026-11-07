@@ -391,7 +391,7 @@ class SelectionProcess(models.Model):
 
     registrations_open = models.BooleanField(
         default=False, verbose_name='Inscrições abertas',
-        help_text='Marque quando o PS abrir. Desmarcado, o site mostra "inscrições encerradas" e não leva a nenhum formulário.'
+        help_text='Marque quando o PS abrir. Desmarcado, o site mostra "inscrições encerradas" e o link do formulário fica escondido.'
     )
     registration_url = models.URLField(
         max_length=300, blank=True, verbose_name='Link de inscrição',

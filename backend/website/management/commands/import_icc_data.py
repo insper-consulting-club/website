@@ -211,7 +211,7 @@ class Command(BaseCommand):
 
     def _archive_former_members(self, people, current_ids):
         """
-        Quem está no registro de pessoas mas não em nenhuma diretoria saiu do
+        Quem está no registro de pessoas mas ficou sem diretoria saiu do
         clube: ganha data de saída (some da Equipe) em vez de ser apagado,
         para continuar aparecendo nos cases antigos.
         """
