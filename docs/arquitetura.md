@@ -69,7 +69,7 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 | Projetos | `Project`, `ProjectContentBlock`, `ProjectImage`, `ProjectTimelineEvent` | `is_active=False` arquiva. Um projeto sem programa (`program` vazio) aparece em "Outros projetos". Um projeto com `end_date` conta como projeto concluído do parceiro |
 | Cases | `ProgramCase`, `ProgramCaseParticipant` | Case resolvido por um grupo de membros dentro de um programa. Os participantes ligam o case a membros, como integrantes ou mentores |
 | Artigos | `Article`, `ArticleImage` | O texto é Markdown e as imagens são chamadas por número. `published=False` é rascunho |
-| Processo seletivo | `SelectionProcess`, `SelectionProcessStage`, `SelectionProcessStep`, `SelectionProcessRequirement`, `PreparationMaterial`, `PreparationMaterialItem` | Só um processo fica ativo por vez; ativar um desativa os outros. Não é possível abrir inscrições sem o link do formulário |
+| Processo seletivo | `SelectionProcess`, `SelectionProcessStage`, `SelectionProcessStep`, `SelectionProcessRequirement`, `PreparationMaterial`, `PreparationMaterialItem` | Só um processo fica ativo por vez; ativar um desativa os outros. O admin não deixa abrir inscrições sem o link do formulário, e a API só informa inscrições abertas quando há link |
 | Home | `Statistic` | Números da faixa de estatísticas |
 
 #### Arquivar em vez de apagar
@@ -115,7 +115,7 @@ O `/health/` não acessa o banco de propósito: o monitor de uptime o chama a ca
 
 ### Configuração (`config/settings.py`)
 
-- `SECRET_KEY` é obrigatória. O projeto não sobe sem ela. No ambiente local, o `docker-compose.yml` define uma chave de desenvolvimento, então o `.env` é opcional.
+- `SECRET_KEY` é obrigatória. O projeto não sobe sem ela. No ambiente local, o `docker-compose.yml` define uma chave de desenvolvimento, então o `.env` é opcional. Como essa chave é pública, o backend se recusa a subir com ela quando `DEBUG=False`.
 - Com `DEBUG=False`, o backend exige HTTPS, define cookies seguros e ativa o HSTS.
 - `BEHIND_PROXY=True` faz o Django confiar no cabeçalho `X-Forwarded-Proto`. É necessário no Render, que termina o HTTPS na frente do Django. Sem isso, o site entra em loop de redirecionamento.
 - O banco vem de `DATABASE_URL`. Sem ela, usa as variáveis `DB_*` do Compose.

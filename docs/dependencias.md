@@ -22,7 +22,6 @@ Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL perm
 | python-dotenv | 1.2.2 | BSD-3-Clause | Carregar o `.env` em desenvolvimento |
 | asgiref | 3.11.1 | BSD-3-Clause | Dependência do Django |
 | sqlparse | 0.6.0 | BSD | Dependência do Django |
-| typing_extensions | 4.15.0 | PSF-2.0 | Dependência de tipagem |
 
 ## Frontend (JavaScript e TypeScript)
 

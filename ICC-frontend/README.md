@@ -79,7 +79,7 @@ Cada página fica em `pages/<Nome>/` com o seu próprio CSS. Os estilos que vale
 
 ### Artigos
 
-O texto é exibido com `react-markdown`, `remark-gfm`, `remark-math` e `rehype-katex`. A biblioteca não executa HTML: marcação digitada no admin aparece como texto, e links `javascript:` são descartados. Só o `$$` abre fórmula, para que valores em reais (`R$ 10 mi`) continuem texto. O CSS e as fontes do KaTeX só carregam nessa página.
+O texto é exibido com `react-markdown`, `remark-gfm`, `remark-math` e `rehype-katex`. A biblioteca não executa HTML: marcação digitada no admin aparece como texto, e links `javascript:` são descartados. Só o `$$` abre fórmula, para que valores em reais (`R$ 10 mi`) continuem texto. O CSS e as fontes do KaTeX só carregam nessa página. O texto estiliza `h2` a `h4`, e o guia de artigos limita os títulos a esses três níveis. Se um dia houver mais níveis, estilize cada um com aparência própria e atualize o guia.
 
 ## Adicionar uma página
 

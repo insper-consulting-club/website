@@ -6,7 +6,7 @@ Como rodar o projeto na sua máquina e como propor mudanças no código. Para en
 
 - [Docker](https://docs.docker.com/get-docker/) com o Compose, em execução.
 - Git.
-- Node.js 20 ou mais novo, apenas se for rodar lint e build do frontend fora do Docker.
+- Node.js 20.19 ou mais novo (ou 22.12 ou mais novo), apenas se for rodar lint e build do frontend fora do Docker. É o que o Vite 8 exige.
 
 Todos os comandos `docker compose` devem ser executados na raiz do repositório.
 
@@ -149,7 +149,7 @@ As migrations ficam versionadas em `backend/website/migrations/`. O Docker Compo
 
 ### Testes
 
-Os testes do backend ficam em `backend/website/tests.py` e usam o `django.test.TestCase` com o `APIClient` do DRF. Hoje cobrem a busca de artigos por slug e por id e o comportamento de rascunhos. Ao criar ou alterar um endpoint, acrescente testes. O frontend ainda não tem testes automatizados.
+Os testes do backend ficam em `backend/website/tests.py` e usam o `django.test.TestCase` com o `APIClient` do DRF. Hoje cobrem os endpoints públicos: artigos (slug, id e rascunhos), membros atuais e arquivados, parceiros ocultos, projetos arquivados, programas, componentes e cases, processo seletivo e o `/api/health/`. Ao criar ou alterar um endpoint, acrescente testes. O frontend ainda não tem testes automatizados.
 
 ### Estilo de código
 
@@ -169,6 +169,7 @@ Faça em uma branch própria.
 
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
+| O `db` fica `unhealthy` e a imagem reclama de dados em `/var/lib/postgresql/data` | Volume criado com o Postgres 16, de antes da troca para o 18 | `docker compose down -v` e `docker compose up --build` (apaga só os dados locais) |
 | `column ... does not exist` | Migration nova não aplicada | `docker compose exec backend python manage.py migrate` |
 | `Failed to resolve import "..."` no frontend | Pacote novo no `package.json`; o container guarda o `node_modules` antigo | `docker compose up --build -V frontend` |
 | `RuntimeError: SECRET_KEY não definida` | O backend foi iniciado fora do Compose | Subir com `docker compose up`, que define a chave de desenvolvimento |
