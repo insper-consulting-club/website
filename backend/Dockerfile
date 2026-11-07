@@ -16,9 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o código
 COPY . .
 
-# Cria a pasta de arquivos de mídia
-RUN mkdir -p /app/media
-
 # Produção: aplica migrations, prepara os arquivos estáticos e inicia o
 # servidor (gunicorn). PORT é definida pela hospedagem; localmente, 8000.
 # No desenvolvimento local, o docker-compose.yml substitui este comando.

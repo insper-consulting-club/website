@@ -34,15 +34,6 @@ export interface ProgramCase {
   order: number
 }
 
-export interface CalendarMonth {
-  id: number
-  month: string
-  year: number | null
-  items: string[]
-  semester: '1' | '2' | 'both'
-  order: number
-}
-
 export interface ProjectImage {
   id: number
   image_url: string
@@ -92,32 +83,11 @@ export interface ProjectDetail {
   content_blocks: ContentBlock[]
 }
 
-export interface ActivityImage {
-  id: number
-  image_url: string
-  caption: string
-  order: number
-}
-
 export interface ProgramComponent {
   id: number
   title: string
   description: string
   program: string | null
-}
-
-export interface ProgramComponentDetail {
-  id: number
-  title: string
-  description: string
-  program: Program | null
-  images: ActivityImage[]
-  content_blocks: ContentBlock[]
-  responsible_partner: {
-    id: number
-    name: string
-    logo_url: string | null
-  } | null
 }
 
 export interface DirectorateMembership {
@@ -198,14 +168,6 @@ export interface ArticleImage {
   number: number
   image_url: string | null
   caption: string
-}
-
-export interface ContactInfo {
-  id: number
-  email: string
-  instagram: string
-  linkedin: string
-  whatsapp: string
 }
 
 export interface SelectionProcessStage {

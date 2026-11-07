@@ -4,11 +4,11 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from .models import (
-    PartnerCategory, ProgramComponent, ActivityImage, ActivityContentBlock,
+    PartnerCategory, ProgramComponent,
     Partner, Member, Article, ArticleImage, Position, Directorate,
-    DirectorateMembership, Statistic, Participant,
+    DirectorateMembership, Statistic,
     Project, ProjectImage, ProjectTimelineEvent, ProjectContentBlock,
-    Program, CalendarMonth, Contact,
+    Program,
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
@@ -46,7 +46,6 @@ class PartnerAdmin(admin.ModelAdmin):
     list_display_links = ('logo', 'name')
     list_editable = ('is_active', 'order')
     list_filter = ('is_active', 'category')
-    # search_fields também é exigido pelo autocomplete de "parceiro responsável" em Atividades.
     search_fields = ('name', 'description')
     ordering = ('order', 'name')
     readonly_fields = ('logo_atual',)
@@ -187,25 +186,6 @@ class MemberAdmin(admin.ModelAdmin):
 
 
 # ---------------------------------------------------------------------------
-# Contato e inscrições
-# ---------------------------------------------------------------------------
-
-@admin.register(Contact)
-class ContactAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'phone', 'contact_type')
-    list_filter = ('contact_type',)
-    search_fields = ('name', 'email', 'phone', 'message')
-
-
-@admin.register(Participant)
-class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'course', 'semester', 'created_at')
-    list_filter = ('semester', 'course', 'created_at')
-    search_fields = ('name', 'email', 'course', 'reason')
-    date_hierarchy = 'created_at'
-
-
-# ---------------------------------------------------------------------------
 # Projetos
 # ---------------------------------------------------------------------------
 
@@ -242,10 +222,6 @@ class ProjectAdmin(admin.ModelAdmin):
     actions = ['arquivar', 'reativar']
     inlines = [ProjectImageInline, ProjectTimelineEventInline, ProjectContentBlockInline]
 
-    # Soft delete: projetos não são apagados, só arquivados (is_active = False).
-    #def has_delete_permission(self, request, obj=None):
-    #    return False
-
     @admin.action(description='Arquivar selecionados (somem do site)')
     def arquivar(self, request, queryset):
         n = queryset.filter(is_active=True).update(is_active=False)
@@ -258,31 +234,15 @@ class ProjectAdmin(admin.ModelAdmin):
 
 
 # ---------------------------------------------------------------------------
-# Programas, componentes e calendário
+# Programas e componentes
 # ---------------------------------------------------------------------------
-
-class ActivityImageInline(admin.TabularInline):
-    model = ActivityImage
-    extra = 1
-    fields = ('image', 'caption', 'order')
-    ordering = ('order',)
-
-
-class ActivityContentBlockInline(admin.StackedInline):
-    model = ActivityContentBlock
-    extra = 1
-    fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
-    ordering = ('order',)
-
 
 @admin.register(ProgramComponent)
 class ProgramComponentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'program', 'responsible_partner')
+    list_display = ('title', 'program')
     list_filter = ('program',)
     search_fields = ('title', 'description')
-    autocomplete_fields = ('responsible_partner',)
-    list_select_related = ('program', 'responsible_partner')
-    inlines = [ActivityImageInline, ActivityContentBlockInline]
+    list_select_related = ('program',)
 
 
 @admin.register(Program)
@@ -293,15 +253,6 @@ class ProgramAdmin(admin.ModelAdmin):
     search_fields = ('label', 'slug', 'description')
     ordering = ('order',)
     prepopulated_fields = {'slug': ('label',)}
-
-
-@admin.register(CalendarMonth)
-class CalendarMonthAdmin(admin.ModelAdmin):
-    list_display = ('month', 'year', 'semester', 'order')
-    list_editable = ('order', 'semester')
-    list_filter = ('semester', 'year')
-    search_fields = ('month', 'items')
-    ordering = ('year', 'order')
 
 
 # ---------------------------------------------------------------------------

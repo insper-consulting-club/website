@@ -60,9 +60,6 @@ class Partner(models.Model):
         blank=True,
         verbose_name='Categoria'
     )
-    contato = models.CharField(max_length=20, blank=True)
-
-
     site = models.URLField(
         max_length=300,
         blank=True,
@@ -96,12 +93,6 @@ BADGE_CHOICES = [
     ('badge--semanal', 'Semanal'),
     ('badge--mensal', 'Mensal'),
     ('badge--semestral', 'Semestral'),
-]
-
-SEMESTER_CHOICES = [
-    ('1', 'Primeiro Semestre'),
-    ('2', 'Segundo Semestre'),
-    ('both', 'Ambos'),
 ]
 
 IMAGE_ALIGN_CHOICES = [
@@ -146,34 +137,6 @@ class Program(models.Model):
 
     def get_highlights_list(self):
         return [line.strip() for line in self.highlights.splitlines() if line.strip()]
-
-
-class CalendarMonth(models.Model):
-    month = models.CharField(max_length=50, verbose_name='Mês')
-    year = models.IntegerField(
-        null=True, blank=True, verbose_name='Ano',
-        help_text='Necessário para o frontend desenhar a grade de dias da semana. Sem ano, só a lista de tópicos é exibida.',
-    )
-    items = models.TextField(
-        verbose_name='Tópicos',
-        help_text='Um tópico por linha. Para aparecer na grade de dias, use o formato "DD/MM - Título" (é o que import_calendar_ics gera).',
-    )
-    semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, default='both', verbose_name='Semestre')
-    order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
-
-    class Meta:
-        verbose_name = 'Mês do Calendário'
-        verbose_name_plural = 'Calendário do Semestre'
-        ordering = ['year', 'order']
-        constraints = [
-            models.UniqueConstraint(fields=['month', 'year'], name='unique_month_per_year'),
-        ]
-
-    def __str__(self):
-        return f"{self.month}/{self.year}" if self.year else self.month
-
-    def get_items_list(self):
-        return [line.strip() for line in self.items.splitlines() if line.strip()]
 
 
 class Project(models.Model):
@@ -314,7 +277,6 @@ class ProgramComponent(models.Model):
         Program, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name='Programa', related_name='components'
     )
-    responsible_partner = models.ForeignKey(Partner, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Componente do programa'
@@ -322,39 +284,6 @@ class ProgramComponent(models.Model):
 
     def __str__(self):
         return self.title
-
-
-class ActivityImage(models.Model):
-    activity = models.ForeignKey(ProgramComponent, on_delete=models.CASCADE, related_name='images', verbose_name='Atividade')
-    image = models.ImageField(upload_to='activities/images/', verbose_name='Imagem')
-    caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda')
-    order = models.IntegerField(default=0, verbose_name='Ordem')
-
-    class Meta:
-        verbose_name = 'Imagem da Atividade'
-        verbose_name_plural = 'Imagens da Atividade'
-        ordering = ['order']
-
-    def __str__(self):
-        return f"Imagem {self.order} — {self.activity.title}"
-
-
-class ActivityContentBlock(models.Model):
-    activity = models.ForeignKey(ProgramComponent, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Atividade')
-    title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
-    text = models.TextField(blank=True, verbose_name='Texto')
-    image = models.ImageField(upload_to='activities/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
-    image_caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda da imagem')
-    image_align = models.CharField(max_length=10, choices=IMAGE_ALIGN_CHOICES, default='right', verbose_name='Posição da imagem')
-    order = models.IntegerField(default=0, verbose_name='Ordem')
-
-    class Meta:
-        verbose_name = 'Bloco de Conteúdo'
-        verbose_name_plural = 'Blocos de Conteúdo'
-        ordering = ['order']
-
-    def __str__(self):
-        return f"Bloco {self.order} — {self.activity.title}"
 
 
 class Article(models.Model):
@@ -448,44 +377,6 @@ class Statistic(models.Model):
         return f"{self.value} - {self.description}"
 
 
-class Participant(models.Model):
-    name = models.CharField(max_length=200, verbose_name='Nome')
-    email = models.EmailField(verbose_name='Email')
-    course = models.CharField(max_length=200, verbose_name='Curso')
-    semester = models.CharField(max_length=50, verbose_name='Semestre')
-    reason = models.TextField(verbose_name='Por que quer entrar no ICC?')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de inscrição')
-
-    class Meta:
-        verbose_name_plural = 'Participantes'
-
-    def __str__(self):
-        return self.name
-
-class Contact(models.Model):
-
-    class ContactType(models.TextChoices):
-        ALUNO = 'aluno', 'Aluno do Insper'
-        EMPRESA = 'empresa', 'Empresa / Parceiro'
-        ALUMNI = 'alumni', 'Ex-aluno do ICC'
-        IMPRENSA = 'imprensa', 'Imprensa'
-        OUTRO = 'outro', 'Outro'
-
-    name = models.CharField(max_length=200, verbose_name="Nome")
-    email = models.EmailField(verbose_name="Email")
-    phone = models.CharField(max_length=200, verbose_name="Telefone")
-    contact_type = models.CharField(
-        max_length=10,
-        choices=ContactType.choices
-    )
-    message = models.TextField(verbose_name="Mensagem", default="")
-
-    class Meta:
-        verbose_name_plural = "Pedidos de contato"
-
-    def __str__(self):
-        return f"{self.name} | {self.contact_type}"
-    
 class SelectionProcess(models.Model):
     title = models.CharField(
         max_length=200,

@@ -5,8 +5,6 @@ from django.core.management.base import BaseCommand
 from website.models import (
     ProgramComponent,
     Program,
-    ActivityContentBlock,
-    CalendarMonth,
     Article,
     Position,
     Partner,
@@ -127,28 +125,24 @@ PARTNERS = [
         "name": "Atlas Strategy",
         "category": "Consultoria",
         "description": "Parceiro mock para mentorias, simulados de case e conversas sobre carreira em estrategia.",
-        "contato": "mock",
         "site": "https://example.com/atlas-strategy",
     },
     {
         "name": "Norte Advisors",
         "category": "Consultoria",
         "description": "Parceiro mock focado em desafios de crescimento, go-to-market e diagnostico competitivo.",
-        "contato": "mock",
         "site": "https://example.com/norte-advisors",
     },
     {
         "name": "Prisma Analytics",
         "category": "Tecnologia e dados",
         "description": "Parceiro mock para trilhas de dados, pesquisa de mercado e suporte analitico aos projetos.",
-        "contato": "mock",
         "site": "https://example.com/prisma-analytics",
     },
     {
         "name": "Vetor Carreiras",
         "category": "Educacao e carreira",
         "description": "Parceiro mock para workshops de entrevista, CV, fit interview e preparacao profissional.",
-        "contato": "mock",
         "site": "https://example.com/vetor-carreiras",
     },
 ]
@@ -190,17 +184,6 @@ CATEGORIES = [
         "badge_class": "badge--semestral",
         "order": 4,
     },
-]
-
-CALENDAR = [
-    ("Fevereiro", "Abertura do semestre\nOnboarding de novos membros\nKickoff da trilha de cases", "1", 1),
-    ("Marco", "Treinamentos tecnicos\nDiagnostico dos projetos\nPrimeiro simulado de case", "1", 2),
-    ("Abril", "Execucao de projetos\nPainel de carreira\nMentorias com alumni", "1", 3),
-    ("Maio", "Sprint final de entregas\nWorkshop de apresentacao executiva", "1", 4),
-    ("Agosto", "Processo seletivo\nOnboarding e integracao\nTrilha de fundamentos", "2", 5),
-    ("Setembro", "Projetos e eventos com parceiros\nSimulados de entrevista\nRevisao de CV", "2", 6),
-    ("Outubro", "Semana de consultoria\nPreparacao para processos seletivos\nBate-papo com alumni", "2", 7),
-    ("Novembro", "Fechamento dos projetos\nRetrospectiva de membros\nPlanejamento do proximo ciclo", "2", 8),
 ]
 
 STATISTICS = [
@@ -262,22 +245,16 @@ ACTIVITIES = [
         "title": "Workshop de Case Interview",
         "description": "Atividade mock com pratica de cases, comunicacao estruturada e feedback individual.",
         "category": "capacitacao",
-        "partner": "Vetor Carreiras",
-        "content": "Sessao voltada para alunos que querem entender como estruturar hipoteses, conduzir calculos e sintetizar recomendacoes.",
     },
     {
         "title": "Painel de carreiras em consultoria",
         "description": "Atividade mock com convidados de mercado e alumni discutindo trajetorias em estrategia.",
         "category": "eventos",
-        "partner": "Atlas Strategy",
-        "content": "Conversa sobre entrada no mercado, rotina de projetos e habilidades valorizadas em consultorias.",
     },
     {
         "title": "Treinamento de storytelling executivo",
         "description": "Atividade mock para melhorar apresentacoes, piramide logica e narrativa de recomendacoes.",
         "category": "capacitacao",
-        "partner": None,
-        "content": "Treinamento interno com exemplos de slides, mensagens-chave e revisao em grupo.",
     },
 ]
 
@@ -329,7 +306,6 @@ NEWS = [
 ]
 
 
-
 class Command(BaseCommand):
     help = "Popula o banco local com dados mock completos para o site do ICC."
 
@@ -339,10 +315,9 @@ class Command(BaseCommand):
         partner_categories = self._seed_partner_categories()
         partners = self._seed_partners(partner_categories)
         categories = self._seed_categories()
-        self._seed_calendar()
         self._seed_statistics()
         projects = self._seed_projects(categories, partners, members)
-        self._seed_activities(categories, partners)
+        self._seed_activities(categories)
         self._seed_news()
         self._seed_selection_process()
 
@@ -399,7 +374,6 @@ class Command(BaseCommand):
                 defaults={
                     "description": item["description"],
                     "category": partner_categories[item["category"]],
-                    "contato": item["contato"],
                     "site": item["site"],
                     "logo_url": "",
                 },
@@ -423,13 +397,6 @@ class Command(BaseCommand):
             )
             categories[item["slug"]] = category
         return categories
-
-    def _seed_calendar(self):
-        for month, items, semester, order in CALENDAR:
-            CalendarMonth.objects.update_or_create(
-                month=month,
-                defaults={"items": items, "semester": semester, "order": order},
-            )
 
     def _seed_statistics(self):
         for value, description, order in STATISTICS:
@@ -482,26 +449,13 @@ class Command(BaseCommand):
 
         return seeded_projects
 
-    def _seed_activities(self, categories, partners):
+    def _seed_activities(self, categories):
         for item in ACTIVITIES:
-            partner = partners.get(item["partner"]) if item["partner"] else None
-            activity, _ = ProgramComponent.objects.update_or_create(
+            ProgramComponent.objects.update_or_create(
                 title=item["title"],
                 defaults={
                     "description": item["description"],
                     "program": categories[item["category"]],
-                    "responsible_partner": partner,
-                },
-            )
-            ActivityContentBlock.objects.update_or_create(
-                activity=activity,
-                title="Resumo",
-                defaults={
-                    "text": item["content"],
-                    "image": None,
-                    "image_caption": "",
-                    "image_align": "right",
-                    "order": 1,
                 },
             )
 

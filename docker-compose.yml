@@ -1,7 +1,7 @@
 services:
 
   db:
-    image: postgres:16
+    image: postgres:18
     ports:
       # Só acessível desta máquina (127.0.0.1), nunca da rede externa,
       # mesmo que o firewall do host esteja mal configurado.
@@ -29,7 +29,6 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - media_files:/app/media
       # Dados reais do ICC (não versionados), lidos pelo import_icc_data.
       - ./site-data:/site-data:ro
     env_file:
@@ -62,5 +61,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  media_files:
   postgres_data:

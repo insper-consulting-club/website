@@ -1,25 +1,18 @@
-import logging
-from django.conf import settings
 from django.db.models import Min, F
-from django.utils.html import escape
 from django.http import Http404, JsonResponse
 from rest_framework import generics
-from rest_framework.parsers import JSONParser
-from rest_framework.throttling import ScopedRateThrottle
 from .models import (
     Member, Partner, Statistic, Project, ProgramComponent,
-    Program, CalendarMonth, SelectionProcess,
-    Article, Contact, Directorate, ProgramCase
+    Program, SelectionProcess,
+    Article, Directorate, ProgramCase
 )
 from .serializers import (
     MemberListSerializer, MemberDetailSerializer,
     PartnerSerializer, StatisticSerializer,
     ProjectListSerializer, ProjectDetailSerializer,
-    ProgramComponentSerializer, ProgramComponentDetailSerializer,
-    ProgramSerializer, CalendarMonthSerializer,
+    ProgramComponentSerializer, ProgramSerializer,
     DirectorateSerializer, ProgramCaseSerializer,
-    SelectionProcessSerializer, ArticleSerializer,
-    ContactSerializer
+    SelectionProcessSerializer, ArticleSerializer
 )
 
 
@@ -73,22 +66,9 @@ class PartnerDetailView(generics.RetrieveAPIView):
     queryset = Partner.objects.select_related("category").filter(is_active=True)
 
 
-
 class ProgramListView(generics.ListAPIView):
     serializer_class = ProgramSerializer
     queryset = Program.objects.filter(is_active=True).order_by("order")
-
-
-
-class CalendarMonthListView(generics.ListAPIView):
-    serializer_class = CalendarMonthSerializer
-
-    def get_queryset(self):
-        qs = CalendarMonth.objects.all().order_by("order")
-        semester = self.request.query_params.get("semester")
-        if semester:
-            qs = qs.filter(semester__in=[semester, "both"])
-        return qs
 
 
 class ProjectListView(generics.ListAPIView):
@@ -138,13 +118,6 @@ class ProgramCaseListView(generics.ListAPIView):
         return qs
 
 
-class ProgramComponentDetailView(generics.RetrieveAPIView):
-    serializer_class = ProgramComponentDetailSerializer
-    queryset = ProgramComponent.objects.prefetch_related(
-        "images", "content_blocks"
-    ).select_related("program", "responsible_partner").all()
-
-
 class StatisticListView(generics.ListAPIView):
     serializer_class = StatisticSerializer
     queryset = Statistic.objects.all().order_by("order")
@@ -176,13 +149,6 @@ class ArticleDetailView(generics.RetrieveAPIView):
         return article
 
 
-# class ContactInfoView(generics.RetrieveAPIView):
-#     serializer_class = ContactInfoSerializer
-
-#     def get_object(self):
-#         return get_object_or_404(ContactInfo, is_active=True)
-
-
 class SelectionProcessView(generics.RetrieveAPIView):
     serializer_class = SelectionProcessSerializer
 
@@ -195,53 +161,6 @@ class SelectionProcessView(generics.RetrieveAPIView):
         if processo is None:
             raise Http404
         return processo
-
-
-class ContactCreateView(generics.CreateAPIView):
-    serializer_class = ContactSerializer
-    queryset = Contact.objects.all()
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "contact"
-    # Só aceita JSON: um <form> HTML comum de outro site não consegue montar
-    # esse tipo de corpo sem JavaScript, e JavaScript de outra origem já é
-    # barrado pelo CORS. Fecha a via de um envio automático disfarçado.
-    parser_classes = [JSONParser]
-
-    def perform_create(self, serializer):
-        contact = serializer.save()
-        self._send_notification(contact)
-
-    def _send_notification(self, contact):
-        api_key = settings.SENDGRID_API_KEY
-        to_email = settings.EMAIL_DESTINATARIO
-        from_email = settings.EMAIL_REMETENTE
-
-        if not api_key or not to_email:
-            return
-
-        try:
-            import sendgrid
-            from sendgrid.helpers.mail import Mail
-
-            message = Mail(
-                from_email=from_email,
-                to_emails=to_email,
-                subject=f"Novo pedido de contato [{contact.get_contact_type_display()}]",
-                # Campos preenchidos pelo visitante: escapados antes de entrar
-                # no HTML do email, pra não permitir injeção de marcação/links.
-                html_content=f"""
-                    <h2>Novo pedido de contato recebido!</h2>
-                    <p><strong>Nome:</strong> {escape(contact.name)}</p>
-                    <p><strong>Email:</strong> {escape(contact.email)}</p>
-                    <p><strong>Telefone:</strong> {escape(contact.phone)}</p>
-                    <p><strong>Mensagem:</strong></p>
-                    <p>{escape(contact.message)}</p>
-                """
-            )
-            sg = sendgrid.SendGridAPIClient(api_key=api_key)
-            sg.send(message)
-        except Exception:
-            logging.getLogger(__name__).exception("Falha no envio do email")
 
 
 def health(request):

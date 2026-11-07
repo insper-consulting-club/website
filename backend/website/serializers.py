@@ -3,9 +3,8 @@ from .models import (
     Member, Partner, Statistic, Project, ProjectImage,
     Directorate,
     ProjectTimelineEvent, ProjectContentBlock,
-    ProgramComponent, ActivityImage, ActivityContentBlock,
-    Program, CalendarMonth, DirectorateMembership,
-    Article, ArticleImage, Contact,
+    ProgramComponent, Program, DirectorateMembership,
+    Article, ArticleImage,
     SelectionProcess, SelectionProcessRequirement,
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
@@ -47,17 +46,6 @@ class ProgramSerializer(serializers.ModelSerializer):
         if obj.icon and request:
             return request.build_absolute_uri(obj.icon.url)
         return None
-
-
-class CalendarMonthSerializer(serializers.ModelSerializer):
-    items = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CalendarMonth
-        fields = ["id", "month", "year", "items", "semester", "order"]
-
-    def get_items(self, obj):
-        return obj.get_items_list()
 
 
 class PartnerProjectSerializer(serializers.ModelSerializer):
@@ -143,25 +131,6 @@ class ProjectContentBlockSerializer(ContentBlockSerializer):
         model = ProjectContentBlock
 
 
-class ActivityContentBlockSerializer(ContentBlockSerializer):
-    class Meta(ContentBlockSerializer.Meta):
-        model = ActivityContentBlock
-
-
-class ActivityImageSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ActivityImage
-        fields = ["id", "image_url", "caption", "order"]
-
-    def get_image_url(self, obj):
-        request = self.context.get("request")
-        if obj.image and request:
-            return request.build_absolute_uri(obj.image.url)
-        return None
-
-
 class ProjectListSerializer(serializers.ModelSerializer):
     partners = serializers.StringRelatedField(many=True)
     program = serializers.SlugRelatedField(slug_field='slug', read_only=True)
@@ -197,17 +166,6 @@ class ProgramComponentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProgramComponent
         fields = ["id", "title", "description", "program"]
-
-
-class ProgramComponentDetailSerializer(serializers.ModelSerializer):
-    program = ProgramSerializer()
-    images = ActivityImageSerializer(many=True)
-    content_blocks = ActivityContentBlockSerializer(many=True)
-    responsible_partner = PartnerSerializer()
-
-    class Meta:
-        model = ProgramComponent
-        fields = ["id", "title", "description", "program", "images", "content_blocks", "responsible_partner"]
 
 
 class MemberListSerializer(serializers.ModelSerializer):
@@ -295,12 +253,6 @@ class ArticleSerializer(serializers.ModelSerializer):
         return None
 
 
-# class ContactInfoSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ContactInfo
-#         fields = ["id", "email", "instagram", "linkedin", "whatsapp"]
-
-
 class SelectionProcessStageSerializer(serializers.ModelSerializer):
     class Meta:
         model = SelectionProcessStage
@@ -361,12 +313,6 @@ class SelectionProcessSerializer(serializers.ModelSerializer):
         model = SelectionProcess
         fields = ['id', 'title', 'registrations_open', 'registration_url', 'stages', 'steps', 'requirements', 'materials']
     
-class ContactSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Contact
-        fields = ['name', 'email', 'phone', 'contact_type', 'message']
-
-
 class ProgramCaseParticipantSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="member.name", read_only=True)
     linkedin = serializers.CharField(source="member.linkedin", read_only=True)
