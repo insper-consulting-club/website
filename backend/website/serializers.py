@@ -308,10 +308,17 @@ class SelectionProcessSerializer(serializers.ModelSerializer):
     steps = SelectionProcessStepSerializer(many=True)
     requirements = SelectionProcessRequirementSerializer(many=True)
     materials = PreparationMaterialSerializer(many=True)
- 
+    registrations_open = serializers.SerializerMethodField()
+
     class Meta:
         model = SelectionProcess
         fields = ['id', 'title', 'registrations_open', 'registration_url', 'stages', 'steps', 'requirements', 'materials']
+
+    def get_registrations_open(self, obj):
+        # O admin recusa abrir as inscrições sem link, mas um cadastro feito por
+        # fora do admin poderia deixar "Inscreva-se" sem destino. Sem link, a
+        # API informa as inscrições como encerradas.
+        return obj.registrations_open and bool(obj.registration_url)
     
 class ProgramCaseParticipantSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="member.name", read_only=True)

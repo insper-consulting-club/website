@@ -271,6 +271,24 @@ class SelectionProcessTests(TestCase):
 
         self.assertIn("registration_url", error.exception.message_dict)
 
+    def test_open_registrations_without_link_are_reported_as_closed(self):
+        # create() não passa pela validação do admin, como um cadastro feito por fora dele.
+        SelectionProcess.objects.create(title="PS", registrations_open=True, registration_url="")
+
+        response = self.client.get("/api/selection-process/")
+
+        self.assertFalse(response.data["registrations_open"])
+
+    def test_closed_registrations_with_link_are_reported_as_closed(self):
+        SelectionProcess.objects.create(
+            title="PS", registrations_open=False,
+            registration_url="https://forms.example.com/ps",
+        )
+
+        response = self.client.get("/api/selection-process/")
+
+        self.assertFalse(response.data["registrations_open"])
+
     def test_open_registrations_with_link_are_exposed(self):
         SelectionProcess.objects.create(
             title="PS", registrations_open=True,
