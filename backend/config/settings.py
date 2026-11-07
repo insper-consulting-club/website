@@ -181,9 +181,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'website' / 'static'
-STATICFILES_DIRS = [
-    BASE_DIR / 'images',
-]
 
 # Media files (Upload) — armazenados no Cloudinary em produção/dev compartilhado
 MEDIA_URL = '/media/'
