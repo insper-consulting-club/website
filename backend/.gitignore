@@ -214,15 +214,6 @@ __marimo__/
 # Gerado pelo collectstatic (servido pelo WhiteNoise em produção)
 website/static/
 
-# Media files (uploaded images)
-images/partners/*.png
-images/partners/*.jpg
-images/partners/*.jpeg
-images/partners/*.gif
-images/partners/*.webp
-images/team/*.png
-images/team/*.jpg
-images/team/*.jpeg
-images/team/*.gif
-images/team/*.webp
+# Uploads do ambiente local (MEDIA_ROOT). Em produção as imagens ficam no Cloudinary.
+/images/
 .env-2

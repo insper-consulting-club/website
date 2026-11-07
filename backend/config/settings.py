@@ -33,6 +33,14 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# A chave do docker-compose.yml é pública (está no repositório) e só vale no
+# ambiente local. Com DEBUG desligado, o site recusa subir com ela.
+if not DEBUG and SECRET_KEY.startswith('chave-apenas-para-desenvolvimento'):
+    raise RuntimeError(
+        "SECRET_KEY de desenvolvimento em uso com DEBUG=False. "
+        "Defina uma SECRET_KEY própria no ambiente de produção."
+    )
+
 ALLOWED_HOSTS = [h for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h]
 
 # Só entra em vigor quando DEBUG=False (publicação de verdade); em
