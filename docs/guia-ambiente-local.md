@@ -25,7 +25,7 @@ O Docker Desktop roda o site em um ambiente isolado, sem instalar banco de dados
 O GitHub Desktop baixa o projeto e o mantém atualizado.
 
 1. Baixe em https://desktop.github.com/ e instale.
-2. Entre com a sua conta do GitHub. Ela precisa ter acesso à organização do ICC (peça ao Diretor Tech, se ainda não tiver).
+2. O repositório do ICC é público, então baixar o projeto não exige acesso especial à organização. Se o aplicativo pedir login ao abrir, entre com a sua conta do GitHub (ou crie uma, é gratuito).
 
 ---
 
@@ -79,7 +79,7 @@ Lembre que o site local começa com os dados de exemplo. Para testar a edição 
 3. Marque **Publicado**. Aqui isso é seguro, porque o banco local é separado do site no ar.
 4. Salve e abra http://localhost:5173/artigos. Confira o card na lista e a página do artigo: seções, tabelas, imagens nos lugares certos e fórmulas sem trechos em vermelho.
 
-Para artigos, essa conferência é obrigatória antes de publicar quando o texto tem imagens ou fórmulas (ver [Revisar antes de publicar](guia-artigos.md#revisar-antes-de-publicar)).
+Para artigos, esta é a forma recomendada de revisar antes de publicar (ver [Revisar antes de publicar](guia-artigos.md#revisar-antes-de-publicar)).
 
 ### Mudanças no visual ou no código
 

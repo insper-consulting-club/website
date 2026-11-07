@@ -47,7 +47,7 @@ Alternativas consideradas: trocar a hospedagem do backend (a Vercel roda Django 
 
 ## 5. Segurança e configuração
 
-- Credenciais ficam só em variáveis de ambiente (`backend/.env.example` é o modelo), e o `.env` é ignorado pelo Git.
+- Credenciais ficam só em variáveis de ambiente (`backend/.env.example` é o modelo), e o `.env` é ignorado pelo Git. Os valores do `docker-compose.yml` valem só no ambiente local.
 - Com `DEBUG=False`, o backend exige HTTPS, ativa o HSTS, usa cookies seguros e libera o CORS só para o domínio do site.
 - A API pública é somente leitura. As escritas passam pelo admin, que exige login.
 - O site não coleta dados pessoais de visitantes: o contato é feito pelos canais oficiais do ICC (e-mail e redes), e as inscrições do processo seletivo vão para um formulário externo.
@@ -69,7 +69,7 @@ Como foi feito:
 - **Rascunho por padrão.** Um artigo novo nasce com "Publicado" desmarcado e só aparece no site e na API depois de publicado. Dá para salvar um artigo pela metade sem exibi-lo incompleto.
 - **Slug opcional.** O artigo pode ter um endereço legível, digitado à mão. Sem slug, o endereço usa o número do artigo.
 - **Fórmulas.** São escritas em LaTeX e desenhadas pelo KaTeX, e só o `$$` abre fórmula. Com o cifrão simples, valores em reais ("R$ 10 mi e R$ 20 mi") virariam fórmula. O KaTeX bloqueia comandos perigosos, e uma fórmula com erro aparece em vermelho sem quebrar o resto do artigo. O peso extra (cerca de 130 kB comprimidos) só é carregado na página do artigo.
-- **Texto do Word.** Quem escreve no Word dispensa aprender Markdown: o ICC converte na publicação pelo Google Docs, como explica o [guia de artigos](guia-artigos.md#texto-escrito-no-word-ou-no-google-docs).
+- **Texto do Word.** Quem escreve no Word dispensa aprender Markdown: o ICC converte na publicação pelo Google Docs, como explica o [guia de artigos](guia-artigos.md#converter-o-texto-para-markdown).
 
 ## 8. Nomes alinhados ao vocabulário do ICC
 

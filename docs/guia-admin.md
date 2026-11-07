@@ -145,9 +145,9 @@ A página **Projetos** do site mostra os programas, e a página de cada programa
 2. **Data de conclusão**, quando o projeto terminar.
 3. **Parceiros envolvidos:** escolha na caixa da esquerda e passe para a direita.
 4. Embaixo, se quiser, o conteúdo da página do projeto:
-   - **Blocos de conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). A **Ordem** define a sequência. Para separar parágrafos, quebre a linha.
-   - **Imagens do projeto:** a galeria, com uma **Legenda** e uma **Ordem** para cada imagem.
-   - **Eventos do cronograma:** data, título e descrição de cada etapa.
+   - **Blocos de Conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). A **Ordem** define a sequência. Para separar parágrafos, quebre a linha.
+   - **Imagens do Projeto:** a galeria, com uma **Legenda** e uma **Ordem** para cada imagem.
+   - **Eventos do Cronograma:** data, título e descrição de cada etapa.
 5. Salvar.
 
 **Onde o projeto aparece no site:**
@@ -174,12 +174,12 @@ O projeto arquivado some do site (de todas as páginas acima e do perfil dos mem
 
 Os artigos são escritos pelos membros do ICC e ficam **dentro do site**: cada um tem a própria página, com resumo, temas, o texto completo, "Como citar" e um botão para compartilhar no LinkedIn.
 
-O passo a passo completo, com a referência de Markdown, imagens, fórmulas, conversão do Word e solução de problemas, está no **[guia de artigos](guia-artigos.md)**. Em resumo:
+O passo a passo completo, com a referência de Markdown, imagens, fórmulas, conversão de documentos e solução de problemas, está no **[guia de artigos](guia-artigos.md)**. Em resumo:
 
 1. **Artigos > Adicionar artigo.** Preencha título, autores, resumo, temas, data e, se quiser, slug, link externo, publicação e imagem de capa.
 2. Escreva o **Texto do artigo** em Markdown, com uma linha em branco entre os parágrafos.
 3. Envie as imagens do texto em **Imagens do artigo** e chame cada uma no texto por `![](imagem-1)`.
-4. Revise o artigo antes de publicar, em um visualizador de Markdown (artigos só com texto) ou no ambiente local (artigos com imagens ou fórmulas; ver o [guia do ambiente local](guia-ambiente-local.md)).
+4. Revise o artigo antes de publicar, de preferência no ambiente local (ver o [guia do ambiente local](guia-ambiente-local.md)).
 5. Salve com **Publicado** desmarcado (rascunho). Quando estiver pronto, marque **Publicado**, salve e confira a página no site.
 
 ---
@@ -220,7 +220,8 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação
 Alguns itens fixos são alterados no código pelo responsável técnico:
 
 - textos institucionais da Home (missão, "Quem somos");
-- links do Instagram, do LinkedIn e do GitHub, e o e-mail de contato.
+- links do Instagram, do LinkedIn e do GitHub, e o e-mail de contato;
+- o texto da Política de Privacidade.
 
 ---
 
