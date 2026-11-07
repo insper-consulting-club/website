@@ -7,7 +7,8 @@ services:
       # mesmo que o firewall do host esteja mal configurado.
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # No Postgres 18, o ponto de montagem é /var/lib/postgresql (e não .../data).
+      - postgres_data:/var/lib/postgresql
     environment:
       - POSTGRES_DB=iccsite
       - POSTGRES_USER=iccuser
@@ -24,16 +25,26 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     # Em desenvolvimento usa o servidor do Django, que recarrega ao salvar.
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    # setup_dev cria o administrador local e carrega os dados de exemplo
+    # quando o banco está vazio.
+    command: sh -c "python manage.py migrate && python manage.py setup_dev && python manage.py runserver 0.0.0.0:8000"
     ports:
-      - "8000:8000"
+      # Só acessível desta máquina: o administrador local tem senha conhecida
+      # e não pode ficar aberto a outros computadores da rede.
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./backend:/app
       # Dados reais do ICC (não versionados), lidos pelo import_icc_data.
       - ./site-data:/site-data:ro
     env_file:
-      - ./backend/.env
+      # Opcional. Só é preciso para variáveis extras, como as de um Cloudinary
+      # de testes (ver backend/.env.example).
+      - path: ./backend/.env
+        required: false
     environment:
+      # Chave só para desenvolvimento local. Em produção ela vem do painel da
+      # hospedagem.
+      - SECRET_KEY=chave-apenas-para-desenvolvimento-local
       - DEBUG=True
       - DB_NAME=iccsite
       - DB_USER=iccuser
@@ -50,7 +61,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
