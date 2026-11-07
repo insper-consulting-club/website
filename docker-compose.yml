@@ -21,19 +21,19 @@ services:
 
   backend:
     build:
-      context: ./ICC-backend
+      context: ./backend
       dockerfile: Dockerfile
     # Em desenvolvimento usa o servidor do Django, que recarrega ao salvar.
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     volumes:
-      - ./ICC-backend:/app
+      - ./backend:/app
       - media_files:/app/media
       # Dados reais do ICC (não versionados), lidos pelo import_icc_data.
       - ./site-data:/site-data:ro
     env_file:
-      - ./ICC-backend/.env
+      - ./backend/.env
     environment:
       - DEBUG=True
       - DB_NAME=iccsite
@@ -48,12 +48,12 @@ services:
 
   frontend:
     build:
-      context: ./ICC-frontend
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - ./ICC-frontend:/app
+      - ./frontend:/app
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000/api

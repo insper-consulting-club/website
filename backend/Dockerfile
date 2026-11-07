@@ -22,4 +22,4 @@ RUN mkdir -p /app/media
 # Produção: aplica migrations, prepara os arquivos estáticos e inicia o
 # servidor (gunicorn). PORT é definida pela hospedagem; localmente, 8000.
 # No desenvolvimento local, o docker-compose.yml substitui este comando.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn inspercode_case.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
