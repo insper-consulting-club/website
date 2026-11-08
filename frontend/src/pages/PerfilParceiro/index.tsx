@@ -4,6 +4,7 @@ import { api } from "../../api"
 import type { Partner } from "../../types"
 import { ArrowLeftIcon, ArrowRightIcon, ExternalIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 type PartnerProject = {
@@ -36,6 +37,7 @@ function formatDateBR(dateString?: string | null) {
 }
 
 export default function PerfilParceiro() {
+  const t = useTextos()
   const { id } = useParams<{ id: string }>()
   const [partner, setPartner] = useState<PartnerDetail | null>(null)
   const [todos, setTodos] = useState<Partner[]>([])
@@ -67,11 +69,11 @@ export default function PerfilParceiro() {
         <div className="container">
           <Link to="/parceiros" className="back-link">
             <ArrowLeftIcon size={14} />
-            Voltar para parceiros
+            {t("parceiro.voltar")}
           </Link>
           <p className="state-message">
-            <strong>Parceiro não encontrado</strong>
-            Não foi possível carregar esse parceiro.
+            <strong>{t("parceiro.nao_encontrado_titulo")}</strong>
+            {t("parceiro.nao_encontrado_texto")}
           </p>
         </div>
       </section>
@@ -86,7 +88,7 @@ export default function PerfilParceiro() {
         <div className="container">
           <Link to="/parceiros" className="back-link">
             <ArrowLeftIcon size={14} />
-            Voltar para parceiros
+            {t("parceiro.voltar")}
           </Link>
 
           <div className="parceiro-detalhe">
@@ -104,7 +106,7 @@ export default function PerfilParceiro() {
               {partner.description && <p className="parceiro-detalhe__descricao">{partner.description}</p>}
               {partner.site && (
                 <a href={partner.site} target="_blank" rel="noopener noreferrer" className="btn btn--primary parceiro-detalhe__site">
-                  Visitar site
+                  {t("parceiro.visitar_site")}
                   <ExternalIcon />
                 </a>
               )}
@@ -117,7 +119,7 @@ export default function PerfilParceiro() {
         <section className="section section--muted">
           <div className="container">
             <div className="section-head">
-              <h2 className="section-title">Casos de sucesso</h2>
+              <h2 className="section-title">{t("parceiro.casos")}</h2>
             </div>
             <div className="grid grid--2">
               {casos.map((project) => (
@@ -125,11 +127,11 @@ export default function PerfilParceiro() {
                   <h3 className="parceiro-caso__titulo">{project.title}</h3>
                   {project.description && <p className="parceiro-caso__descricao">{project.description}</p>}
                   <p className="parceiro-caso__meta">
-                    {project.end_date && `Concluído em ${formatDateBR(project.end_date)}`}
+                    {project.end_date && t("projeto_card.concluido_em", { data: formatDateBR(project.end_date) })}
                     {project.program && ` · ${project.program}`}
                   </p>
                   <span className="link-arrow">
-                    Ver projeto
+                    {t("parceiro.caso_link")}
                     <ArrowRightIcon />
                   </span>
                 </Link>
@@ -143,9 +145,9 @@ export default function PerfilParceiro() {
         <section className="section section--muted">
           <div className="container">
             <div className="section-head section-head--row">
-              <h2 className="section-title">Outros parceiros em {partner.category}</h2>
+              <h2 className="section-title">{t("parceiro.outros", { categoria: partner.category ?? "" })}</h2>
               <Link to="/parceiros" className="link-arrow">
-                Todos os parceiros
+                {t("parceiro.todos")}
                 <ArrowRightIcon />
               </Link>
             </div>

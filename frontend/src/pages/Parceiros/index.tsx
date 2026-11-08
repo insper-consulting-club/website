@@ -6,11 +6,13 @@ import PageHero from "../../components/PageHero"
 import { ArrowRightIcon, MailIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 export default function Parceiros() {
   const config = useSiteConfig()
-  usePageTitle("Parceiros", config.partners_lead)
+  const t = useTextos()
+  usePageTitle(t("parceiros.eyebrow"), config.partners_lead)
   const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -25,8 +27,8 @@ export default function Parceiros() {
   return (
     <div className="parceiros-page">
       <PageHero
-        eyebrow="Parceiros"
-        title={<>Quem caminha <span className="destaque">conosco</span></>}
+        eyebrow={t("parceiros.eyebrow")}
+        title={<>{t("parceiros.titulo")} <span className="destaque">{t("parceiros.titulo_destaque")}</span></>}
         lead={config.partners_lead}
       />
 
@@ -35,7 +37,7 @@ export default function Parceiros() {
           {loading ? (
             <p className="loading">Carregando parceiros...</p>
           ) : partners.length === 0 ? (
-            <p className="state-message">Em breve, novos parceiros.</p>
+            <p className="state-message">{t("parceiros.vazio")}</p>
           ) : (
             <div className="grid grid--3">
               {partners.map((p) => (
@@ -48,7 +50,7 @@ export default function Parceiros() {
                     <h2 className="parceiro-card__nome">{p.name}</h2>
                     {p.description && <p className="parceiro-card__descricao">{p.description}</p>}
                     <span className="link-arrow parceiro-card__mais">
-                      Ver detalhes
+                      {t("parceiros.card_link")}
                       <ArrowRightIcon />
                     </span>
                   </div>
@@ -62,7 +64,7 @@ export default function Parceiros() {
       <section className="section section--dark">
         <div className="container">
           <div className="section-head">
-            <p className="eyebrow">Por que ser parceiro</p>
+            <p className="eyebrow">{t("parceiros.beneficios_eyebrow")}</p>
             <h2 className="section-title">{config.partners_benefits_title}</h2>
           </div>
 
@@ -78,7 +80,7 @@ export default function Parceiros() {
 
           <a href={`mailto:${config.email}`} className="btn btn--light parceiros-cta">
             <MailIcon size={18} />
-            Fale com a gente
+            {t("parceiros.botao_contato")}
           </a>
         </div>
       </section>

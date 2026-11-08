@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import type { Project } from "../../types"
 import { ArrowRightIcon } from "../Icons"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 function formatDateBR(dateString: string) {
@@ -11,6 +12,7 @@ function formatDateBR(dateString: string) {
 }
 
 export default function ProjetoCard({ projeto }: { projeto: Project }) {
+  const t = useTextos()
   return (
     <Link to={`/projetos/projeto/${projeto.id}`} className="card projeto-card">
       {projeto.partners.length > 0 && (
@@ -19,10 +21,10 @@ export default function ProjetoCard({ projeto }: { projeto: Project }) {
       <h3 className="projeto-card__titulo">{projeto.title}</h3>
       {projeto.description && <p className="projeto-card__descricao">{projeto.description}</p>}
       <p className="projeto-card__meta">
-        {projeto.end_date ? `Concluído em ${formatDateBR(projeto.end_date)}` : "Em andamento"}
+        {projeto.end_date ? t("projeto_card.concluido_em", { data: formatDateBR(projeto.end_date) }) : t("projeto.em_andamento")}
       </p>
       <span className="link-arrow">
-        Ver projeto
+        {t("projeto_card.link")}
         <ArrowRightIcon />
       </span>
     </Link>

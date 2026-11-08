@@ -8,11 +8,13 @@ import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useProgramas from "../../hooks/useProgramas"
 import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 export default function Projetos() {
   const config = useSiteConfig()
-  usePageTitle("Projetos", config.projects_lead)
+  const t = useTextos()
+  usePageTitle(t("projetos.eyebrow"), config.projects_lead)
   const programas = useProgramas()
   const [cases, setCases] = useState<ProgramCase[]>([])
   const [outrosProjetos, setOutrosProjetos] = useState<Project[]>([])
@@ -36,8 +38,8 @@ export default function Projetos() {
   return (
     <div className="projetos-page">
       <PageHero
-        eyebrow="Projetos"
-        title={<>Programas e <span className="destaque">cases</span></>}
+        eyebrow={t("projetos.eyebrow")}
+        title={<>{t("projetos.titulo")} <span className="destaque">{t("projetos.titulo_destaque")}</span></>}
         lead={config.projects_lead}
       />
 
@@ -67,8 +69,8 @@ export default function Projetos() {
         <section className="section section--muted" id="outros-projetos">
           <div className="container">
             <div className="section-head">
-              <p className="eyebrow">Além dos programas</p>
-              <h2 className="section-title">Outros projetos</h2>
+              <p className="eyebrow">{t("projetos.outros_eyebrow")}</p>
+              <h2 className="section-title">{t("projetos.outros_titulo")}</h2>
             </div>
             <div className="grid grid--2">
               {outrosProjetos.map((projeto) => (
@@ -83,11 +85,11 @@ export default function Projetos() {
         <section className={`section${outrosProjetos.length > 0 ? "" : " section--muted"}`}>
           <div className="container projetos-cases">
             <div>
-              <p className="eyebrow">Cases resolvidos</p>
-              <h2 className="section-title">{programaDestaque.label}: {casesDestaque.length} {casesDestaque.length === 1 ? "case" : "cases"}</h2>
+              <p className="eyebrow">{t("projetos.cases_eyebrow")}</p>
+              <h2 className="section-title">{t(casesDestaque.length === 1 ? "projetos.cases_titulo_um" : "projetos.cases_titulo_varios", { programa: programaDestaque.label, n: casesDestaque.length })}</h2>
             </div>
             <Link to={`/projetos/${programaDestaque.slug}#cases`} className="btn btn--primary">
-              Ver os cases
+              {t("projetos.cases_botao")}
               <ArrowRightIcon />
             </Link>
           </div>

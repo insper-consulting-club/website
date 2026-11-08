@@ -10,6 +10,7 @@ import type { Article, ArticleImage } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowLeftIcon, ExternalIcon, LinkedInIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 function formatDate(date: string) {
@@ -55,6 +56,7 @@ function componentesMarkdown(imagens: ArticleImage[]): Components {
 }
 
 export default function Artigo() {
+  const t = useTextos()
   const { slugOrId } = useParams<{ slugOrId: string }>()
   const [artigo, setArtigo] = useState<Article | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
@@ -80,11 +82,11 @@ export default function Artigo() {
         <div className="container">
           <Link to="/artigos" className="back-link">
             <ArrowLeftIcon size={14} />
-            Voltar para artigos
+            {t("artigo.voltar")}
           </Link>
           <p className="state-message">
-            <strong>Artigo não encontrado</strong>
-            Não foi possível carregar esse artigo.
+            <strong>{t("artigo.nao_encontrado_titulo")}</strong>
+            {t("artigo.nao_encontrado_texto")}
           </p>
         </div>
       </section>
@@ -106,7 +108,7 @@ export default function Artigo() {
   return (
     <div className="artigo-page">
       <PageHero
-        back={{ to: "/artigos", label: "Voltar para artigos" }}
+        back={{ to: "/artigos", label: t("artigo.voltar") }}
         eyebrow={artigo.date ? formatDate(artigo.date) : undefined}
         title={artigo.title}
         lead={artigo.authors}
@@ -124,7 +126,7 @@ export default function Artigo() {
           {artigo.image_url && <img src={artigo.image_url} alt="" className="artigo__capa" />}
           {artigo.description && (
             <div className="artigo__resumo">
-              <h2>Resumo</h2>
+              <h2>{t("artigo.resumo")}</h2>
               <p>{artigo.description}</p>
             </div>
           )}
@@ -143,11 +145,11 @@ export default function Artigo() {
           )}
 
           <div className="artigo__rodape">
-            <h2>Como citar</h2>
+            <h2>{t("artigo.como_citar")}</h2>
             <p className="artigo__citacao">{citacao}</p>
             <div className="artigo__acoes">
               <button type="button" className="btn btn--secondary" onClick={copiarCitacao}>
-                {copiado ? "Copiado!" : "Copiar citação"}
+                {copiado ? t("artigo.copiado") : t("artigo.copiar")}
               </button>
               <a
                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
@@ -156,11 +158,11 @@ export default function Artigo() {
                 className="btn btn--secondary"
               >
                 <LinkedInIcon size={16} />
-                Compartilhar
+                {t("artigo.compartilhar")}
               </a>
               {artigo.link && (
                 <a href={artigo.link} target="_blank" rel="noopener noreferrer" className="btn btn--secondary">
-                  Ver publicação original
+                  {t("artigo.link_original")}
                   <ExternalIcon />
                 </a>
               )}

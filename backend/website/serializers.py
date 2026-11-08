@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .site_texts import PADRAO as PADRAO_TEXTOS
 from .models import (
     Member, Partner, Statistic, Project, ProjectImage,
     Directorate,
@@ -9,7 +10,7 @@ from .models import (
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
     ProgramCase, ProgramCaseParticipant,
-    SiteConfig, PartnerBenefit, ProgramContentBlock
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText
 )
 
 
@@ -409,11 +410,17 @@ class PartnerBenefitSerializer(serializers.ModelSerializer):
 class SiteConfigSerializer(serializers.ModelSerializer):
     home_about_photo_url = serializers.SerializerMethodField()
     partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
+    texts = serializers.SerializerMethodField()
 
     class Meta:
         model = SiteConfig
         # A foto não sai como campo de arquivo: o site recebe só o endereço.
         exclude = ["id", "home_about_photo"]
+
+    def get_texts(self, obj):
+        # Parte do catálogo: um texto que ainda não chegou ao banco sai com o
+        # valor original, em vez de faltar na resposta.
+        return {**PADRAO_TEXTOS, **dict(SiteText.objects.values_list("key", "value"))}
 
     def get_home_about_photo_url(self, obj):
         request = self.context.get("request")

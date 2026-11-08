@@ -71,6 +71,7 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 | Artigos | `Article`, `ArticleImage` | O texto é Markdown e as imagens são chamadas por número. `published=False` é rascunho |
 | Processo seletivo | `SelectionProcess`, `SelectionProcessStage`, `SelectionProcessStep`, `SelectionProcessRequirement`, `PreparationMaterial`, `PreparationMaterialItem` | Só um processo fica ativo por vez; ativar um desativa os outros. O admin não deixa abrir inscrições sem o link do formulário, e a API só informa inscrições abertas quando há link |
 | Home | `Statistic` | Números da faixa de estatísticas |
+| Textos do site | `SiteText` | Títulos de seção, rótulos, botões e mensagens curtas. As entradas nascem do catálogo `website/site_texts.py` (uma chave, o grupo, a descrição e o texto original) e são criadas pelo sinal `post_migrate`, que nunca altera um valor já editado. O admin edita só o valor, e recusa a remoção de trechos como `{n}`. Para acrescentar um texto: incluir a linha no catálogo, rodar `python manage.py export_site_texts --saida ../frontend/src/textosPadrao.ts` e usar a chave no frontend por `useTextos`. Um teste confere se o arquivo do frontend acompanha o catálogo |
 | Configuração do site | `SiteConfig`, `PartnerBenefit` | Registro único (`pk=1`, criado pela migration com os textos que o site já tinha), sem adicionar nem excluir no admin. Guarda contatos, textos da Home, do rodapé e da abertura das páginas, a Política de Privacidade (Markdown) e o slug do programa em destaque na página Projetos. `PartnerBenefit` é a lista "Por que ser parceiro". O admin usa o tema django-unfold, com os campos em abas |
 
 #### Arquivar em vez de apagar
@@ -155,7 +156,7 @@ Resumo; os detalhes (rotas, tokens, componentes e como adicionar uma página) es
 - **Rotas** definidas em `src/main.tsx` com `createBrowserRouter`. Cada página carrega sob demanda, exceto a Home, que é a porta de entrada mais comum.
 - **Chamadas à API** concentradas em `src/api.ts`, com os tipos em `src/types.ts`. O endereço vem de `VITE_API_URL`.
 - **`VITE_API_URL`** entra no código no momento do build. Mudar o valor exige novo build e novo deploy. O link "Área administrativa" do rodapé é derivado dele, trocando o `/api` final por `/admin/`.
-- **Textos e contatos** (e-mail, redes sociais, Home, rodapé, abertura das páginas, Política de Privacidade) vêm de `GET /api/site-config/`, pelo hook `useSiteConfig`. Os valores de reserva, usados enquanto a resposta não chega ou se ela falhar, ficam em `src/siteConfigPadrao.ts`.
+- **Textos e contatos** (e-mail, redes sociais, Home, rodapé, abertura das páginas, Política de Privacidade) vêm de `GET /api/site-config/`, pelo hook `useSiteConfig`; os títulos, rótulos e botões vêm do campo `texts` da mesma resposta, pelo hook `useTextos`. Os valores de reserva, usados enquanto a resposta não chega ou se ela falhar, ficam em `src/siteConfigPadrao.ts` e em `src/textosPadrao.ts` (este gerado do catálogo do backend).
 - **Artigos** são exibidos com `react-markdown`, `remark-gfm` e KaTeX. A biblioteca não executa HTML, então marcação digitada no admin aparece como texto. O CSS e as fontes do KaTeX só carregam na página de artigo.
 - **Aplicação de página única:** o serviço de hospedagem precisa de uma regra que reescreva `/*` para `/index.html`. Sem ela, recarregar uma página interna dá 404.
 

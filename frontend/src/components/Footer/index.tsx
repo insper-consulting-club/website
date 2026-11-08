@@ -4,6 +4,7 @@ import logoBranca from "../../images/logo-icc-branca.png";
 import useProgramas from "../../hooks/useProgramas";
 import { GitHubIcon, InstagramIcon, LinkedInIcon, MailIcon } from "../Icons";
 import useSiteConfig from "../../hooks/useSiteConfig";
+import useTextos from "../../hooks/useTextos";
 
 // O admin fica no backend, no mesmo endereço da API sem o "/api"
 // (local: localhost:8000/admin/; produção: icc-backend…onrender.com/admin/).
@@ -18,6 +19,7 @@ const NAVEGACAO = [
 ];
 
 export default function Footer() {
+  const t = useTextos();
   const programas = useProgramas();
   const config = useSiteConfig();
 
@@ -32,7 +34,7 @@ export default function Footer() {
         </div>
 
         <nav className="footer__col" aria-label="Navegação do rodapé">
-          <h2 className="footer__title">Navegação</h2>
+          <h2 className="footer__title">{t("rodape.navegacao")}</h2>
           <ul className="footer__list">
             {NAVEGACAO.map((item) => (
               <li key={item.to}>
@@ -43,7 +45,7 @@ export default function Footer() {
         </nav>
 
         <div className="footer__col">
-          <h2 className="footer__title">Programas</h2>
+          <h2 className="footer__title">{t("rodape.programas")}</h2>
           <ul className="footer__list">
             {programas.map((programa) => (
               <li key={programa.slug}>
@@ -54,7 +56,7 @@ export default function Footer() {
         </div>
 
         <div className="footer__col">
-          <h2 className="footer__title">Contato</h2>
+          <h2 className="footer__title">{t("rodape.contato")}</h2>
           <ul className="footer__list">
             <li>
               <a href={`mailto:${config.email}`} className="footer__contact">
@@ -87,8 +89,8 @@ export default function Footer() {
       <div className="container footer__bottom">
         <span>© {new Date().getFullYear()} Liga Insper Consulting Club</span>
         <div className="footer__bottom-links">
-          <Link to="/politica-de-privacidade">Política de Privacidade</Link>
-          <a href={ADMIN_URL}>Área administrativa</a>
+          <Link to="/politica-de-privacidade">{t("rodape.privacidade")}</Link>
+          <a href={ADMIN_URL}>{t("rodape.admin")}</a>
         </div>
       </div>
     </footer>

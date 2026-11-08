@@ -6,6 +6,7 @@ import reuniaoInaugural from "../../images/reuniao-inaugural.jpg"
 import logoBranca from "../../images/logo-icc-branca.png"
 import useProgramas from "../../hooks/useProgramas"
 import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import MemberCard from "../../components/MemberCard"
 import { ArrowRightIcon, ChevronDownIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
@@ -24,6 +25,7 @@ function eLideranca(member: Member): boolean {
 export default function Home() {
   usePageTitle()
   const config = useSiteConfig()
+  const t = useTextos()
   const programas = useProgramas()
   const [members, setMembers] = useState<Member[]>([])
   const [statistics, setStatistics] = useState<Statistic[]>([])
@@ -67,11 +69,11 @@ export default function Home() {
           <p className="home-intro__statement">{config.home_statement}</p>
           <div className="home-intro__actions">
             <Link to="/processo" className="btn btn--primary">
-              Seja membro
+              {t("home.hero_botao_principal")}
               <ArrowRightIcon />
             </Link>
             <Link to="/projetos" className="btn btn--secondary">
-              Conheça os projetos
+              {t("home.hero_botao_secundario")}
             </Link>
           </div>
         </div>
@@ -80,7 +82,7 @@ export default function Home() {
       <section className="section home-about">
         <div className="container home-about__grid">
           <div>
-            <p className="eyebrow">Quem somos</p>
+            <p className="eyebrow">{t("home.sobre_eyebrow")}</p>
             <h2 className="section-title">
               {config.home_about_title}
               {config.home_about_title_highlight && (
@@ -114,16 +116,16 @@ export default function Home() {
       <section className="section section--muted">
         <div className="container home-mission">
           <div className="home-mission__main">
-            <p className="eyebrow">Missão</p>
+            <p className="eyebrow">{t("home.missao_eyebrow")}</p>
             <p className="home-mission__statement">{config.mission}</p>
           </div>
           <div className="home-mission__details">
             <div className="home-mission__detail">
-              <h3>Como preparamos</h3>
+              <h3>{t("home.missao_como_titulo")}</h3>
               <p>{config.mission_how}</p>
             </div>
             <div className="home-mission__detail">
-              <h3>Onde queremos chegar</h3>
+              <h3>{t("home.missao_meta_titulo")}</h3>
               <p>{config.mission_goal}</p>
             </div>
           </div>
@@ -134,11 +136,11 @@ export default function Home() {
         <div className="container">
           <div className="section-head section-head--row">
             <div>
-              <p className="eyebrow">Projetos</p>
-              <h2 className="section-title">Nossos programas e cases</h2>
+              <p className="eyebrow">{t("home.programas_eyebrow")}</p>
+              <h2 className="section-title">{t("home.programas_titulo")}</h2>
             </div>
             <Link to="/projetos" className="link-arrow">
-              Ver todos os projetos
+              {t("home.programas_link")}
               <ArrowRightIcon />
             </Link>
           </div>
@@ -150,7 +152,7 @@ export default function Home() {
                 <h3 className="home-program__name">{programa.label}</h3>
                 <p className="home-program__type">{programa.subtitle}</p>
                 <span className="link-arrow home-program__more">
-                  Saiba mais
+                  {t("home.programa_card_link")}
                   <ArrowRightIcon />
                 </span>
               </Link>
@@ -163,11 +165,11 @@ export default function Home() {
         <div className="container">
           <div className="section-head section-head--row">
             <div>
-              <p className="eyebrow">Membros</p>
-              <h2 className="section-title">Quem constrói o clube</h2>
+              <p className="eyebrow">{t("home.membros_eyebrow")}</p>
+              <h2 className="section-title">{t("home.membros_titulo")}</h2>
             </div>
             <Link to="/equipe" className="link-arrow">
-              Ver equipe completa
+              {t("home.membros_link")}
               <ArrowRightIcon />
             </Link>
           </div>
@@ -189,11 +191,11 @@ export default function Home() {
           <div className="container">
             <div className="section-head section-head--row">
               <div>
-                <p className="eyebrow">Parceiros</p>
-                <h2 className="section-title">Empresas que confiam no nosso trabalho</h2>
+                <p className="eyebrow">{t("home.parceiros_eyebrow")}</p>
+                <h2 className="section-title">{t("home.parceiros_titulo")}</h2>
               </div>
               <Link to="/parceiros" className="link-arrow">
-                Ver todos os parceiros
+                {t("home.parceiros_link")}
                 <ArrowRightIcon />
               </Link>
             </div>
@@ -231,11 +233,11 @@ export default function Home() {
           <h2 className="home-cta__title">{config.home_cta_title}</h2>
           <div className="home-cta__actions">
             <Link to="/processo" className="btn btn--light">
-              Faça parte do ICC
+              {t("home.cta_botao_principal")}
               <ArrowRightIcon />
             </Link>
             <Link to="/contato" className="btn btn--ghost-light">
-              Fale com a gente
+              {t("home.cta_botao_secundario")}
             </Link>
           </div>
         </div>

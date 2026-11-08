@@ -3,13 +3,14 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.db import connection
+from pathlib import Path
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from website.models import (
     Article, Member, Partner, PartnerCategory, Program, ProgramCase,
-    ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig,
+    ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
 )
 
 
@@ -470,3 +471,80 @@ class ProgramDetailTests(TestCase):
         self.program.delete()
 
         self.assertEqual(ProgramContentBlock.objects.count(), 0)
+
+
+class SiteTextTests(TestCase):
+    def test_every_catalog_text_exists_in_the_database(self):
+        from website.site_texts import TEXTOS
+
+        self.assertEqual(SiteText.objects.count(), len(TEXTOS))
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Quem constrói o clube")
+
+    def test_sync_keeps_edited_values_and_recreates_missing_ones(self):
+        from website.site_texts import sincroniza_textos
+
+        SiteText.objects.filter(key="home.membros_titulo").update(value="Editado pelo ICC")
+        SiteText.objects.filter(key="equipe.titulo").delete()
+        SiteText.objects.create(key="chave.antiga", group="x", description="x", value="x")
+
+        sincroniza_textos()
+
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Editado pelo ICC")
+        self.assertTrue(SiteText.objects.filter(key="equipe.titulo").exists())
+        self.assertFalse(SiteText.objects.filter(key="chave.antiga").exists())
+
+    def test_endpoint_returns_edited_and_default_texts(self):
+        SiteText.objects.filter(key="home.membros_titulo").update(value="Editado pelo ICC")
+        SiteText.objects.filter(key="equipe.titulo").delete()
+
+        texts = APIClient().get("/api/site-config/").data["texts"]
+
+        self.assertEqual(texts["home.membros_titulo"], "Editado pelo ICC")
+        self.assertEqual(texts["equipe.titulo"], "Nossa Equipe")
+
+    def test_frontend_fallback_file_matches_the_catalog(self):
+        from website.management.commands.export_site_texts import gera_arquivo_ts
+
+        arquivo = Path(__file__).resolve().parents[2] / "frontend" / "src" / "textosPadrao.ts"
+        if not arquivo.exists():
+            self.skipTest("Pasta do frontend indisponível neste ambiente.")
+        self.assertEqual(
+            arquivo.read_text(encoding="utf-8"), gera_arquivo_ts(),
+            "frontend/src/textosPadrao.ts está desatualizado. Rode: python manage.py export_site_texts --saida ../frontend/src/textosPadrao.ts",
+        )
+
+
+class SiteTextAdminTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(user)
+        self.texto = SiteText.objects.get(key="projetos.cases_titulo_varios")
+
+    def test_list_and_edit_pages_open_but_add_and_delete_are_blocked(self):
+        self.assertEqual(self.client.get("/admin/website/sitetext/").status_code, 200)
+        self.assertEqual(self.client.get(f"/admin/website/sitetext/{self.texto.pk}/change/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/website/sitetext/add/").status_code, 403)
+        self.assertEqual(self.client.get(f"/admin/website/sitetext/{self.texto.pk}/delete/").status_code, 403)
+
+    def test_editing_must_keep_the_placeholders(self):
+        url = f"/admin/website/sitetext/{self.texto.pk}/change/"
+
+        recusado = self.client.post(url, {"value": "Cases do programa"})
+        self.assertEqual(recusado.status_code, 200)
+        self.texto.refresh_from_db()
+        self.assertEqual(self.texto.value, "{programa}: {n} cases")
+
+        aceito = self.client.post(url, {"value": "{n} cases em {programa}"})
+        self.assertEqual(aceito.status_code, 302)
+        self.texto.refresh_from_db()
+        self.assertEqual(self.texto.value, "{n} cases em {programa}")
+
+    def test_restore_action_goes_back_to_the_original_text(self):
+        SiteText.objects.filter(pk=self.texto.pk).update(value="{n} outro texto {programa}")
+
+        self.client.post("/admin/website/sitetext/", {
+            "action": "restaurar", "_selected_action": [self.texto.pk],
+        })
+
+        self.texto.refresh_from_db()
+        self.assertEqual(self.texto.value, "{programa}: {n} cases")

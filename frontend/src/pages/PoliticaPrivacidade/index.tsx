@@ -5,10 +5,12 @@ import PageHero from "../../components/PageHero"
 import TextoMarkdown from "../../components/TextoMarkdown"
 import usePageTitle from "../../hooks/usePageTitle"
 import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 export default function PoliticaPrivacidade() {
-  usePageTitle("Política de Privacidade")
+  const t = useTextos()
+  usePageTitle(t("privacidade.titulo"))
   const reserva = useSiteConfig()
   const [politica, setPolitica] = useState<SiteConfig | null>(null)
   const [erro, setErro] = useState(false)
@@ -28,7 +30,7 @@ export default function PoliticaPrivacidade() {
   return (
     <div className="politica-page">
       <PageHero
-        title="Política de Privacidade"
+        title={t("privacidade.titulo")}
         lead={atualizacao ? `Última atualização: ${atualizacao}` : undefined}
       />
 
@@ -37,11 +39,12 @@ export default function PoliticaPrivacidade() {
           {politica?.privacy_text ? (
             <TextoMarkdown>{politica.privacy_text}</TextoMarkdown>
           ) : erro || politica ? (
-            <p>
-              Não foi possível exibir a política agora. Para qualquer dúvida sobre o tratamento
-              dos seus dados, escreva para{" "}
-              <a href={`mailto:${reserva.email}`}>{reserva.email}</a>.
-            </p>
+            <>
+              <p>{t("privacidade.erro")}</p>
+              <p>
+                <a href={`mailto:${reserva.email}`}>{reserva.email}</a>
+              </p>
+            </>
           ) : (
             <p className="loading">Carregando...</p>
           )}

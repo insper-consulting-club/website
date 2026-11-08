@@ -237,6 +237,18 @@ As mudanças podem levar até um minuto para aparecer no site.
 
 ---
 
+## Textos do site
+
+Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem constrói o clube", "Calendário", "Nenhum artigo cadastrado no momento") ficam em **Textos do site**. A lista traz a **página** onde cada texto aparece e uma descrição de **onde aparece**.
+
+- Use o filtro **Página** (à direita) ou a busca para achar o texto. Edite direto na coluna **Texto** e clique em **Salvar**.
+- Alguns textos têm trechos entre chaves, como `{n}`, `{data}` ou `{programa}`. O site preenche esses trechos, então eles precisam continuar no texto. O admin avisa se algum for apagado.
+- Para voltar ao texto original, marque os textos e use a ação **Restaurar texto original**.
+- Não há botão para adicionar ou excluir: os textos existentes são os que o site usa.
+- Os textos longos (missão, "Quem somos", Política de Privacidade) ficam em **Configuração do site**.
+
+---
+
 ## O que fica fora do admin
 
 Alguns itens fixos são alterados no código pelo responsável técnico:

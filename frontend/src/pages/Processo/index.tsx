@@ -5,11 +5,13 @@ import PageHero from "../../components/PageHero"
 import { ArrowRightIcon, CheckIcon, ClockIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 export default function Processo() {
+  const t = useTextos()
   const config = useSiteConfig()
-  usePageTitle("Processo Seletivo", config.process_lead)
+  usePageTitle(t("processo.titulo"), config.process_lead)
   const [process, setProcess] = useState<SelectionProcess | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -27,9 +29,9 @@ export default function Processo() {
 
   const cta = linkInscricao ? (
     <div className="processo-cta">
-      <h2 className="processo-cta__title">Inscrições abertas!</h2>
+      <h2 className="processo-cta__title">{t("processo.abertas")}</h2>
       <a href={linkInscricao} target="_blank" rel="noopener noreferrer" className="btn btn--light">
-        Inscreva-se
+        {t("processo.botao_inscricao")}
         <ArrowRightIcon />
       </a>
     </div>
@@ -37,7 +39,7 @@ export default function Processo() {
     <div className="processo-cta">
       <h2 className="processo-cta__title">{config.process_closed_message}</h2>
       <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="btn btn--light">
-        Seguir no Instagram
+        {t("processo.botao_instagram")}
         <ArrowRightIcon />
       </a>
     </div>
@@ -48,8 +50,8 @@ export default function Processo() {
   return (
     <div className="processo-page">
       <PageHero
-        eyebrow="Seja membro"
-        title={process?.title || "Processo Seletivo"}
+        eyebrow={t("processo.eyebrow")}
+        title={process?.title || t("processo.titulo")}
         lead={config.process_lead}
       />
 
@@ -60,8 +62,8 @@ export default function Processo() {
           ) : !process ? (
             <>
               <p className="state-message">
-                <strong>Nenhum processo seletivo ativo no momento.</strong>
-                Assim que abrirmos novas vagas, as inscrições aparecem aqui.
+                <strong>{t("processo.sem_processo_titulo")}</strong>
+                {t("processo.sem_processo_texto")}
               </p>
               {cta}
             </>
@@ -69,7 +71,7 @@ export default function Processo() {
             <>
               {process.stages.length > 0 && (
                 <div className="processo-bloco">
-                  <h2 className="section-title">Calendário</h2>
+                  <h2 className="section-title">{t("processo.calendario")}</h2>
                   <ol className="processo-datas">
                     {process.stages.map((stage) => (
                       <li key={stage.id}>
@@ -84,7 +86,7 @@ export default function Processo() {
               {process.steps.length > 0 && (
                 <div className="processo-bloco">
                   <div className="section-head">
-                    <h2 className="section-title">Etapas do processo</h2>
+                    <h2 className="section-title">{t("processo.etapas")}</h2>
                   </div>
                   <ol className="processo-etapas">
                     {process.steps.map((step) => (
@@ -119,7 +121,7 @@ export default function Processo() {
               {process.requirements.length > 0 && (
                 <div className="processo-bloco">
                   <div className="section-head">
-                    <h2 className="section-title">Requisitos</h2>
+                    <h2 className="section-title">{t("processo.requisitos")}</h2>
                   </div>
                   <ul className="grid grid--2 processo-requisitos">
                     {process.requirements.map((req) => (
@@ -137,7 +139,7 @@ export default function Processo() {
               {process.materials.length > 0 && (
                 <div className="processo-bloco">
                   <div className="section-head">
-                    <h2 className="section-title">Materiais de preparação</h2>
+                    <h2 className="section-title">{t("processo.materiais")}</h2>
                   </div>
                   <div className="grid grid--3">
                     {process.materials.map((material) => (

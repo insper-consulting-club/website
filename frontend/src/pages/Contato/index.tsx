@@ -2,6 +2,7 @@ import PageHero from "../../components/PageHero"
 import { GitHubIcon, InstagramIcon, LinkedInIcon, MailIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import type { SiteConfig } from "../../types"
 import "./index.css"
 
@@ -35,17 +36,18 @@ function canais(config: SiteConfig) {
 }
 
 export default function Contato() {
+  const t = useTextos()
   const config = useSiteConfig()
-  usePageTitle("Contato", config.contact_lead)
+  usePageTitle(t("contato.titulo"), config.contact_lead)
 
   return (
     <div className="contato-page">
-      <PageHero title="Contato" lead={config.contact_lead} />
+      <PageHero title={t("contato.titulo")} lead={config.contact_lead} />
 
       <section className="section">
         <div className="container contato-grid">
           <aside className="contato-canais">
-            <h2 className="contato-canais__title">Canais oficiais</h2>
+            <h2 className="contato-canais__title">{t("contato.canais_titulo")}</h2>
             <ul>
               {canais(config).map((canal) => (
                 <li key={canal.label}>

@@ -4,9 +4,11 @@ import { api } from "../../api";
 import type { MemberDetail } from "../../types";
 import { ArrowLeftIcon, LinkedInIcon } from "../../components/Icons";
 import usePageTitle from "../../hooks/usePageTitle";
+import useTextos from "../../hooks/useTextos";
 import "./index.css";
 
 export default function PerfilMembro() {
+  const t = useTextos();
   const { id } = useParams();
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [loadedId, setLoadedId] = useState<string | undefined>();
@@ -30,11 +32,11 @@ export default function PerfilMembro() {
         <div className="container">
           <Link to="/equipe" className="back-link">
             <ArrowLeftIcon size={14} />
-            Voltar para a equipe
+            {t("membro.voltar")}
           </Link>
           <p className="state-message">
-            <strong>Membro não encontrado</strong>
-            O perfil procurado não existe ou foi removido.
+            <strong>{t("membro.nao_encontrado_titulo")}</strong>
+            {t("membro.nao_encontrado_texto")}
           </p>
         </div>
       </section>
@@ -59,7 +61,7 @@ export default function PerfilMembro() {
       <div className="container">
         <Link to="/equipe" className="back-link membro-back">
           <ArrowLeftIcon size={14} />
-          Voltar para a equipe
+          {t("membro.voltar")}
         </Link>
 
         <section className="membro-hero">
@@ -94,7 +96,7 @@ export default function PerfilMembro() {
 
             {trajetoria.length > 0 && (
               <div className="membro-trajetoria">
-                <h2 className="membro-trajetoria__title">Trajetória no ICC</h2>
+                <h2 className="membro-trajetoria__title">{t("membro.trajetoria")}</h2>
                 <ol className="membro-trajetoria__list">
                   {trajetoria.map((etapa, i) => {
                     const isAtual = etapa.semestre === ultimoSemestre && cargosAtuais.includes(etapa.cargo);
@@ -102,7 +104,7 @@ export default function PerfilMembro() {
                       <li key={i} className={isAtual ? "is-atual" : undefined}>
                         <span className="membro-trajetoria__semestre">{etapa.semestre}</span>
                         <span className="membro-trajetoria__cargo">{etapa.cargo}</span>
-                        {isAtual && <span className="tag tag--accent">Atual</span>}
+                        {isAtual && <span className="tag tag--accent">{t("membro.atual")}</span>}
                       </li>
                     );
                   })}

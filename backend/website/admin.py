@@ -3,6 +3,8 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+import re
+
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -10,6 +12,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
+from .site_texts import PADRAO as PADRAO_TEXTOS
 from .models import (
     PartnerCategory, ProgramComponent,
     Partner, Member, Article, ArticleImage, Position, Directorate,
@@ -19,7 +22,7 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
-    SiteConfig, PartnerBenefit, ProgramContentBlock,
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText,
 )
 
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
@@ -473,3 +476,62 @@ class SiteConfigAdmin(ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# ---------------------------------------------------------------------------
+# Textos do site (títulos de seção, rótulos, botões e mensagens)
+# ---------------------------------------------------------------------------
+
+class SiteTextForm(forms.ModelForm):
+    class Meta:
+        model = SiteText
+        fields = ('value',)
+
+    def clean_value(self):
+        valor = self.cleaned_data['value']
+        original = PADRAO_TEXTOS.get(self.instance.key, '')
+        faltando = sorted(set(re.findall(r'\{\w+\}', original)) - set(re.findall(r'\{\w+\}', valor)))
+        if faltando:
+            raise forms.ValidationError(
+                'Mantenha no texto: ' + ', '.join(faltando) + '. O site preenche esses trechos.'
+            )
+        return valor
+
+
+@admin.register(SiteText)
+class SiteTextAdmin(ModelAdmin):
+    list_display = ('group', 'description', 'value')
+    list_display_links = ('description',)
+    list_editable = ('value',)
+    list_filter = ('group',)
+    search_fields = ('key', 'description', 'value')
+    list_per_page = 200
+    ordering = ('order',)
+    actions = ['restaurar']
+    readonly_fields = ('group', 'description', 'key')
+    fields = ('group', 'description', 'key', 'value')
+
+    def get_changelist_form(self, request, **kwargs):
+        return SiteTextForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        kwargs['form'] = SiteTextForm
+        return super().get_form(request, obj, **kwargs)
+
+    # As entradas vêm do catálogo no código: aqui só se edita o texto.
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.action(description='Restaurar texto original')
+    def restaurar(self, request, queryset):
+        n = 0
+        for texto in queryset:
+            original = PADRAO_TEXTOS.get(texto.key)
+            if original is not None and texto.value != original:
+                texto.value = original
+                texto.save(update_fields=['value'])
+                n += 1
+        self.message_user(request, f'{n} texto(s) restaurado(s) ao original.', messages.SUCCESS)

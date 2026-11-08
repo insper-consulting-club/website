@@ -817,3 +817,27 @@ class PartnerBenefit(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class SiteText(models.Model):
+    """
+    Texto curto do site (título de seção, rótulo, botão, mensagem de lista
+    vazia). As entradas nascem do catálogo em site_texts.py; o admin só edita
+    o valor, não cria nem exclui.
+    """
+    key = models.CharField(max_length=100, unique=True, verbose_name='Chave')
+    group = models.CharField(max_length=100, verbose_name='Página')
+    description = models.CharField(max_length=200, verbose_name='Onde aparece')
+    value = models.CharField(
+        max_length=300, verbose_name='Texto',
+        help_text='Mantenha os trechos entre chaves, como {n} ou {data}: o site os preenche.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Texto do site'
+        verbose_name_plural = 'Textos do site'
+        ordering = ['order']
+
+    def __str__(self):
+        return f'{self.group}: {self.description}'

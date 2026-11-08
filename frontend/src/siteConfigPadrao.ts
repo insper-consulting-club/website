@@ -1,3 +1,4 @@
+import { TEXTOS_PADRAO } from "./textosPadrao"
 import type { SiteConfig } from "./types"
 
 // Reserva usada enquanto a Configuração do site não chega da API, ou quando a
@@ -43,6 +44,7 @@ export const SITE_CONFIG_PADRAO: SiteConfig = {
     "Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.",
   privacy_updated: "novembro de 2026",
   privacy_text: "",
+  texts: TEXTOS_PADRAO,
   partner_benefits: [
     {
       id: 0,
