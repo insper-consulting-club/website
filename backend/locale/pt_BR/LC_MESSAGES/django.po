@@ -1,0 +1,40 @@
+# Correções de grafia da tradução em português do Django usada no admin.
+# Este catálogo tem precedência sobre o do Django (LOCALE_PATHS em settings.py).
+# Cada entrada abaixo corrige uma palavra errada no texto original do Django.
+msgid ""
+msgstr ""
+"Project-Id-Version: icc-website\n"
+"PO-Revision-Date: 2026-11-08 00:00-0300\n"
+"Last-Translator: ICC\n"
+"Language-Team: ICC\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. Django (admin): 'ordenção' -> 'ordenação'
+msgid "Toggle sorting"
+msgstr "Alternar ordenação"
+
+#. Django (admin): 'estalação' -> 'instalação'
+msgid ""
+"Something’s wrong with your database installation. Make sure the appropriate"
+" database tables have been created, and make sure the database is readable "
+"by the appropriate user."
+msgstr ""
+"Alguma coisa está errada com sua instalação do banco de dados. Certifique-se"
+" que as tabelas apropriadas foram criadas, e certifique-se que o banco de "
+"dados pode ser acessado pelo usuário apropriado."
+
+#. Django (admin): 'Obirgado' -> 'Obrigado'
+msgid ""
+"There’s been an error. It’s been reported to the site administrators via "
+"email and should be fixed shortly. Thanks for your patience."
+msgstr ""
+"Ocorreu um erro. Este foi reportado para os administradores do site via "
+"email e deve ser corrigido logo. Obrigado por sua paciência."
+
+#. Django (auth): 'datos' -> 'dados'
+msgid "Conflicting form data submitted. Please try again."
+msgstr "Formulário com dados conflitantes. Por favor, tente novamente."

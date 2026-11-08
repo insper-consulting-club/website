@@ -27,7 +27,7 @@ POSITIONS = [
     ("Presidente", 0),
     ("Vice-presidente", 1),
     ("Diretor de Projetos", 2),
-    ("Diretor de Capacitacao", 2),
+    ("Diretor de Capacitação", 2),
     ("Diretor de Relacionamento", 2),
     ("Mentor", 3),
     ("Membro", 4),
@@ -38,8 +38,8 @@ MEMBERS = [
     {
         "name": "Ana Silva",
         "position": "Presidente",
-        "biography": "Membro mock para ambiente local. Atua na lideranca e organizacao do ICC.",
-        "course": "Administracao",
+        "biography": "Membro mock para ambiente local. Atua na liderança e organização do ICC.",
+        "course": "Administração",
         "year": "5o semestre",
         "hours": 420,
         "entry_date": date(2024, 2, 1),
@@ -49,7 +49,7 @@ MEMBERS = [
     {
         "name": "Bruno Costa",
         "position": "Diretor de Projetos",
-        "biography": "Membro mock para ambiente local. Apoia a gestao de projetos e entregas.",
+        "biography": "Membro mock para ambiente local. Apoia a gestão de projetos e entregas.",
         "course": "Economia",
         "year": "6o semestre",
         "hours": 360,
@@ -60,8 +60,8 @@ MEMBERS = [
     {
         "name": "Carla Mendes",
         "position": "Mentor",
-        "biography": "Membro mock para ambiente local. Contribui com orientacao e acompanhamento.",
-        "course": "Administracao",
+        "biography": "Membro mock para ambiente local. Contribui com orientação e acompanhamento.",
+        "course": "Administração",
         "year": "Alumni",
         "hours": 520,
         "entry_date": date(2023, 8, 10),
@@ -82,8 +82,8 @@ MEMBERS = [
     {
         "name": "Eduarda Lima",
         "position": "Trainee",
-        "biography": "Membro mock para ambiente local. Participa do ciclo de formacao do ICC.",
-        "course": "Administracao",
+        "biography": "Membro mock para ambiente local. Participa do ciclo de formação do ICC.",
+        "course": "Administração",
         "year": "2o semestre",
         "hours": 80,
         "entry_date": date(2025, 8, 5),
@@ -92,7 +92,7 @@ MEMBERS = [
     },
     {
         "name": "Felipe Rocha",
-        "position": "Diretor de Capacitacao",
+        "position": "Diretor de Capacitação",
         "biography": "Membro mock para ambiente local. Conduz treinamentos de case, mercado e storytelling.",
         "course": "Economia",
         "year": "5o semestre",
@@ -105,7 +105,7 @@ MEMBERS = [
         "name": "Marina Torres",
         "position": "Diretor de Relacionamento",
         "biography": "Membro mock para ambiente local. Coordena contato com parceiros e eventos institucionais.",
-        "course": "Administracao",
+        "course": "Administração",
         "year": "6o semestre",
         "hours": 340,
         "entry_date": date(2024, 2, 19),
@@ -116,7 +116,7 @@ MEMBERS = [
 
 PARTNER_CATEGORIES = [
     "Consultoria",
-    "Educacao e carreira",
+    "Educação e carreira",
     "Tecnologia e dados",
 ]
 
@@ -124,25 +124,25 @@ PARTNERS = [
     {
         "name": "Atlas Strategy",
         "category": "Consultoria",
-        "description": "Parceiro mock para mentorias, simulados de case e conversas sobre carreira em estrategia.",
+        "description": "Parceiro mock para mentorias, simulados de case e conversas sobre carreira em estratégia.",
         "site": "https://example.com/atlas-strategy",
     },
     {
         "name": "Norte Advisors",
         "category": "Consultoria",
-        "description": "Parceiro mock focado em desafios de crescimento, go-to-market e diagnostico competitivo.",
+        "description": "Parceiro mock focado em desafios de crescimento, go-to-market e diagnóstico competitivo.",
         "site": "https://example.com/norte-advisors",
     },
     {
         "name": "Prisma Analytics",
         "category": "Tecnologia e dados",
-        "description": "Parceiro mock para trilhas de dados, pesquisa de mercado e suporte analitico aos projetos.",
+        "description": "Parceiro mock para trilhas de dados, pesquisa de mercado e suporte analítico aos projetos.",
         "site": "https://example.com/prisma-analytics",
     },
     {
         "name": "Vetor Carreiras",
-        "category": "Educacao e carreira",
-        "description": "Parceiro mock para workshops de entrevista, CV, fit interview e preparacao profissional.",
+        "category": "Educação e carreira",
+        "description": "Parceiro mock para workshops de entrevista, CV, fit interview e preparação profissional.",
         "site": "https://example.com/vetor-carreiras",
     },
 ]
@@ -151,17 +151,17 @@ CATEGORIES = [
     {
         "slug": "projetos",
         "label": "Projetos de consultoria",
-        "description": "Frente dedicada a diagnostico, estruturacao de problemas e recomendacoes praticas.",
-        "highlights": "Diagnostico de negocio\nBenchmarking\nAnalise de mercado\nStorytelling executivo",
+        "description": "Frente dedicada a diagnóstico, estruturação de problemas e recomendações práticas.",
+        "highlights": "Diagnóstico de negócio\nBenchmarking\nAnálise de mercado\nStorytelling executivo",
         "badge": "Continuo",
         "badge_class": "badge--continuo",
         "order": 1,
     },
     {
         "slug": "capacitacao",
-        "label": "Capacitacao",
-        "description": "Trilha de treinamento para cases, entrevistas, pensamento estruturado e comunicacao.",
-        "highlights": "Case interview\nFit interview\nExcel e dados\nApresentacoes",
+        "label": "Capacitação",
+        "description": "Trilha de treinamento para cases, entrevistas, pensamento estruturado e comunicação.",
+        "highlights": "Case interview\nFit interview\nExcel e dados\nApresentações",
         "badge": "Semanal",
         "badge_class": "badge--semanal",
         "order": 2,
@@ -169,8 +169,8 @@ CATEGORIES = [
     {
         "slug": "eventos",
         "label": "Eventos",
-        "description": "Palestras, paineis e encontros com consultorias, alumni e liderancas de mercado.",
-        "highlights": "Paineis de carreira\nWorkshops com parceiros\nEventos abertos\nBate-papos com alumni",
+        "description": "Palestras, painéis e encontros com consultorias, alumni e lideranças de mercado.",
+        "highlights": "Painéis de carreira\nWorkshops com parceiros\nEventos abertos\nBate-papos com alumni",
         "badge": "Mensal",
         "badge_class": "badge--mensal",
         "order": 3,
@@ -178,7 +178,7 @@ CATEGORIES = [
     {
         "slug": "networking",
         "label": "Networking",
-        "description": "Conexoes entre membros, ex-membros, empresas parceiras e comunidade Insper.",
+        "description": "Conexões entre membros, ex-membros, empresas parceiras e comunidade Insper.",
         "highlights": "Comunidade de membros\nMentorias\nAlumni\nParceiros",
         "badge": "Semestral",
         "badge_class": "badge--semestral",
@@ -189,51 +189,51 @@ CATEGORIES = [
 STATISTICS = [
     ("40+", "membros ativos", 1),
     ("15+", "projetos e iniciativas", 2),
-    ("8+", "parceiros e conexoes", 3),
-    ("5+", "anos de atuacao", 4),
+    ("8+", "parceiros e conexões", 3),
+    ("5+", "anos de atuação", 4),
 ]
 
 PROJECTS = [
     {
-        "title": "Diagnostico de crescimento para marketplace B2B",
-        "description": "Projeto mock com analise de funil, entrevistas com usuarios e recomendacoes de priorizacao comercial.",
+        "title": "Diagnóstico de crescimento para marketplace B2B",
+        "description": "Projeto mock com análise de funil, entrevistas com usuários e recomendações de priorização comercial.",
         "category": "projetos",
         "partners": ["Atlas Strategy", "Prisma Analytics"],
         "start_date": date(2025, 3, 1),
         "end_date": date(2025, 5, 30),
         "events": [
-            (date(2025, 3, 1), "Kickoff", "Alinhamento de escopo, objetivos e hipoteses iniciais.", 1),
-            (date(2025, 4, 10), "Analise intermediaria", "Validacao de dados, benchmark e entrevistas.", 2),
-            (date(2025, 5, 30), "Entrega final", "Apresentacao executiva com recomendacoes priorizadas.", 3),
+            (date(2025, 3, 1), "Kickoff", "Alinhamento de escopo, objetivos e hipóteses iniciais.", 1),
+            (date(2025, 4, 10), "Análise intermediária", "Validação de dados, benchmark e entrevistas.", 2),
+            (date(2025, 5, 30), "Entrega final", "Apresentação executiva com recomendações priorizadas.", 3),
         ],
         "content": [
             (
                 "Contexto",
-                "O time estruturou um diagnostico de crescimento para identificar gargalos de conversao e oportunidades comerciais.",
+                "O time estruturou um diagnóstico de crescimento para identificar gargalos de conversão e oportunidades comerciais.",
                 1,
             ),
             (
                 "Resultado",
-                "A entrega final consolidou hipoteses, criterios de priorizacao e proximos passos para execucao.",
+                "A entrega final consolidou hipóteses, critérios de priorização e próximos passos para execução.",
                 2,
             ),
         ],
     },
     {
-        "title": "Benchmarks para estrategia de entrada em mercado",
-        "description": "Projeto mock focado em dimensionamento de mercado, analise competitiva e recomendacao de rota de entrada.",
+        "title": "Benchmarks para estratégia de entrada em mercado",
+        "description": "Projeto mock focado em dimensionamento de mercado, análise competitiva e recomendação de rota de entrada.",
         "category": "projetos",
         "partners": ["Norte Advisors"],
         "start_date": date(2025, 8, 15),
         "end_date": None,
         "events": [
-            (date(2025, 8, 15), "Kickoff", "Definicao de perguntas-chave e plano de analise.", 1),
-            (date(2025, 9, 20), "Sprint de pesquisa", "Mapeamento de concorrentes, precos e canais.", 2),
+            (date(2025, 8, 15), "Kickoff", "Definição de perguntas-chave e plano de análise.", 1),
+            (date(2025, 9, 20), "Sprint de pesquisa", "Mapeamento de concorrentes, preços e canais.", 2),
         ],
         "content": [
             (
                 "Abordagem",
-                "A equipe combinou pesquisa secundaria, benchmarks e entrevistas exploratorias para orientar a recomendacao.",
+                "A equipe combinou pesquisa secundária, benchmarks e entrevistas exploratórias para orientar a recomendação.",
                 1,
             ),
         ],
@@ -243,45 +243,45 @@ PROJECTS = [
 ACTIVITIES = [
     {
         "title": "Workshop de Case Interview",
-        "description": "Atividade mock com pratica de cases, comunicacao estruturada e feedback individual.",
+        "description": "Atividade mock com prática de cases, comunicação estruturada e feedback individual.",
         "category": "capacitacao",
     },
     {
         "title": "Painel de carreiras em consultoria",
-        "description": "Atividade mock com convidados de mercado e alumni discutindo trajetorias em estrategia.",
+        "description": "Atividade mock com convidados de mercado e alumni discutindo trajetórias em estratégia.",
         "category": "eventos",
     },
     {
         "title": "Treinamento de storytelling executivo",
-        "description": "Atividade mock para melhorar apresentacoes, piramide logica e narrativa de recomendacoes.",
+        "description": "Atividade mock para melhorar apresentações, pirâmide lógica e narrativa de recomendações.",
         "category": "capacitacao",
     },
 ]
 
 NEWS = [
     {
-        "title": "[Exemplo] Precificacao dinamica no varejo brasileiro: um estudo de caso",
+        "title": "[Exemplo] Precificação dinâmica no varejo brasileiro: um estudo de caso",
         "authors": "Autor Exemplo, Autora Exemplo",
-        "topics": "Varejo, Precificacao",
-        "description": "Resumo mock: analise de estrategias de precificacao em redes varejistas e impacto na margem.",
+        "topics": "Varejo, Precificação",
+        "description": "Resumo mock: análise de estratégias de precificação em redes varejistas e impacto na margem.",
         "content": (
-            "Paragrafo mock 1: contexto do varejo brasileiro e por que a precificacao dinamica ganhou espaco.\n\n"
-            "Paragrafo mock 2: metodologia, com entrevistas e dados publicos de tres redes varejistas.\n\n"
-            "Paragrafo mock 3: resultados e recomendacoes para empresas que querem adotar o modelo."
+            "Parágrafo mock 1: contexto do varejo brasileiro e por que a precificação dinâmica ganhou espaço.\n\n"
+            "Parágrafo mock 2: metodologia, com entrevistas e dados públicos de três redes varejistas.\n\n"
+            "Parágrafo mock 3: resultados e recomendações para empresas que querem adotar o modelo."
         ),
         "link": "https://example.com/artigo-exemplo-1",
-        "source": "Revista Exemplo de Administracao",
+        "source": "Revista Exemplo de Administração",
         "date": date(2026, 3, 12),
         "order": 1,
     },
     {
-        "title": "[Exemplo] Transformacao digital em PMEs: barreiras e alavancas",
+        "title": "[Exemplo] Transformação digital em PMEs: barreiras e alavancas",
         "authors": "Autora Exemplo",
         "topics": "Tecnologia, PMEs",
-        "description": "Resumo mock: levantamento com pequenas e medias empresas sobre adocao de tecnologia.",
+        "description": "Resumo mock: levantamento com pequenas e médias empresas sobre adoção de tecnologia.",
         "content": (
-            "Paragrafo mock 1: o que trava a adocao de tecnologia em pequenas e medias empresas.\n\n"
-            "Paragrafo mock 2: alavancas que funcionaram nos casos analisados."
+            "Parágrafo mock 1: o que trava a adoção de tecnologia em pequenas e médias empresas.\n\n"
+            "Parágrafo mock 2: alavancas que funcionaram nos casos analisados."
         ),
         "link": "",
         "source": "",
@@ -289,14 +289,14 @@ NEWS = [
         "order": 2,
     },
     {
-        "title": "[Exemplo] Modelos de priorizacao de portfolio em consultoria",
+        "title": "[Exemplo] Modelos de priorização de portfolio em consultoria",
         "authors": "Autor Exemplo, Autor Exemplo 2",
-        "topics": "Estrategia",
-        "description": "Resumo mock: comparacao de matrizes de priorizacao usadas em projetos de estrategia.",
+        "topics": "Estratégia",
+        "description": "Resumo mock: comparação de matrizes de priorização usadas em projetos de estratégia.",
         "content": (
-            "Paragrafo mock 1: as matrizes de priorizacao mais usadas em projetos de estrategia.\n\n"
-            "Paragrafo mock 2: quando cada uma funciona melhor.\n\n"
-            "Paragrafo mock 3: um exemplo aplicado a um portfolio ficticio."
+            "Parágrafo mock 1: as matrizes de priorização mais usadas em projetos de estratégia.\n\n"
+            "Parágrafo mock 2: quando cada uma funciona melhor.\n\n"
+            "Parágrafo mock 3: um exemplo aplicado a um portfolio fictício."
         ),
         "link": "",
         "source": "",
@@ -323,7 +323,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                "Mock concluido: "
+                "Mock concluído: "
                 f"{len(members)} membros, {len(partners)} parceiros, "
                 f"{len(categories)} programas e {len(projects)} projetos prontos."
             )
@@ -488,10 +488,10 @@ class Command(BaseCommand):
             process.save(update_fields=["is_active"])
 
         steps = [
-            ("Inscricao", "18 a 29 de agosto", 1),
-            ("Dinamica em grupo", "Primeira semana de setembro", 2),
+            ("Inscrição", "18 a 29 de agosto", 1),
+            ("Dinâmica em grupo", "Primeira semana de setembro", 2),
             ("Entrevista individual", "Segunda semana de setembro", 3),
-            ("Resultado", "Ate 20 de setembro", 4),
+            ("Resultado", "Até 20 de setembro", 4),
         ]
         for label, stage_date, order in steps:
             SelectionProcessStage.objects.update_or_create(
@@ -503,33 +503,33 @@ class Command(BaseCommand):
         detailed_steps = [
             (
                 "01",
-                "Inscricao",
-                "Envio de dados, motivacao e perguntas iniciais sobre interesse em consultoria.",
+                "Inscrição",
+                "Envio de dados, motivação e perguntas iniciais sobre interesse em consultoria.",
                 "15 minutos",
-                "Revise sua motivacao\nMostre clareza sobre o ICC\nExplique aprendizados relevantes",
+                "Revise sua motivação\nMostre clareza sobre o ICC\nExplique aprendizados relevantes",
                 1,
             ),
             (
                 "02",
-                "Dinamica",
-                "Resolucao em grupo para avaliar comunicacao, colaboracao e pensamento estruturado.",
+                "Dinâmica",
+                "Resolução em grupo para avaliar comunicação, colaboração e pensamento estruturado.",
                 "60 minutos",
-                "Escute o grupo\nEstruture hipoteses\nComunique sintese",
+                "Escute o grupo\nEstruture hipóteses\nComunique síntese",
                 2,
             ),
             (
                 "03",
                 "Entrevista",
-                "Conversa individual com perguntas de fit, experiencias e motivacao para a rotina do clube.",
+                "Conversa individual com perguntas de fit, experiências e motivação para a rotina do clube.",
                 "30 minutos",
-                "Prepare exemplos concretos\nMostre consistencia\nSeja objetivo",
+                "Prepare exemplos concretos\nMostre consistência\nSeja objetivo",
                 3,
             ),
             (
                 "04",
                 "Resultado",
-                "Retorno final e proximos passos para onboarding e trilha de formacao.",
-                "Ate 1 semana",
+                "Retorno final e próximos passos para onboarding e trilha de formação.",
+                "Até 1 semana",
                 "Acompanhe o e-mail\nConfirme disponibilidade\nPrepare-se para o onboarding",
                 4,
             ),
@@ -548,9 +548,9 @@ class Command(BaseCommand):
             )
 
         requirements = [
-            ("Ser aluno de graduacao do Insper.", 1),
-            ("Ter disponibilidade para reunioes, treinamentos e projetos semanais.", 2),
-            ("Demonstrar interesse por consultoria, estrategia e resolucao de problemas.", 3),
+            ("Ser aluno de graduação do Insper.", 1),
+            ("Ter disponibilidade para reuniões, treinamentos e projetos semanais.", 2),
+            ("Demonstrar interesse por consultoria, estratégia e resolução de problemas.", 3),
         ]
         for text, order in requirements:
             SelectionProcessRequirement.objects.update_or_create(
@@ -561,7 +561,7 @@ class Command(BaseCommand):
 
         materials = [
             ("Materiais para case interview", ["Victor Cheng - Case Interview Secrets", "Case in Point", "Simulados internos do ICC"], 1),
-            ("Preparacao para fit interview", ["Mapeie experiencias relevantes", "Prepare motivacao para consultoria", "Treine respostas objetivas"], 2),
+            ("Preparação para fit interview", ["Mapeie experiências relevantes", "Prepare motivação para consultoria", "Treine respostas objetivas"], 2),
         ]
         for title, items, order in materials:
             material, _ = PreparationMaterial.objects.update_or_create(

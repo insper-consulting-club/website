@@ -121,6 +121,7 @@ O `/health/` não acessa o banco de propósito: o monitor de uptime o chama a ca
 
 - `SECRET_KEY` é obrigatória. O projeto não sobe sem ela. No ambiente local, o `docker-compose.yml` define uma chave de desenvolvimento, então o `.env` é opcional. Como essa chave é pública, o backend se recusa a subir com ela quando `DEBUG=False`.
 - Com `DEBUG=False`, o backend exige HTTPS, define cookies seguros e ativa o HSTS.
+- **Correções da tradução do admin:** a tradução em português do Django traz erros de grafia (por exemplo, "ordenção"). A pasta `backend/locale/` tem um catálogo do projeto que vale antes do do Django, ativado por `LOCALE_PATHS` em `settings.py`, e um teste confere as correções. O `django.mo` compilado é versionado (exceção no `.gitignore`), porque o deploy não compila mensagens. Para corrigir outro texto, acrescente a entrada em `django.po` e rode `msgfmt -o locale/pt_BR/LC_MESSAGES/django.mo locale/pt_BR/LC_MESSAGES/django.po` dentro de `backend/`.
 - `BEHIND_PROXY=True` faz o Django confiar no cabeçalho `X-Forwarded-Proto`. É necessário no Render, que termina o HTTPS na frente do Django. Sem isso, o site entra em loop de redirecionamento.
 - O banco vem de `DATABASE_URL`. Sem ela, usa as variáveis `DB_*` do Compose.
 - O armazenamento de uploads é o Cloudinary quando `CLOUDINARY_CLOUD_NAME` está definido, e o disco local caso contrário.

@@ -56,6 +56,9 @@ cover/
 
 # Translations
 *.mo
+# Exceção: o catálogo compilado das correções de tradução do projeto precisa ir
+# para o repositório, porque o deploy não compila mensagens.
+!locale/**/*.mo
 *.pot
 
 # Django stuff:

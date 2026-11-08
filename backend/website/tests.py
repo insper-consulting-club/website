@@ -8,6 +8,7 @@ from unittest import mock
 
 import requests
 from django.test import override_settings
+from django.utils import translation
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
@@ -690,3 +691,30 @@ class FrontendDeployTests(TestCase):
         texto = "\n".join(log.output)
         self.assertIn("ConnectionError", texto)
         self.assertNotIn("segredo", texto)
+
+
+class TranslationFixesTests(TestCase):
+    """A tradução em português do Django traz erros de grafia; locale/ os corrige."""
+
+    def test_misspelled_django_texts_are_fixed(self):
+        from django.utils.translation import gettext
+
+        with translation.override("pt-br"):
+            self.assertEqual(gettext("Toggle sorting"), "Alternar ordenação")
+            self.assertIn("instalação do banco de dados", gettext(
+                "Something’s wrong with your database installation. Make sure the appropriate database "
+                "tables have been created, and make sure the database is readable by the appropriate user."
+            ))
+            self.assertIn("dados conflitantes", gettext("Conflicting form data submitted. Please try again."))
+            self.assertIn("Obrigado", gettext(
+                "There’s been an error. It’s been reported to the site administrators via email and should be "
+                "fixed shortly. Thanks for your patience."
+            ))
+
+    def test_admin_list_page_shows_the_fixed_text(self):
+        user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(user)
+
+        pagina = self.client.get("/admin/website/program/").content.decode()
+
+        self.assertNotIn("ordenção", pagina)

@@ -186,6 +186,10 @@ TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
+# Correções de grafia da tradução em português do Django (ver locale/). A pasta do
+# projeto vem antes da do Django, então as entradas dela valem.
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
 USE_TZ = True
 
 
