@@ -41,10 +41,10 @@ frontend/
     ├── App.tsx          # Layout: Header, conteúdo da rota e Footer
     ├── api.ts           # Todas as chamadas à API
     ├── types.ts         # Tipos dos dados que a API devolve
-    ├── redes.ts         # E-mail e links do Instagram, LinkedIn e GitHub, num lugar só
+    ├── siteConfigPadrao.ts # Textos e contatos de reserva, caso a Configuração do site não chegue
     ├── index.css        # Design tokens e estilos globais
     ├── components/      # Header, Footer, PageHero, MemberCard, ProjetoCard, Icons, CargaInicial
-    ├── hooks/           # usePageTitle, useProgramas, useDiretorias
+    ├── hooks/           # usePageTitle, useProgramas, useDiretorias, useSiteConfig
     ├── images/          # Logo e imagens fixas
     └── pages/           # Uma pasta por página, com index.tsx e index.css
 ```

@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import MemberCard from "../../components/MemberCard";
 import PageHero from "../../components/PageHero";
 import usePageTitle from "../../hooks/usePageTitle";
+import useSiteConfig from "../../hooks/useSiteConfig";
 import { api } from "../../api";
 import type { Member } from "../../types";
 import "./index.css";
@@ -10,7 +11,8 @@ import "./index.css";
 type Group = { directorate: string; slug: string; members: { member: Member; cargo: string; order: number }[] };
 
 export default function Equipe() {
-  usePageTitle("Nossa Equipe", "Conheça os membros que fazem parte da Liga Insper Consulting Club");
+  const config = useSiteConfig();
+  usePageTitle("Nossa Equipe", config.team_lead);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
@@ -60,7 +62,7 @@ export default function Equipe() {
       <PageHero
         eyebrow="Membros"
         title="Nossa Equipe"
-        lead="Conheça os membros que fazem parte da Liga Insper Consulting Club"
+        lead={config.team_lead}
       />
 
       {!loading && groups.length > 0 && (

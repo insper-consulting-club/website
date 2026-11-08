@@ -5,7 +5,7 @@ import logoBranca from "../../images/logo-icc-branca.png";
 import useProgramas from "../../hooks/useProgramas";
 import useDiretorias from "../../hooks/useDiretorias";
 import { ChevronDownIcon, CloseIcon, GitHubIcon, InstagramIcon, LinkedInIcon, MenuIcon } from "../Icons";
-import { REDES } from "../../redes";
+import useSiteConfig from "../../hooks/useSiteConfig";
 
 const COMPACT_THRESHOLD = 40;
 
@@ -29,6 +29,7 @@ export default function Header() {
   const location = useLocation();
   const programas = useProgramas();
   const diretorias = useDiretorias();
+  const config = useSiteConfig();
   // O submenu de Projetos vem do banco, então só aparece depois que a lista
   // chega; até lá o item continua navegável, levando ao índice.
   const nav = useMemo(
@@ -144,13 +145,13 @@ export default function Header() {
         </nav>
 
         <div className="header__actions">
-          <a href={REDES.instagram} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="Instagram do ICC">
+          <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="Instagram do ICC">
             <InstagramIcon size={18} />
           </a>
-          <a href={REDES.linkedin} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="LinkedIn do ICC">
+          <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="LinkedIn do ICC">
             <LinkedInIcon size={17} />
           </a>
-          <a href={REDES.github} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="GitHub do ICC">
+          <a href={config.github_url} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="GitHub do ICC">
             <GitHubIcon size={17} />
           </a>
           <Link to="/processo" className="header__cta">
@@ -193,13 +194,13 @@ export default function Header() {
             Seja membro
           </Link>
           <div className="header__mobile-social">
-            <a href={REDES.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram do ICC">
+            <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram do ICC">
               <InstagramIcon size={20} />
             </a>
-            <a href={REDES.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn do ICC">
+            <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn do ICC">
               <LinkedInIcon size={19} />
             </a>
-            <a href={REDES.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub do ICC">
+            <a href={config.github_url} target="_blank" rel="noopener noreferrer" aria-label="GitHub do ICC">
               <GitHubIcon size={19} />
             </a>
           </div>

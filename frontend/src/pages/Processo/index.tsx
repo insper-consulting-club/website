@@ -4,11 +4,12 @@ import type { SelectionProcess } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowRightIcon, CheckIcon, ClockIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
-import { REDES } from "../../redes"
+import useSiteConfig from "../../hooks/useSiteConfig"
 import "./index.css"
 
 export default function Processo() {
-  usePageTitle("Processo Seletivo", "Participe do processo seletivo e faça parte da Liga Insper Consulting Club")
+  const config = useSiteConfig()
+  usePageTitle("Processo Seletivo", config.process_lead)
   const [process, setProcess] = useState<SelectionProcess | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -34,8 +35,8 @@ export default function Processo() {
     </div>
   ) : (
     <div className="processo-cta">
-      <h2 className="processo-cta__title">Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.</h2>
-      <a href={REDES.instagram} target="_blank" rel="noopener noreferrer" className="btn btn--light">
+      <h2 className="processo-cta__title">{config.process_closed_message}</h2>
+      <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="btn btn--light">
         Seguir no Instagram
         <ArrowRightIcon />
       </a>
@@ -49,7 +50,7 @@ export default function Processo() {
       <PageHero
         eyebrow="Seja membro"
         title={process?.title || "Processo Seletivo"}
-        lead="Participe do processo seletivo e faça parte da Liga Insper Consulting Club"
+        lead={config.process_lead}
       />
 
       <section className="section">

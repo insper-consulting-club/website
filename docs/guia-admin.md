@@ -215,13 +215,27 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação
 
 ---
 
+## Configuração do site
+
+**Configuração do site** abre direto na edição, porque existe um único registro. Não há botão de adicionar nem de excluir. A tela tem abas:
+
+- **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
+- **Home:** título do topo, frase de destaque, o bloco "Quem somos" (com a foto, que é opcional), a missão, "como preparamos", "onde queremos chegar" e a chamada final.
+- **Rodapé:** a frase de apresentação.
+- **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** recebe o slug de um programa existente (por exemplo, `jornada-do-consultor`) e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
+- **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
+- **Benefícios para parceiros:** a lista de "Por que ser parceiro" da página Parceiros, com título, descrição e ordem.
+
+As mudanças podem levar até um minuto para aparecer no site.
+
+---
+
 ## O que fica fora do admin
 
 Alguns itens fixos são alterados no código pelo responsável técnico:
 
-- textos institucionais da Home (missão, "Quem somos");
-- links do Instagram, do LinkedIn e do GitHub, e o e-mail de contato;
-- o texto da Política de Privacidade.
+- o menu de navegação e os títulos das páginas;
+- a descrição e a imagem usadas na prévia ao compartilhar um link (WhatsApp, LinkedIn), que ficam no `index.html`, porque esses aplicativos não executam o site.
 
 ---
 

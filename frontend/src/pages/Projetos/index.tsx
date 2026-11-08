@@ -7,10 +7,12 @@ import ProjetoCard from "../../components/ProjetoCard"
 import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useProgramas from "../../hooks/useProgramas"
+import useSiteConfig from "../../hooks/useSiteConfig"
 import "./index.css"
 
 export default function Projetos() {
-  usePageTitle("Projetos", "Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor.")
+  const config = useSiteConfig()
+  usePageTitle("Projetos", config.projects_lead)
   const programas = useProgramas()
   const [cases, setCases] = useState<ProgramCase[]>([])
   const [outrosProjetos, setOutrosProjetos] = useState<Project[]>([])
@@ -25,12 +27,18 @@ export default function Projetos() {
       .catch(() => setOutrosProjetos([]))
   }, [])
 
+  // A seção de cases leva ao programa escolhido em Configuração do site. Sem
+  // slug, ou com um slug que não existe mais, a seção não aparece.
+  const slugDestaque = config.featured_program_slug
+  const programaDestaque = programas.find((p) => p.slug === slugDestaque)
+  const casesDestaque = cases.filter((c) => c.program === slugDestaque)
+
   return (
     <div className="projetos-page">
       <PageHero
         eyebrow="Projetos"
         title={<>Programas e <span className="destaque">cases</span></>}
-        lead="Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor."
+        lead={config.projects_lead}
       />
 
       <section className="section">
@@ -71,14 +79,14 @@ export default function Projetos() {
         </section>
       )}
 
-      {cases.length > 0 && (
+      {programaDestaque && casesDestaque.length > 0 && (
         <section className={`section${outrosProjetos.length > 0 ? "" : " section--muted"}`}>
           <div className="container projetos-cases">
             <div>
               <p className="eyebrow">Cases resolvidos</p>
-              <h2 className="section-title">{cases.length} cases na Jornada do Consultor</h2>
+              <h2 className="section-title">{programaDestaque.label}: {casesDestaque.length} {casesDestaque.length === 1 ? "case" : "cases"}</h2>
             </div>
-            <Link to="/projetos/jornada-do-consultor#cases" className="btn btn--primary">
+            <Link to={`/projetos/${programaDestaque.slug}#cases`} className="btn btn--primary">
               Ver os cases
               <ArrowRightIcon />
             </Link>

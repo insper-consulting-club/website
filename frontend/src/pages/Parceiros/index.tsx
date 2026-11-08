@@ -5,29 +5,12 @@ import type { Partner } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowRightIcon, MailIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useSiteConfig from "../../hooks/useSiteConfig"
 import "./index.css"
 
-// Extraído de site-data/icc.json (sobre.porQueSerParceiro).
-const BENEFICIOS_PARCEIRO = [
-  {
-    nome: "Acesso a talentos",
-    descricao:
-      "Contato direto com alunos de alta performance, treinados em resolução de cases e raciocínio analítico.",
-  },
-  {
-    nome: "Visibilidade Institucional",
-    descricao:
-      "Presença em eventos, capacitações e redes sociais com crescimento consistente de alcance e engajamento.",
-  },
-  {
-    nome: "Cases aplicados à realidade",
-    descricao:
-      "Possibilidade de propor desafios reais de negócio para serem resolvidos pelos nossos grupos de trainees e do Pedagógico.",
-  },
-]
-
 export default function Parceiros() {
-  usePageTitle("Parceiros", "Conheça as empresas que apoiam o Insper Consulting Club e contribuem para a formação dos futuros líderes em consultoria.")
+  const config = useSiteConfig()
+  usePageTitle("Parceiros", config.partners_lead)
   const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -44,7 +27,7 @@ export default function Parceiros() {
       <PageHero
         eyebrow="Parceiros"
         title={<>Quem caminha <span className="destaque">conosco</span></>}
-        lead="Conheça as empresas que apoiam o Insper Consulting Club e contribuem para a formação dos futuros líderes em consultoria."
+        lead={config.partners_lead}
       />
 
       <section className="section">
@@ -80,20 +63,20 @@ export default function Parceiros() {
         <div className="container">
           <div className="section-head">
             <p className="eyebrow">Por que ser parceiro</p>
-            <h2 className="section-title">O que sua empresa ganha ao apoiar o Insper Consulting Club</h2>
+            <h2 className="section-title">{config.partners_benefits_title}</h2>
           </div>
 
           <div className="grid grid--3 parceiros-beneficios">
-            {BENEFICIOS_PARCEIRO.map((b, index) => (
-              <div className="parceiros-beneficio" key={b.nome}>
+            {config.partner_benefits.map((b, index) => (
+              <div className="parceiros-beneficio" key={b.id}>
                 <span className="parceiros-beneficio__index">{String(index + 1).padStart(2, "0")}</span>
-                <h3>{b.nome}</h3>
-                <p>{b.descricao}</p>
+                <h3>{b.title}</h3>
+                <p>{b.description}</p>
               </div>
             ))}
           </div>
 
-          <a href="mailto:insperconsultingclub@gmail.com" className="btn btn--light parceiros-cta">
+          <a href={`mailto:${config.email}`} className="btn btn--light parceiros-cta">
             <MailIcon size={18} />
             Fale com a gente
           </a>

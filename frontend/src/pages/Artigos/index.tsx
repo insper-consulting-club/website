@@ -5,6 +5,7 @@ import type { ArticleSummary } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useSiteConfig from "../../hooks/useSiteConfig"
 import "./index.css"
 
 function formatDate(date: string) {
@@ -16,6 +17,7 @@ function formatDate(date: string) {
 }
 
 export default function Artigos() {
+  const config = useSiteConfig()
   usePageTitle("Artigos")
   const [artigos, setArtigos] = useState<ArticleSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +34,7 @@ export default function Artigos() {
     <div className="artigos-page">
       <PageHero
         title="Artigos"
-        lead="Artigos e publicações produzidos por membros do ICC"
+        lead={config.articles_lead}
       />
 
       <section className="section">

@@ -3,7 +3,7 @@ import "./index.css";
 import logoBranca from "../../images/logo-icc-branca.png";
 import useProgramas from "../../hooks/useProgramas";
 import { GitHubIcon, InstagramIcon, LinkedInIcon, MailIcon } from "../Icons";
-import { REDES } from "../../redes";
+import useSiteConfig from "../../hooks/useSiteConfig";
 
 // O admin fica no backend, no mesmo endereço da API sem o "/api"
 // (local: localhost:8000/admin/; produção: icc-backend…onrender.com/admin/).
@@ -19,6 +19,7 @@ const NAVEGACAO = [
 
 export default function Footer() {
   const programas = useProgramas();
+  const config = useSiteConfig();
 
   return (
     <footer className="footer">
@@ -27,10 +28,7 @@ export default function Footer() {
           <Link to="/" aria-label="Liga Insper Consulting Club, página inicial">
             <img src={logoBranca} alt="" className="footer__logo" />
           </Link>
-          <p className="footer__tagline">
-            Mais do que um clube, somos um ambiente de formação para futuros
-            consultores.
-          </p>
+          <p className="footer__tagline">{config.footer_tagline}</p>
         </div>
 
         <nav className="footer__col" aria-label="Navegação do rodapé">
@@ -59,25 +57,25 @@ export default function Footer() {
           <h2 className="footer__title">Contato</h2>
           <ul className="footer__list">
             <li>
-              <a href={`mailto:${REDES.email}`} className="footer__contact">
+              <a href={`mailto:${config.email}`} className="footer__contact">
                 <MailIcon size={16} />
-                {REDES.email}
+                {config.email}
               </a>
             </li>
             <li>
-              <a href={REDES.instagram} target="_blank" rel="noopener noreferrer" className="footer__contact">
+              <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="footer__contact">
                 <InstagramIcon size={16} />
                 Instagram
               </a>
             </li>
             <li>
-              <a href={REDES.linkedin} target="_blank" rel="noopener noreferrer" className="footer__contact">
+              <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" className="footer__contact">
                 <LinkedInIcon size={15} />
                 LinkedIn
               </a>
             </li>
             <li>
-              <a href={REDES.github} target="_blank" rel="noopener noreferrer" className="footer__contact">
+              <a href={config.github_url} target="_blank" rel="noopener noreferrer" className="footer__contact">
                 <GitHubIcon size={15} />
                 GitHub
               </a>

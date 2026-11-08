@@ -48,4 +48,7 @@ export const api = {
 
   getSelectionProcess: () =>
     fetch(`${apiUrl}/selection-process/`, { headers }).then((res) => res.json()),
+
+  getSiteConfig: () =>
+    fetch(`${apiUrl}/site-config/`, { headers }).then((res) => res.json()),
 };

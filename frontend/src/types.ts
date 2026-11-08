@@ -222,3 +222,45 @@ export interface PreparationMaterial {
   items: PreparationMaterialItem[]
   order: number
 }
+
+export interface PartnerBenefit {
+  id: number
+  title: string
+  description: string
+  order: number
+}
+
+// Textos e contatos editáveis no admin (Configuração do site).
+export interface SiteConfig {
+  email: string
+  instagram_url: string
+  instagram_label: string
+  linkedin_url: string
+  linkedin_label: string
+  github_url: string
+  github_label: string
+  home_hero_title: string
+  home_statement: string
+  home_about_title: string
+  home_about_title_highlight: string
+  home_about_text: string
+  home_about_photo_url: string | null
+  home_about_photo_alt: string
+  mission: string
+  mission_how: string
+  mission_goal: string
+  home_cta_title: string
+  footer_tagline: string
+  team_lead: string
+  partners_lead: string
+  partners_benefits_title: string
+  projects_lead: string
+  featured_program_slug: string
+  articles_lead: string
+  contact_lead: string
+  process_lead: string
+  process_closed_message: string
+  privacy_updated: string
+  privacy_text: string
+  partner_benefits: PartnerBenefit[]
+}
