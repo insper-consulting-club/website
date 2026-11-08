@@ -711,6 +711,42 @@ class TranslationFixesTests(TestCase):
                 "fixed shortly. Thanks for your patience."
             ))
 
+    def test_unfold_texts_are_translated(self):
+        from django.utils.translation import gettext, ngettext, pgettext
+
+        with translation.override("pt-br"):
+            self.assertEqual(gettext("Apply Filters"), "Aplicar filtros")
+            self.assertEqual(gettext("Reset filters"), "Limpar filtros")
+            self.assertEqual(gettext("Toggle dark/light mode"), "Alternar entre o modo escuro e o claro")
+            self.assertEqual(pgettext("verb", "impersonate"), "personificar")
+            self.assertIn("“%(escaped_object)s”", gettext(
+                'Are you sure you want to delete the %(object_name)s "%(escaped_object)s"? '
+                "All of the following related items will be deleted:"
+            ))
+            plural = "\n                    Export %(len)s selected items.\n                "
+            singular = "\n                    Export %(len)s selected item.\n                "
+            self.assertEqual(ngettext(singular, plural, 1).strip(), "Exportar %(len)s item selecionado.")
+            self.assertEqual(ngettext(singular, plural, 3).strip(), "Exportar %(len)s itens selecionados.")
+
+    def test_translations_keep_the_placeholders_of_the_original(self):
+        import gettext as stdlib_gettext
+        import re
+
+        arquivo = Path(__file__).resolve().parents[1] / "locale" / "pt_BR" / "LC_MESSAGES" / "django.mo"
+        with open(arquivo, "rb") as f:
+            catalogo = stdlib_gettext.GNUTranslations(f)._catalog
+        marcas = r"%\(\w+\)s|\{\w*\}"
+        verificadas = 0
+        for chave, traducao in catalogo.items():
+            if not chave:
+                continue
+            # Plurais vêm como (msgid, n); o contexto vem junto do msgid, separado por \x04.
+            msgid = chave[0] if isinstance(chave, tuple) else chave
+            msgid = msgid.split("\x04")[-1]
+            self.assertEqual(sorted(re.findall(marcas, traducao)), sorted(re.findall(marcas, msgid)), msgid[:60])
+            verificadas += 1
+        self.assertGreater(verificadas, 100)
+
     def test_admin_list_page_shows_the_fixed_text(self):
         user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
         self.client.force_login(user)
