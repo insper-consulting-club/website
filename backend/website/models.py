@@ -4,6 +4,7 @@ from django.db import models, transaction
 from django.utils.text import slugify
 
 from .deploy_hook import dispara_deploy_do_frontend
+from .fields import LimitedImageField
 
 
 class PartnerCategory(models.Model):
@@ -54,7 +55,7 @@ class Position(models.Model):
 
 
 class Partner(models.Model):
-    logo_url = models.ImageField(upload_to='partners/', verbose_name='Logo')
+    logo_url = LimitedImageField(upload_to='partners/', verbose_name='Logo')
     name = models.CharField(max_length=200, verbose_name='Nome')
     description = models.TextField(verbose_name='Descrição')
     category = models.ForeignKey(
@@ -116,7 +117,7 @@ class Program(models.Model):
     )
     description = models.TextField(verbose_name='Descrição')
     highlights = models.TextField(verbose_name='Tópicos', blank=True, help_text='Um tópico por linha.')
-    icon = models.ImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
+    icon = LimitedImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
     badge = models.CharField(
         max_length=50, blank=True, verbose_name='Frequência (badge)',
         help_text='Opcional. Deixe vazio quando o programa não tiver uma periodicidade definida.'
@@ -170,7 +171,7 @@ class Project(models.Model):
 
 class ProjectImage(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='images', verbose_name='Projeto')
-    image = models.ImageField(upload_to='projects/images/', verbose_name='Imagem')
+    image = LimitedImageField(upload_to='projects/images/', verbose_name='Imagem')
     caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda')
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
@@ -203,7 +204,7 @@ class ProjectContentBlock(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Projeto')
     title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
     text = models.TextField(blank=True, verbose_name='Texto')
-    image = models.ImageField(upload_to='projects/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
+    image = LimitedImageField(upload_to='projects/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
     image_caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda da imagem')
     image_align = models.CharField(max_length=10, choices=IMAGE_ALIGN_CHOICES, default='right', verbose_name='Posição da imagem')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -219,7 +220,7 @@ class ProjectContentBlock(models.Model):
 
 class Member(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome')
-    photo = models.ImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
+    photo = LimitedImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
     biography = models.TextField(max_length=200, blank=True, verbose_name='Biografia')
     position = models.ForeignKey(Position, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Cargo principal')
     course = models.CharField(max_length=200, null=True, blank=True, verbose_name='Curso')
@@ -326,7 +327,7 @@ class ProgramContentBlock(models.Model):
         help_text='Em Markdown: **negrito**, ## Subtítulo, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco.'
     )
-    image = models.ImageField(upload_to='programs/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
+    image = LimitedImageField(upload_to='programs/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
     image_caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda da imagem')
     image_align = models.CharField(max_length=10, choices=IMAGE_ALIGN_CHOICES, default='right', verbose_name='Posição da imagem')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -366,7 +367,7 @@ class Article(models.Model):
         blank=True, verbose_name='Link externo (opcional)',
         help_text='PDF, LinkedIn ou revista onde o artigo também foi publicado.'
     )
-    image = models.ImageField(upload_to='news/', null=True, blank=True, verbose_name='Imagem de capa')
+    image = LimitedImageField(upload_to='news/', null=True, blank=True, verbose_name='Imagem de capa')
     source = models.CharField(
         max_length=200, blank=True, verbose_name='Publicação',
         help_text='Opcional: revista ou evento, se o artigo também saiu fora do site.'
@@ -400,7 +401,7 @@ class ArticleImage(models.Model):
         verbose_name='Número',
         help_text='No texto, escreva ![](imagem-1) para a imagem de número 1.'
     )
-    image = models.ImageField(upload_to='articles/', verbose_name='Imagem')
+    image = LimitedImageField(upload_to='articles/', verbose_name='Imagem')
     caption = models.CharField(
         max_length=300, blank=True, verbose_name='Legenda',
         help_text='Aparece embaixo da imagem no artigo.'
@@ -464,6 +465,34 @@ class SelectionProcess(models.Model):
         if self.registrations_open and not self.registration_url:
             raise ValidationError({'registration_url': 'Informe o link para abrir as inscrições.'})
 
+    def duplicate(self):
+        """
+        Cria uma cópia deste processo para o semestre seguinte: datas, etapas, requisitos
+        e materiais de preparação. A cópia nasce inativa, com as inscrições fechadas e
+        sem o link do formulário (cada processo tem o seu). As imagens são reaproveitadas,
+        não copiadas: continuam sendo o mesmo arquivo.
+        """
+        with transaction.atomic():
+            copia = SelectionProcess.objects.create(
+                title=f'{self.title[:190]} (cópia)', is_active=False, registrations_open=False, registration_url='',
+            )
+            for etapa in self.stages.all():
+                SelectionProcessStage.objects.create(process=copia, label=etapa.label, date=etapa.date, order=etapa.order)
+            for passo in self.steps.all():
+                SelectionProcessStep.objects.create(
+                    process=copia, number=passo.number, title=passo.title, description=passo.description,
+                    image=passo.image.name or None, duration=passo.duration, tips=passo.tips, order=passo.order,
+                )
+            for requisito in self.requirements.all():
+                SelectionProcessRequirement.objects.create(
+                    process=copia, text=requisito.text, icon=requisito.icon.name or None, order=requisito.order,
+                )
+            for material in self.materials.all():
+                novo = PreparationMaterial.objects.create(process=copia, title=material.title, order=material.order)
+                for item in material.items.all():
+                    PreparationMaterialItem.objects.create(material=novo, text=item.text, order=item.order)
+        return copia
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Só um processo aparece no site; ativar este desativa os demais.
@@ -502,7 +531,7 @@ class SelectionProcessStep(models.Model):
     number = models.CharField(max_length=10, verbose_name='Número')
     title = models.CharField(max_length=200, verbose_name='Título')
     description = models.TextField(verbose_name='Descrição')
-    image = models.ImageField(upload_to='process/steps/', null=True, blank=True, verbose_name='Ícone do quadrado')
+    image = LimitedImageField(upload_to='process/steps/', null=True, blank=True, verbose_name='Ícone do quadrado')
     duration = models.CharField(max_length=100, blank=True, verbose_name='Duração')
     tips = models.TextField(blank=True, verbose_name='Dicas', help_text='Um tópico por linha.')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -522,7 +551,7 @@ class SelectionProcessStep(models.Model):
 class SelectionProcessRequirement(models.Model):
     process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE, related_name='requirements', verbose_name='Processo Seletivo')
     text = models.CharField(max_length=300, verbose_name='Texto do requisito')
-    icon = models.ImageField(upload_to='process/requirements/', null=True, blank=True, verbose_name='Ícone (imagem)')
+    icon = LimitedImageField(upload_to='process/requirements/', null=True, blank=True, verbose_name='Ícone (imagem)')
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
@@ -680,17 +709,17 @@ class SiteConfig(models.Model):
         verbose_name='Descrição do site',
         help_text='Usada na prévia ao compartilhar o link e em páginas sem descrição própria.'
     )
-    logo = models.ImageField(
+    logo = LimitedImageField(
         upload_to='site/', null=True, blank=True, verbose_name='Logo (versão clara)',
         help_text='Opcional. Versão clara, para fundo escuro, usada no topo, no rodapé e na Home. '
                   'Sem logo enviado, o site usa o logo original.'
     )
-    favicon = models.ImageField(
+    favicon = LimitedImageField(
         upload_to='site/', null=True, blank=True, verbose_name='Ícone da aba (favicon)',
         help_text='Opcional. Imagem quadrada em PNG, de preferência com 256 x 256 pixels. '
                   'Sem ícone enviado, o site usa o original.'
     )
-    og_image = models.ImageField(
+    og_image = LimitedImageField(
         upload_to='site/', null=True, blank=True, verbose_name='Imagem de compartilhamento',
         help_text='Opcional. Aparece na prévia do link no WhatsApp e no LinkedIn. '
                   'Use 1200 x 630 pixels. Sem imagem enviada, o site usa a original.'
@@ -739,7 +768,7 @@ class SiteConfig(models.Model):
                 'que aproximam nossos membros da realidade das principais empresas do mercado.',
         verbose_name='Texto de "Quem somos"'
     )
-    home_about_photo = models.ImageField(
+    home_about_photo = LimitedImageField(
         upload_to='site/', null=True, blank=True, verbose_name='Foto de "Quem somos"',
         help_text='Opcional. Sem foto enviada, o site usa a foto da reunião inaugural.'
     )

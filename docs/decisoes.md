@@ -77,6 +77,20 @@ Os models e as rotas da API usam os termos que o ICC usa: `Program`, `ProgramCom
 
 O app Django continua se chamando `website`. Renomeá-lo mudaria os nomes das tabelas e exigiria migrar o banco, por um ganho só visual.
 
+## 10. Login do `/admin` sem limite de tentativas
+
+O `/admin` é a única parte do site com escrita, mas o que ele protege é o conteúdo público de um clube estudantil, sem dados pessoais nem financeiros. Por isso o projeto **não** usa limite de tentativas de senha nem segundo fator. A defesa fica em medidas que não custam manutenção:
+
+- **Senhas longas:** mínimo de **12 caracteres**, e o Django recusa as comuns e as só numéricas.
+- **HTTPS**, cookies seguros e **sessão de 12 horas sem uso**, em vez dos 14 dias do padrão.
+- **Grupo Editores:** quem só edita conteúdo não é superusuário, então uma conta invadida não cria logins nem apaga cadastros.
+- **Sem a conta `admin/admin` em produção:** ela só existe no ambiente local (`setup_dev` recusa rodar com banco externo ou `DEBUG=False`). Em produção, cada pessoa tem o próprio login.
+- **Desativar quem sai** da gestão (veja o [guia do admin](guia-admin.md)).
+
+**O que foi considerado e descartado.** Um limite de tentativas (testado com o django-axes) exigia uma dependência, tabelas e um middleware, mais uma decisão delicada: contar só por usuário deixa qualquer pessoa de fora trancar a conta de um editor, e contar por IP depende de o IP real chegar corretamente atrás do Cloudflare e do proxy do Render, que não foi possível testar em produção (e o `X-Forwarded-For`, que o Render não filtra, pode ser forjado). A manutenção não compensava o risco.
+
+**Quando reavaliar:** se o ICC passar a guardar dados pessoais ou sensíveis no admin, ou se houver sinal de tentativas de invasão nos logs do Render. Nesse caso, o caminho é um limite de tentativas por usuário e IP (lendo `CF-Connecting-IP`) e, se possível, segundo fator para os superusuários.
+
 ## 9. Contas e acessos ligados a uma conta de e-mail do ICC
 
 A infraestrutura (Render, Neon, Cloudinary e UptimeRobot) fica em uma conta de e-mail do ICC, passada de um Diretor Tech para o seguinte. Assim, o acesso pertence à entidade e não a uma pessoa. As exceções são o GitHub, em que cada pessoa usa a própria conta, e o domínio, que no Registro.br fica em nome de uma pessoa física porque o ICC não tem CNPJ. As consequências de cada caso estão em [`passagem-de-gestao.md`](passagem-de-gestao.md).

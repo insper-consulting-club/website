@@ -11,8 +11,10 @@ import re
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import capfirst
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .site_texts import PADRAO as PADRAO_TEXTOS
@@ -43,15 +45,38 @@ admin.site.unregister(User)
 admin.site.unregister(Group)
 
 
+ACOES_DE_PERMISSAO = {'add': 'adicionar', 'change': 'alterar', 'delete': 'remover', 'view': 'ver'}
+
+
+def rotulo_da_permissao(permissao):
+    """
+    Nome da permissão em português para as listas de permissões de usuários e grupos. O
+    Django guarda os nomes em inglês ("Can add group") no momento em que cria a permissão.
+    """
+    acao = permissao.codename.split('_', 1)[0]
+    modelo = permissao.content_type.model_class()
+    if acao not in ACOES_DE_PERMISSAO or modelo is None:
+        return permissao.name
+    return f'{modelo._meta.app_config.verbose_name} · {capfirst(modelo._meta.verbose_name)} · pode {ACOES_DE_PERMISSAO[acao]}'
+
+
+class PermissoesEmPortuguesMixin:
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        campo = super().formfield_for_manytomany(db_field, request, **kwargs)
+        if campo is not None and db_field.name in ('user_permissions', 'permissions'):
+            campo.label_from_instance = rotulo_da_permissao
+        return campo
+
+
 @admin.register(User)
-class UserAdmin(BaseUserAdmin, ModelAdmin):
+class UserAdmin(PermissoesEmPortuguesMixin, BaseUserAdmin, ModelAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
 
 
 @admin.register(Group)
-class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+class GroupAdmin(PermissoesEmPortuguesMixin, BaseGroupAdmin, ModelAdmin):
     pass
 
 
@@ -87,18 +112,49 @@ class TextoCompactoMixin:
         return campo
 
 
+class AvisoDeAtrasoMixin:
+    """
+    Depois de salvar, avisa que a mudança pode levar um pouco para aparecer no site: a API
+    deixa o navegador de quem visita reaproveitar as respostas por API_CACHE_SECONDS. Sem o
+    aviso, quem edita acha que a mudança não pegou. Só uma mensagem por requisição, mesmo
+    que a lista salve várias linhas de uma vez.
+    """
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        segundos = settings.API_CACHE_SECONDS
+        if segundos <= 0 or getattr(request, '_aviso_de_atraso', False):
+            return
+        request._aviso_de_atraso = True
+        if segundos < 60:
+            tempo = f'{segundos} segundos'
+        elif segundos % 60 == 0:
+            tempo = '1 minuto' if segundos == 60 else f'{segundos // 60} minutos'
+        else:
+            tempo = f'{segundos} segundos'
+        self.message_user(
+            request,
+            f'A mudança aparece no site em até {tempo}: o navegador de quem visita guarda as respostas por esse tempo.',
+            messages.INFO,
+        )
+
+
+class AdminDoSite(AvisoDeAtrasoMixin, TextoCompactoMixin, ModelAdmin):
+    """Base dos admins de conteúdo do site (não vale para Usuários e Grupos)."""
+
+
 # ---------------------------------------------------------------------------
 # Parceiros
 # ---------------------------------------------------------------------------
 
 @admin.register(PartnerCategory)
-class PartnerCategoryAdmin(ModelAdmin):
+class PartnerCategoryAdmin(AdminDoSite):
     list_display = ('title',)
     search_fields = ('title',)
 
 
 @admin.register(Partner)
-class PartnerAdmin(TextoCompactoMixin, ModelAdmin):
+class PartnerAdmin(AdminDoSite):
     list_display = ('logo', 'name', 'category', 'is_active')
     list_display_links = ('logo', 'name')
     list_editable = ('is_active',)
@@ -123,7 +179,7 @@ class PartnerAdmin(TextoCompactoMixin, ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(Position)
-class PositionAdmin(ModelAdmin):
+class PositionAdmin(AdminDoSite):
     list_display = ('title', 'power')
     list_editable = ('power',)
     search_fields = ('title',)
@@ -131,7 +187,7 @@ class PositionAdmin(ModelAdmin):
 
 
 @admin.register(Directorate)
-class DirectorateAdmin(ModelAdmin):
+class DirectorateAdmin(AdminDoSite):
     list_display = ('name',)
     ordering_field = 'order'
     hide_ordering_field = True
@@ -203,7 +259,7 @@ class MemberForm(forms.ModelForm):
 
 
 @admin.register(Member)
-class MemberAdmin(TextoCompactoMixin, ModelAdmin):
+class MemberAdmin(AdminDoSite):
     form = MemberForm
     inlines = [MemberTrajectoryInline, DirectorateMembershipInline]
     list_display = ('foto', 'name', 'get_directorates', 'position', 'course', 'year', 'atual')
@@ -291,7 +347,7 @@ class ProjectContentBlockInline(TextoCompactoMixin, StackedInline):
 
 
 @admin.register(Project)
-class ProjectAdmin(TextoCompactoMixin, ModelAdmin):
+class ProjectAdmin(AdminDoSite):
     list_display = ('title', 'program', 'start_date', 'end_date', 'is_active')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'start_date')
@@ -325,7 +381,7 @@ class ProjectAdmin(TextoCompactoMixin, ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(ProgramComponent)
-class ProgramComponentAdmin(TextoCompactoMixin, ModelAdmin):
+class ProgramComponentAdmin(AdminDoSite):
     linhas_dos_campos = {'description': 3}
     list_display = ('title', 'program')
     list_filter = ('program',)
@@ -349,7 +405,7 @@ class ProgramContentBlockInline(TextoCompactoMixin, StackedInline):
 
 
 @admin.register(Program)
-class ProgramAdmin(TextoCompactoMixin, ModelAdmin):
+class ProgramAdmin(AdminDoSite):
     inlines = [ProgramContentBlockInline]
     linhas_dos_campos = {'description': 4, 'highlights': 4}
     fieldsets = (
@@ -373,7 +429,7 @@ class ProgramAdmin(TextoCompactoMixin, ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(Statistic)
-class StatisticAdmin(ModelAdmin):
+class StatisticAdmin(AdminDoSite):
     list_display = ('value', 'description')
     ordering_field = 'order'
     hide_ordering_field = True
@@ -390,7 +446,7 @@ class ArticleImageInline(TabularInline):
 
 
 @admin.register(Article)
-class ArticleAdmin(TextoCompactoMixin, ModelAdmin):
+class ArticleAdmin(AdminDoSite):
     linhas_dos_campos = {'description': 4}
     # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
     prepopulated_fields = {'slug': ('title',)}
@@ -398,6 +454,7 @@ class ArticleAdmin(TextoCompactoMixin, ModelAdmin):
         (None, {'fields': ('title', 'slug', 'authors', 'topics', 'description', 'content')}),
         ('Publicação', {'fields': ('published', 'date', 'order', 'source', 'link', 'image')}),
     )
+    actions = ['publicar', 'despublicar']
     list_display = ('title', 'slug', 'authors', 'published', 'date', 'order')
     search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
     list_editable = ('published', 'order')
@@ -422,6 +479,24 @@ class ArticleAdmin(TextoCompactoMixin, ModelAdmin):
             for imagem in ArticleImage.objects.filter(article_id=int(id_do_artigo))
         ]
 
+    @admin.action(description='Publicar selecionados (aparecem no site)', permissions=['change'])
+    def publicar(self, request, queryset):
+        n = queryset.filter(published=False).update(published=True)
+        sem_data = queryset.filter(date__isnull=True).count()
+        self.message_user(request, f'{n} artigo(s) publicado(s).', messages.SUCCESS)
+        if sem_data:
+            self.message_user(
+                request,
+                f'{sem_data} artigo(s) selecionado(s) estão sem data de publicação: a ordem na lista do site '
+                'depende dela. Preencha a data em cada um.',
+                messages.WARNING,
+            )
+
+    @admin.action(description='Despublicar selecionados (voltam a rascunho)', permissions=['change'])
+    def despublicar(self, request, queryset):
+        n = queryset.filter(published=True).update(published=False)
+        self.message_user(request, f'{n} artigo(s) despublicado(s). O texto continua guardado como rascunho.', messages.SUCCESS)
+
     def view_on_site(self, obj):
         # Rascunho responde 404 no site.
         return url_do_site(f'/artigos/{obj.slug or obj.pk}') if obj.published else None
@@ -439,7 +514,7 @@ class ProgramCaseParticipantInline(TabularInline):
 
 
 @admin.register(ProgramCase)
-class ProgramCaseAdmin(TextoCompactoMixin, ModelAdmin):
+class ProgramCaseAdmin(AdminDoSite):
     inlines = [ProgramCaseParticipantInline]
     linhas_dos_campos = {'theme': 3, 'panel': 3}
     list_display = ('semester', 'title', 'area', 'program', 'is_active')
@@ -485,7 +560,7 @@ class SelectionProcessRequirementInline(TabularInline):
 
 
 @admin.register(SelectionProcess)
-class SelectionProcessAdmin(ModelAdmin):
+class SelectionProcessAdmin(AdminDoSite):
     fieldsets = (
         (None, {'fields': ('title', 'is_active', 'registrations_open', 'registration_url')}),
     )
@@ -493,8 +568,31 @@ class SelectionProcessAdmin(ModelAdmin):
     list_editable = ('is_active', 'registrations_open')
     list_filter = ('is_active',)
     search_fields = ('title',)
+    actions = ['duplicar']
+    actions_detail = ['duplicar_este']
     inlines = [SelectionProcessStageInline, SelectionProcessStepInline,
                SelectionProcessRequirementInline]
+
+    @admin.action(description='Duplicar selecionados (cópia inativa, para o próximo semestre)', permissions=['add'])
+    def duplicar(self, request, queryset):
+        copias = [processo.duplicate() for processo in queryset]
+        self.message_user(
+            request,
+            f'{len(copias)} processo(s) duplicado(s). As cópias estão inativas e com as inscrições fechadas: '
+            'ajuste as datas, preencha o link do formulário e ative quando for a hora.',
+            messages.SUCCESS,
+        )
+
+    @acao_unfold(description='Duplicar este processo', icon='content_copy', permissions=['website.add_selectionprocess'])
+    def duplicar_este(self, request, object_id):
+        copia = SelectionProcess.objects.get(pk=object_id).duplicate()
+        self.message_user(
+            request,
+            'Cópia criada. Ela está inativa e com as inscrições fechadas: ajuste as datas, preencha o link do '
+            'formulário e ative quando for a hora.',
+            messages.SUCCESS,
+        )
+        return redirect(reverse('admin:website_selectionprocess_change', args=[copia.pk]))
 
     def view_on_site(self, obj):
         return url_do_site('/processo') if obj.is_active else None
@@ -509,7 +607,7 @@ class PreparationMaterialItemInline(TabularInline):
 
 
 @admin.register(PreparationMaterial)
-class PreparationMaterialAdmin(ModelAdmin):
+class PreparationMaterialAdmin(AdminDoSite):
     list_display = ('title', 'process')
     ordering_field = 'order'
     hide_ordering_field = True
@@ -595,7 +693,7 @@ class NavItemInline(TabularInline):
 
 
 @admin.register(SiteConfig)
-class SiteConfigAdmin(TextoCompactoMixin, ModelAdmin):
+class SiteConfigAdmin(AdminDoSite):
     form = SiteConfigForm
     linhas_dos_campos = {'home_about_text': 4, 'mission': 3, 'mission_how': 3, 'mission_goal': 3}
     inlines = [NavItemInline, PartnerBenefitInline]
@@ -704,7 +802,7 @@ class SiteTextForm(forms.ModelForm):
 
 
 @admin.register(SiteText)
-class SiteTextAdmin(ModelAdmin):
+class SiteTextAdmin(AdminDoSite):
     list_display = ('group', 'description', 'value')
     list_display_links = ('description',)
     list_editable = ('value',)

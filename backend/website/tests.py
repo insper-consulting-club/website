@@ -1274,3 +1274,279 @@ class AdminLayoutTests(TestCase):
         for modelo in apps.get_app_config("website").get_models():
             nome = str(modelo._meta.verbose_name)
             self.assertTrue(nome[0].isupper(), f"{modelo.__name__}: nome no singular em inglês ou sem maiúscula ({nome!r})")
+
+
+class SelectionProcessDuplicateTests(TestCase):
+    def setUp(self):
+        from website.models import (
+            PreparationMaterial, PreparationMaterialItem, SelectionProcessRequirement,
+            SelectionProcessStage, SelectionProcessStep,
+        )
+
+        self.original = SelectionProcess.objects.create(
+            title="PS 2026.1", is_active=True, registrations_open=True, registration_url="https://forms.example/ps-2026-1",
+        )
+        SelectionProcessStage.objects.create(process=self.original, label="Inscrição", date="1 a 10 de março", order=1)
+        SelectionProcessStep.objects.create(
+            process=self.original, number="01", title="Dinâmica", description="Em grupo", duration="60 min",
+            tips="Escute\nSintetize", image="process/steps/x.png", order=1,
+        )
+        SelectionProcessRequirement.objects.create(process=self.original, text="Ser aluno do Insper", order=1)
+        material = PreparationMaterial.objects.create(process=self.original, title="Case", order=1)
+        PreparationMaterialItem.objects.create(material=material, text="Livro A", order=1)
+        PreparationMaterialItem.objects.create(material=material, text="Livro B", order=2)
+
+    def test_copy_has_everything_but_starts_inactive_and_closed(self):
+        copia = self.original.duplicate()
+
+        self.assertEqual(copia.title, "PS 2026.1 (cópia)")
+        self.assertFalse(copia.is_active)
+        self.assertFalse(copia.registrations_open)
+        self.assertEqual(copia.registration_url, "")
+        self.assertEqual([(e.label, e.date) for e in copia.stages.all()], [("Inscrição", "1 a 10 de março")])
+        passo = copia.steps.get()
+        self.assertEqual((passo.title, passo.tips, passo.image.name), ("Dinâmica", "Escute\nSintetize", "process/steps/x.png"))
+        self.assertEqual([r.text for r in copia.requirements.all()], ["Ser aluno do Insper"])
+        self.assertEqual([i.text for i in copia.materials.get().items.all()], ["Livro A", "Livro B"])
+
+    def test_original_stays_untouched_and_active(self):
+        self.original.duplicate()
+
+        self.original.refresh_from_db()
+        self.assertTrue(self.original.is_active)
+        self.assertTrue(self.original.registrations_open)
+        self.assertEqual(self.original.stages.count(), 1)
+        self.assertEqual(SelectionProcess.objects.count(), 2)
+
+    def test_copy_is_independent_from_the_original(self):
+        copia = self.original.duplicate()
+        copia.stages.all().delete()
+
+        self.assertEqual(self.original.stages.count(), 1)
+
+    def test_a_failure_in_the_middle_leaves_no_half_copy(self):
+        with mock.patch("website.models.PreparationMaterialItem.objects.create", side_effect=RuntimeError("falhou")):
+            with self.assertRaises(RuntimeError):
+                self.original.duplicate()
+
+        self.assertEqual(SelectionProcess.objects.count(), 1)
+
+
+@SEM_MANIFESTO
+class AdminBulkActionsTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(self.admin)
+
+    def acao(self, modelo, nome, ids):
+        return self.client.post(f"/admin/website/{modelo}/", {"action": nome, "_selected_action": ids}, follow=True)
+
+    def test_publish_and_unpublish_articles_in_bulk(self):
+        a = Article.objects.create(title="A", description="d", published=False, date=date(2026, 1, 1))
+        b = Article.objects.create(title="B", description="d", published=False)
+
+        resposta = self.acao("article", "publicar", [a.pk, b.pk])
+
+        a.refresh_from_db(); b.refresh_from_db()
+        self.assertTrue(a.published and b.published)
+        self.assertContains(resposta, "2 artigo(s) publicado(s)")
+        self.assertContains(resposta, "sem data de publicação")
+
+        self.acao("article", "despublicar", [a.pk])
+        a.refresh_from_db()
+        self.assertFalse(a.published)
+
+    def test_duplicate_action_in_the_list_and_on_the_edit_page(self):
+        processo = SelectionProcess.objects.create(title="PS", is_active=True)
+
+        self.acao("selectionprocess", "duplicar", [processo.pk])
+        self.assertEqual(SelectionProcess.objects.filter(title="PS (cópia)").count(), 1)
+
+        resposta = self.client.get(f"/admin/website/selectionprocess/{processo.pk}/change/")
+        self.assertContains(resposta, "Duplicar este processo")
+
+    def test_user_without_add_permission_cannot_duplicate(self):
+        from django.contrib.auth.models import Permission
+
+        usuario = get_user_model().objects.create_user("lê", "l@example.com", "senha-de-teste", is_staff=True)
+        usuario.user_permissions.add(*Permission.objects.filter(codename__in=["view_selectionprocess", "change_selectionprocess"]))
+        self.client.force_login(usuario)
+        processo = SelectionProcess.objects.create(title="PS", is_active=True)
+
+        self.acao("selectionprocess", "duplicar", [processo.pk])
+
+        self.assertEqual(SelectionProcess.objects.count(), 1)
+
+
+class ImageSizeLimitTests(TestCase):
+    def arquivo(self, bytes_):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        return SimpleUploadedFile("foto.png", b"x" * bytes_, content_type="image/png")
+
+    def test_new_upload_above_the_limit_is_refused_with_the_size_in_the_message(self):
+        from django.db.models.fields.files import FieldFile
+        from website.fields import valida_tamanho_da_imagem
+
+        novo = FieldFile(None, Member._meta.get_field("photo"), "foto.png")
+        novo.file = self.arquivo(6 * 1024 * 1024)
+        novo._committed = False
+
+        with self.assertRaises(ValidationError) as erro:
+            valida_tamanho_da_imagem(novo)
+
+        self.assertIn("6,0 MB", erro.exception.messages[0])
+        self.assertIn("limite é 5 MB", erro.exception.messages[0])
+
+    def test_new_upload_within_the_limit_is_accepted(self):
+        from django.db.models.fields.files import FieldFile
+        from website.fields import valida_tamanho_da_imagem
+
+        novo = FieldFile(None, Member._meta.get_field("photo"), "foto.png")
+        novo.file = self.arquivo(1024)
+        novo._committed = False
+
+        valida_tamanho_da_imagem(novo)
+
+    def test_stored_image_is_never_measured(self):
+        from website.fields import valida_tamanho_da_imagem
+
+        guardada = mock.Mock(_committed=True)
+        type(guardada).size = mock.PropertyMock(side_effect=AssertionError("não deveria consultar o armazenamento"))
+
+        valida_tamanho_da_imagem(guardada)
+
+    @override_settings(MAX_IMAGE_UPLOAD_MB=1)
+    def test_the_limit_comes_from_the_settings(self):
+        from django.db.models.fields.files import FieldFile
+        from website.fields import valida_tamanho_da_imagem
+
+        novo = FieldFile(None, Member._meta.get_field("photo"), "foto.png")
+        novo.file = self.arquivo(2 * 1024 * 1024)
+        novo._committed = False
+
+        with self.assertRaises(ValidationError):
+            valida_tamanho_da_imagem(novo)
+
+    def test_the_admin_form_refuses_a_large_real_image(self):
+        import io
+        import os
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        from website.admin import MemberForm
+
+        buffer = io.BytesIO()
+        Image.frombytes("RGB", (1600, 1600), os.urandom(1600 * 1600 * 3)).save(buffer, format="PNG")
+        self.assertGreater(buffer.tell(), 5 * 1024 * 1024)
+        form = MemberForm(
+            data={"name": "Ana", "entry_date": "2024-02-01", "projects": []},
+            files={"photo": SimpleUploadedFile("foto.png", buffer.getvalue(), content_type="image/png")},
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("limite é 5 MB", form.errors["photo"][0])
+
+    def test_migrations_still_see_a_plain_image_field(self):
+        from django.core.management import call_command
+
+        # Se o campo mudasse de caminho nas migrations, isto geraria uma migration nova.
+        call_command("makemigrations", "--check", "--dry-run", verbosity=0)
+
+
+@SEM_MANIFESTO
+class DelayNoticeTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(self.admin)
+        from website.models import Statistic
+        self.estatistica = Statistic.objects.create(value="10", description="membros", order=1)
+
+    def salvar(self):
+        return self.client.post(
+            f"/admin/website/statistic/{self.estatistica.pk}/change/",
+            {"value": "12", "description": "membros", "order": "1", "_continue": "1"}, follow=True,
+        )
+
+    @override_settings(API_CACHE_SECONDS=60)
+    def test_saving_warns_about_the_delay(self):
+        self.assertContains(self.salvar(), "em até 1 minuto")
+
+    @override_settings(API_CACHE_SECONDS=120)
+    def test_the_time_follows_the_setting(self):
+        self.assertContains(self.salvar(), "em até 2 minutos")
+
+    @override_settings(API_CACHE_SECONDS=0)
+    def test_no_warning_when_the_cache_is_off(self):
+        self.assertNotContains(self.salvar(), "em até")
+
+    @override_settings(API_CACHE_SECONDS=60)
+    def test_saving_a_whole_list_gives_one_warning_only(self):
+        from website.models import Directorate
+
+        Directorate.objects.all().delete()
+        a, b = (Directorate.objects.create(name=n, order=i) for i, n in enumerate(["Alfa", "Beta"], 1))
+        dados = {"form-TOTAL_FORMS": "2", "form-INITIAL_FORMS": "2", "form-MIN_NUM_FORMS": "0",
+                 "form-MAX_NUM_FORMS": "1000", "_save": "Salvar",
+                 "form-0-id": str(a.pk), "form-0-order": "2", "form-1-id": str(b.pk), "form-1-order": "1"}
+
+        resposta = self.client.post("/admin/website/directorate/", dados, follow=True)
+
+        self.assertEqual(resposta.content.decode().count("em até 1 minuto"), 1)
+
+    def test_users_and_groups_do_not_get_the_notice(self):
+        from django.contrib import admin
+        from website.admin import AvisoDeAtrasoMixin
+
+        for modelo in (get_user_model(), __import__("django.contrib.auth.models", fromlist=["Group"]).Group):
+            self.assertNotIsInstance(admin.site._registry[modelo], AvisoDeAtrasoMixin)
+
+
+@SEM_MANIFESTO
+class PermissionLabelsTests(TestCase):
+    def test_permission_lists_are_in_portuguese(self):
+        from django.contrib.auth.models import Permission
+        from website.admin import rotulo_da_permissao
+
+        rotulos = {p.codename: rotulo_da_permissao(p) for p in Permission.objects.select_related("content_type")}
+
+        self.assertEqual(rotulos["change_article"], "Conteúdo do site · Artigo · pode alterar")
+        self.assertEqual(rotulos["delete_navitem"], "Conteúdo do site · Item de navegação · pode remover")
+        self.assertEqual(rotulos["add_group"], "Autenticação e Autorização · Grupo · pode adicionar")
+        self.assertEqual(rotulos["view_user"], "Autenticação e Autorização · Usuário · pode ver")
+        self.assertFalse([r for r in rotulos.values() if r.startswith("Can ") or " Can " in r])
+
+    def test_the_user_and_group_forms_use_the_portuguese_labels(self):
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(usuario)
+
+        for url in ("/admin/auth/user/%d/change/" % usuario.pk, "/admin/auth/group/add/"):
+            pagina = self.client.get(url).content.decode()
+            self.assertIn("pode alterar", pagina, url)
+            self.assertNotIn("Can add", pagina, url)
+
+
+class PasswordAndSessionPolicyTests(TestCase):
+    """O login do /admin não limita tentativas; a defesa é a senha longa e a sessão curta."""
+
+    def test_passwords_need_at_least_twelve_characters(self):
+        from django.contrib.auth.password_validation import validate_password
+
+        with self.assertRaises(ValidationError) as erro:
+            validate_password("Onze-chars1")  # 11 caracteres
+        self.assertTrue(any("12 caracteres" in m for m in erro.exception.messages))
+
+        validate_password("Doze-chars-ok")  # 13 caracteres, não é comum nem só números
+
+    def test_common_and_numeric_passwords_are_still_refused(self):
+        from django.contrib.auth.password_validation import CommonPasswordValidator, validate_password
+
+        # Uma senha comum que já passa do mínimo de 12 caracteres, tirada da lista do próprio Django.
+        comum = next(s for s in sorted(CommonPasswordValidator().passwords) if len(s) >= 12 and not s.isdigit())
+
+        for fraca in (comum, "123456789012345"):
+            with self.assertRaises(ValidationError, msg=fraca):
+                validate_password(fraca)
+
+    def test_session_expires_after_twelve_hours_without_use(self):
+        self.assertEqual(settings.SESSION_COOKIE_AGE, 12 * 60 * 60)
+        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)

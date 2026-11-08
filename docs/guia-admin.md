@@ -39,6 +39,11 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 
 Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Mostrar prévia** abre, logo abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
 
+### Depois de salvar e ao enviar imagens
+
+- **Aviso depois de salvar:** o admin mostra "A mudança aparece no site em até 1 minuto". É o tempo que o navegador de quem visita guarda as respostas do site. Se a mudança ainda não apareceu, espere um pouco e recarregue a página.
+- **Tamanho das imagens:** cada imagem enviada pode ter até **5 MB**. Acima disso, o admin recusa e mostra o tamanho real. Fotos de celular costumam ser maiores: reduza ou comprima a imagem antes de enviar (qualquer editor de imagens ou site de compressão serve).
+
 ### Esconder ou apagar
 
 Parceiros, programas e cases têm o campo **"Exibir no site"**. Projetos têm o campo **"Ativo"**. Artigos têm o campo **"Publicado"**. Desmarcado, o item some do site, mas continua guardado e pode voltar quando você quiser. Membros que saem são arquivados com a data de saída (ver [Membros](#membros)).
@@ -65,6 +70,8 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
 O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, quem administra o servidor roda `python manage.py sincroniza_grupo_editores`.
 
 **Quando alguém sai da gestão:** abra o usuário dela e desmarque **"Ativo"**. Ela perde o acesso na hora.
+
+**Senhas:** o admin exige pelo menos **12 caracteres** e recusa senhas comuns ou só de números. Cada pessoa deve ter uma senha longa e só dela, de preferência guardada num gerenciador de senhas (assim ninguém precisa decorar nem reaproveitar a de outro serviço). O login do admin não bloqueia depois de várias tentativas erradas, então a senha longa é a principal proteção. A sessão expira depois de 12 horas sem uso, e aí é preciso entrar de novo.
 
 ---
 
@@ -201,11 +208,17 @@ O passo a passo completo, com a referência de Markdown, imagens, fórmulas, con
 4. Revise o artigo antes de publicar, de preferência no ambiente local (ver o [guia do ambiente local](guia-ambiente-local.md)).
 5. Salve com **Publicado** desmarcado (rascunho). Quando estiver pronto, marque **Publicado**, salve e confira a página no site.
 
+Na lista de artigos, as ações **Publicar selecionados** e **Despublicar selecionados** mudam vários de uma vez (despublicar devolve o artigo a rascunho, sem apagar o texto). Ao publicar, o admin avisa se algum artigo está sem data de publicação, porque a ordem no site depende dela.
+
 ---
 
 ## Processo seletivo
 
 O site mostra **um processo seletivo por vez**: o que estiver marcado como **Ativo**. Ativar um processo desativa os outros sozinho.
+
+### Duplicar o processo anterior
+
+Para o próximo semestre, em vez de recadastrar tudo: abra o processo anterior e clique em **Duplicar este processo**, no alto da página (ou marque o processo na lista e use a ação **Duplicar selecionados**). A cópia traz as datas, as etapas detalhadas, os requisitos e os materiais de preparação, e nasce **inativa, com as inscrições fechadas e sem o link do formulário**, com o título "... (cópia)". Depois é só ajustar as datas, escrever o novo título, preencher o link do formulário e marcar **Ativo** quando for a hora. O processo original não muda.
 
 ### Cadastrar um processo
 
@@ -282,7 +295,7 @@ Pouca coisa fica fora do admin:
 
 | Quando | O quê | Onde |
 |---|---|---|
-| Antes do processo seletivo | Cadastrar o novo processo (datas, etapas, requisitos) e deixar **Ativo** | Processos seletivos |
+| Antes do processo seletivo | **Duplicar** o processo anterior, ajustar datas e etapas e deixar **Ativo** | Processos seletivos |
 | Abertura do processo | Marcar **Inscrições abertas** e colar o link do formulário | Processos seletivos |
 | Fim das inscrições | Desmarcar **Inscrições abertas** (o processo continua ativo, com as datas visíveis) | Processos seletivos |
 | Entrada dos aprovados | Cadastrar os novos membros, com foto e diretoria | Membros |

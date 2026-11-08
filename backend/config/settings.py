@@ -109,6 +109,13 @@ MIDDLEWARE = [
 # Uma edição no admin leva até esse tempo para aparecer. Use 0 para desligar.
 API_CACHE_SECONDS = int(os.environ.get('API_CACHE_SECONDS', '60'))
 
+# A sessão do admin expira depois de 12 horas sem uso (a cada requisição o prazo recomeça).
+SESSION_COOKIE_AGE = 12 * 60 * 60
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Tamanho máximo de cada imagem enviada pelo admin, em MB (protege a cota do Cloudinary).
+MAX_IMAGE_UPLOAD_MB = int(os.environ.get('MAX_IMAGE_UPLOAD_MB', '5'))
+
 # Endereço secreto que o Render dá para reconstruir o frontend (Settings > Deploy
 # Hook). Opcional: sem ele, mudar a marca ou a descrição do site exige disparar
 # o deploy do frontend à mão.
@@ -168,7 +175,10 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
+        # 12 caracteres, em vez dos 8 do padrão: é a principal defesa do login do /admin,
+        # que não limita tentativas de senha (ver docs/decisoes.md).
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 12},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

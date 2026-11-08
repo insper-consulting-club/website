@@ -25,3 +25,15 @@ fieldset.module {
   min-width: 0;
   max-width: 100%;
 }
+
+/* Itens de uma linha de formulário podem encolher. Sem isso, o conteúdo mais largo
+ * (o nome do arquivo num campo de foto, ou a lista do seletor duplo) empurra o vizinho
+ * para fora da caixa: os ícones de baixar e trocar da foto ficavam cortados no celular,
+ * e o texto de ajuda de Usuário passava da borda. */
+.form-row .grow {
+  min-width: 0;
+}
+
+.form-row .overflow-hidden > * {
+  min-width: 0;
+}

@@ -147,6 +147,7 @@ Modelo comentado em [`backend/.env.example`](../backend/.env.example). Nunca reg
 | `BEHIND_PROXY` | Sim | `True` atrás do proxy do Render |
 | `RENDER_FRONTEND_DEPLOY_HOOK` | Não | Endereço secreto (Render, Settings > Deploy Hook) que reconstrói o frontend quando muda um campo de Marca e compartilhamento. Sem ele, o deploy do frontend é manual. Ver [`operacao.md`](operacao.md) |
 | `FRONTEND_URL` | Não | Endereço público do site, usado pelos botões "Ver no site", pelo link "Voltar ao site" e pela prévia de Markdown do admin. Sem ela, vale a primeira origem de `CORS_ALLOWED_ORIGINS` e, em desenvolvimento, `http://localhost:5173` |
+| `MAX_IMAGE_UPLOAD_MB` | Não | Tamanho máximo, em MB, de cada imagem enviada pelo admin (padrão: `5`), para proteger a cota do Cloudinary |
 | `API_CACHE_SECONDS` | Não | Segundos que o navegador reaproveita as respostas de leitura da API (`Cache-Control`). Padrão: `60`. `0` desliga |
 | `DATABASE_URL` | Sim | Conexão com o Postgres do Neon |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Sim | Armazenamento de imagens. Sem elas, as imagens enviadas se perdem a cada deploy |
