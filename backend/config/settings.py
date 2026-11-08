@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url
+from django.templatetags.static import static
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -217,6 +218,8 @@ UNFOLD = {
     'SITE_SUBHEADER': 'Conteúdo do site',
     'SITE_URL': FRONTEND_URL or None,
     'DASHBOARD_CALLBACK': 'config.dashboard.painel',
+    # Ajustes de layout (ver admin_static/website/admin.css)
+    'STYLES': [lambda request: static('website/admin.css')],
     'SIDEBAR': {
         'show_search': True,
         'show_all_applications': False,

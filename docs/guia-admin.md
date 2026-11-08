@@ -77,14 +77,12 @@ O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo 
 1. **Nome**, **Foto** (JPG ou PNG, de preferência quadrada), **Cargo principal**, **LinkedIn** e **Email**.
 2. **Formação:** Curso e Período.
 3. **No ICC:** Data de entrada, Biografia (até 200 caracteres) e, se quiser, Horas dedicadas e Projetos participados.
-4. Embaixo, em **Vínculos com Diretorias**, adicione uma linha por diretoria da pessoa: a diretoria, o cargo nela e a ordem em que ela aparece dentro da diretoria.
+4. Nas abas **Trajetória** e **Vínculos com diretorias**, no alto do formulário, ficam as listas da pessoa:
+   - **Trajetória** (opcional): uma linha por semestre, com o **Semestre** no formato `AAAA.S` (por exemplo, `2026.1`) e o **Cargo nesse semestre**. O perfil público mostra as etapas em ordem de semestre, e o admin recusa um semestre fora do formato.
+   - **Vínculos com diretorias:** uma linha por diretoria da pessoa, com o cargo nela. Arraste a linha para mudar a ordem dentro da diretoria.
 5. Salvar.
 
-O campo **Trajetória** é opcional e guarda os cargos da pessoa ao longo dos semestres, neste formato, com o mais recente por último:
-
-```
-[{"semestre": "2026.1", "cargo": "Trainee"}, {"semestre": "2026.2", "cargo": "Membro"}]
-```
+Em **Projetos participados**, digite parte do nome do projeto para buscar e escolha; os escolhidos aparecem como etiquetas, e o "x" tira cada um.
 
 O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança.
 

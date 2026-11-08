@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils.text import slugify
 
@@ -9,6 +10,7 @@ class PartnerCategory(models.Model):
     title = models.CharField(max_length=200)
 
     class Meta:
+        verbose_name = 'Categoria do parceiro'
         verbose_name_plural = 'Categorias dos parceiros'
 
     def __str__(self):
@@ -75,6 +77,7 @@ class Partner(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
+        verbose_name = 'Parceiro'
         verbose_name_plural = 'Parceiros'
         ordering = ['order', 'name']
 
@@ -157,6 +160,7 @@ class Project(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Projeto'
         verbose_name_plural = 'Projetos'
         ordering = ['-start_date']
 
@@ -229,10 +233,6 @@ class Member(models.Model):
     )
     email = models.EmailField(null=True, blank=True, verbose_name='Email')
     linkedin = models.URLField(null=True, blank=True, verbose_name='LinkedIn')
-    trajetoria = models.JSONField(
-        default=list, blank=True, verbose_name='Trajetória',
-        help_text='Lista de {"semestre": "2026.1", "cargo": "Trainee"}, mais recente por último.'
-    )
     projects = models.ManyToManyField(Project, blank=True, verbose_name='Projetos participados', related_name='members')
 
     class Meta:
@@ -245,6 +245,31 @@ class Member(models.Model):
     @property
     def number_of_projects(self):
         return self.projects.filter(is_active=True).count()
+
+
+class MemberTrajectory(models.Model):
+    """
+    Uma etapa da trajetória de um membro no ICC: o cargo que teve em um semestre.
+    Aparece, em ordem de semestre, no perfil público da pessoa.
+    """
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='trajectory_steps', verbose_name='Membro')
+    semester = models.CharField(
+        max_length=10, verbose_name='Semestre',
+        validators=[RegexValidator(r'^\d{4}\.[12]$', 'Use o formato AAAA.S, por exemplo 2026.1.')],
+        help_text='No formato AAAA.S, por exemplo 2026.1.'
+    )
+    role = models.CharField(max_length=200, verbose_name='Cargo nesse semestre', help_text='Por exemplo: Trainee, Membro, Diretor de Projetos.')
+
+    class Meta:
+        verbose_name = 'Etapa da trajetória'
+        verbose_name_plural = 'Trajetória'
+        ordering = ['semester', 'id']
+        constraints = [
+            models.UniqueConstraint(fields=['member', 'semester', 'role'], name='unique_trajectory_step'),
+        ]
+
+    def __str__(self):
+        return f"{self.semester} - {self.role}"
 
 
 class DirectorateMembership(models.Model):
@@ -399,6 +424,7 @@ class Statistic(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
+        verbose_name = 'Estatística'
         verbose_name_plural = 'Estatísticas'
         ordering = ['order']
 

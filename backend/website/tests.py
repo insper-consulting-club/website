@@ -10,7 +10,7 @@ from unittest import mock
 import requests
 from django.test import override_settings
 from django.utils import translation
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
@@ -1132,3 +1132,145 @@ class MarkdownPreviewWidgetTests(TestCase):
 
         self.assertNotIn("md-previa__botao", pagina)
         self.assertIn('name="content"', pagina)
+
+
+class TrajectoryMigrationTests(TransactionTestCase):
+    """A trajetória deixou de ser um JSON no membro e virou linhas (migrations 0021 a 0023)."""
+
+    ANTES = ("website", "0021_etapas_da_trajetoria_e_nomes")
+    DEPOIS = ("website", "0022_copia_trajetoria_para_etapas")
+
+    def _estado(self, alvo):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate([alvo])
+        return MigrationExecutor(connection).loader.project_state([alvo]).apps
+
+    def tearDown(self):
+        # Devolve o banco ao estado final para os testes seguintes.
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_json_trajectory_is_copied_and_malformed_entries_are_skipped(self):
+        antigo = self._estado(self.ANTES)
+        Member = antigo.get_model("website", "Member")
+        membro = Member.objects.create(
+            name="Ana", entry_date=date(2024, 2, 1),
+            trajetoria=[
+                {"semestre": "2025.1", "cargo": "Membro"},
+                {"semestre": "2024.2", "cargo": "Trainee"},
+                {"semestre": "2024.2", "cargo": "Trainee"},  # repetida
+                {"semestre": "2026", "cargo": "Diretora"},  # semestre fora do padrão
+                {"semestre": "2025.2"},  # sem cargo
+                "texto solto",  # não é um objeto
+            ],
+        )
+        Member.objects.create(name="Bia", entry_date=date(2024, 2, 1), trajetoria=[])
+
+        novo = self._estado(self.DEPOIS)
+        etapas = novo.get_model("website", "MemberTrajectory").objects.filter(member_id=membro.pk).order_by("semester")
+
+        self.assertEqual([(e.semester, e.role) for e in etapas], [("2024.2", "Trainee"), ("2025.1", "Membro")])
+        self.assertEqual(novo.get_model("website", "MemberTrajectory").objects.count(), 2)
+
+    def test_migrating_back_restores_the_json_in_semester_order(self):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+        membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+        membro.trajectory_steps.create(semester="2025.1", role="Membro")
+        membro.trajectory_steps.create(semester="2024.2", role="Trainee")
+
+        antigo = self._estado(self.ANTES)
+
+        restaurado = antigo.get_model("website", "Member").objects.get(pk=membro.pk)
+        self.assertEqual(
+            restaurado.trajetoria,
+            [{"semestre": "2024.2", "cargo": "Trainee"}, {"semestre": "2025.1", "cargo": "Membro"}],
+        )
+
+
+class TrajectoryTests(TestCase):
+    def setUp(self):
+        self.membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+
+    def test_profile_api_keeps_the_same_format_in_semester_order(self):
+        self.membro.trajectory_steps.create(semester="2025.2", role="Presidente")
+        self.membro.trajectory_steps.create(semester="2024.1", role="Trainee")
+
+        dados = APIClient().get(f"/api/members/{self.membro.pk}/").data
+
+        self.assertEqual(
+            [dict(e) for e in dados["trajetoria"]],
+            [{"semestre": "2024.1", "cargo": "Trainee"}, {"semestre": "2025.2", "cargo": "Presidente"}],
+        )
+
+    def test_member_without_steps_has_an_empty_list(self):
+        self.assertEqual(APIClient().get(f"/api/members/{self.membro.pk}/").data["trajetoria"], [])
+
+    def test_semester_must_follow_the_pattern(self):
+        from website.models import MemberTrajectory
+
+        for invalido in ("2026", "2026.3", "26.1", "2026-1", "semestre"):
+            with self.assertRaises(ValidationError, msg=invalido):
+                MemberTrajectory(member=self.membro, semester=invalido, role="Trainee").full_clean()
+        MemberTrajectory(member=self.membro, semester="2026.1", role="Trainee").full_clean()
+
+    def test_the_same_step_cannot_be_repeated(self):
+        from website.models import MemberTrajectory
+
+        self.membro.trajectory_steps.create(semester="2026.1", role="Trainee")
+
+        with self.assertRaises(ValidationError):
+            MemberTrajectory(member=self.membro, semester="2026.1", role="Trainee").full_clean()
+
+    def test_profile_query_count_does_not_grow_with_the_steps(self):
+        for i in range(1, 6):
+            self.membro.trajectory_steps.create(semester=f"202{i}.1", role="Membro")
+
+        with CaptureQueriesContext(connection) as poucas:
+            APIClient().get(f"/api/members/{self.membro.pk}/")
+        for i in range(1, 6):
+            self.membro.trajectory_steps.create(semester=f"202{i}.2", role="Membro")
+        with CaptureQueriesContext(connection) as muitas:
+            APIClient().get(f"/api/members/{self.membro.pk}/")
+
+        self.assertEqual(len(poucas), len(muitas))
+
+
+class FlushTests(TransactionTestCase):
+    def test_flush_recreates_the_texts_and_the_editors_group(self):
+        from django.contrib.auth.models import Group
+        from django.core.management import call_command
+
+        SiteText.objects.all().delete()
+
+        call_command("flush", interactive=False, verbosity=0)
+
+        self.assertGreater(SiteText.objects.count(), 100)
+        self.assertTrue(Group.objects.filter(name="Editores").exists())
+
+
+@SEM_MANIFESTO
+class AdminLayoutTests(TestCase):
+    def test_admin_pages_load_the_project_stylesheet(self):
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(usuario)
+
+        pagina = self.client.get("/admin/").content.decode()
+
+        self.assertIn("website/admin.css", pagina)
+
+    def test_models_have_a_portuguese_singular_name(self):
+        from django.apps import apps
+
+        for modelo in apps.get_app_config("website").get_models():
+            nome = str(modelo._meta.verbose_name)
+            self.assertTrue(nome[0].isupper(), f"{modelo.__name__}: nome no singular em inglês ou sem maiúscula ({nome!r})")

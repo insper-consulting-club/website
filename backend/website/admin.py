@@ -26,7 +26,7 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
-    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem,
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem, MemberTrajectory,
 )
 
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
@@ -71,6 +71,22 @@ def miniatura(imagem, altura=40):
     )
 
 
+class TextoCompactoMixin:
+    """
+    Deixa as caixas de texto com poucas linhas, em vez da altura padrão (que faz
+    uma descrição de uma frase ocupar meia tela). Em linhas_dos_campos, cada campo
+    recebe o número de linhas desejado.
+    """
+    linhas_dos_campos = {}
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        campo = super().formfield_for_dbfield(db_field, request, **kwargs)
+        linhas = self.linhas_dos_campos.get(db_field.name)
+        if campo is not None and linhas:
+            campo.widget.attrs['rows'] = linhas
+        return campo
+
+
 # ---------------------------------------------------------------------------
 # Parceiros
 # ---------------------------------------------------------------------------
@@ -82,7 +98,7 @@ class PartnerCategoryAdmin(ModelAdmin):
 
 
 @admin.register(Partner)
-class PartnerAdmin(ModelAdmin):
+class PartnerAdmin(TextoCompactoMixin, ModelAdmin):
     list_display = ('logo', 'name', 'category', 'is_active')
     list_display_links = ('logo', 'name')
     list_editable = ('is_active',)
@@ -91,19 +107,16 @@ class PartnerAdmin(ModelAdmin):
     list_filter = ('is_active', 'category')
     search_fields = ('name', 'description')
     ordering = ('order', 'name')
-    readonly_fields = ('logo_atual',)
-    fields = ('name', 'logo_url', 'logo_atual', 'category', 'site', 'description', 'is_active', 'order')
+    fields = ('name', 'logo_url', 'category', 'site', 'description', 'is_active', 'order')
+    linhas_dos_campos = {'description': 4}
 
     @admin.display(description='Logo')
     def logo(self, obj):
         return miniatura(obj.logo_url)
 
-    @admin.display(description='Logo atual')
-    def logo_atual(self, obj):
-        return miniatura(obj.logo_url, 80)
-
     def view_on_site(self, obj):
         return url_do_site(f'/parceiros/{obj.pk}') if obj.is_active else None
+
 
 # ---------------------------------------------------------------------------
 # Equipe
@@ -141,6 +154,15 @@ class DirectorateMembershipInline(TabularInline):
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    tab = True
+
+
+class MemberTrajectoryInline(TabularInline):
+    # Uma linha por semestre, em ordem de semestre no perfil público.
+    model = MemberTrajectory
+    extra = 1
+    fields = ('semester', 'role')
+    tab = True
 
 
 class SituacaoFilter(admin.SimpleListFilter):
@@ -181,9 +203,9 @@ class MemberForm(forms.ModelForm):
 
 
 @admin.register(Member)
-class MemberAdmin(ModelAdmin):
+class MemberAdmin(TextoCompactoMixin, ModelAdmin):
     form = MemberForm
-    inlines = [DirectorateMembershipInline]
+    inlines = [MemberTrajectoryInline, DirectorateMembershipInline]
     list_display = ('foto', 'name', 'get_directorates', 'position', 'course', 'year', 'atual')
     list_display_links = ('foto', 'name')
     list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position', 'year')
@@ -191,15 +213,16 @@ class MemberAdmin(ModelAdmin):
     # quando a lista acumula alumni além dos membros ativos.
     search_fields = ('name', 'email', 'course', 'linkedin')
     list_select_related = ('position',)
-    filter_horizontal = ('projects',)
+    # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
+    autocomplete_fields = ('projects',)
     date_hierarchy = 'entry_date'
     list_per_page = 50
     actions = ['arquivar', 'reativar']
-    readonly_fields = ('foto_atual',)
+    linhas_dos_campos = {'biography': 3}
     fieldsets = (
-        (None, {'fields': ('name', 'photo', 'foto_atual', 'position', 'linkedin', 'email')}),
+        (None, {'fields': ('name', 'photo', 'position', 'linkedin', 'email')}),
         ('Formação', {'fields': ('course', 'year')}),
-        ('No ICC', {'fields': ('entry_date', 'exit_date', 'biography', 'trajetoria', 'hours', 'projects')}),
+        ('No ICC', {'fields': ('entry_date', 'exit_date', 'biography', 'hours', 'projects')}),
     )
 
     def get_queryset(self, request):
@@ -213,10 +236,6 @@ class MemberAdmin(ModelAdmin):
     @admin.display(description='Foto')
     def foto(self, obj):
         return miniatura(obj.photo)
-
-    @admin.display(description='Foto atual')
-    def foto_atual(self, obj):
-        return miniatura(obj.photo, 120)
 
     @admin.display(description='Atual', boolean=True)
     def atual(self, obj):
@@ -236,6 +255,7 @@ class MemberAdmin(ModelAdmin):
         # O perfil de quem saiu continua acessível por link, então o botão vale para todos.
         return url_do_site(f'/equipe/{obj.pk}')
 
+
 # ---------------------------------------------------------------------------
 # Projetos
 # ---------------------------------------------------------------------------
@@ -247,31 +267,41 @@ class ProjectImageInline(TabularInline):
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    tab = True
 
 
-class ProjectTimelineEventInline(TabularInline):
+class ProjectTimelineEventInline(TextoCompactoMixin, TabularInline):
     model = ProjectTimelineEvent
     extra = 1
     fields = ('date', 'title', 'description', 'order')
     ordering = ('order',)
+    linhas_dos_campos = {'description': 2}
+    tab = True
 
 
-class ProjectContentBlockInline(StackedInline):
+class ProjectContentBlockInline(TextoCompactoMixin, StackedInline):
     model = ProjectContentBlock
     extra = 1
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    linhas_dos_campos = {'text': 6}
+    tab = True
 
 
 @admin.register(Project)
-class ProjectAdmin(ModelAdmin):
+class ProjectAdmin(TextoCompactoMixin, ModelAdmin):
     list_display = ('title', 'program', 'start_date', 'end_date', 'is_active')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'start_date')
     search_fields = ('title', 'description')
-    filter_horizontal = ('partners',)
+    # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
+    autocomplete_fields = ('partners',)
+    linhas_dos_campos = {'description': 4}
+    fieldsets = (
+        (None, {'fields': ('title', 'description', 'program', 'partners', 'start_date', 'end_date', 'is_active')}),
+    )
     date_hierarchy = 'start_date'
     list_select_related = ('program',)
     actions = ['arquivar', 'reativar']
@@ -295,30 +325,37 @@ class ProjectAdmin(ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(ProgramComponent)
-class ProgramComponentAdmin(ModelAdmin):
+class ProgramComponentAdmin(TextoCompactoMixin, ModelAdmin):
+    linhas_dos_campos = {'description': 3}
     list_display = ('title', 'program')
     list_filter = ('program',)
     search_fields = ('title', 'description')
     list_select_related = ('program',)
 
 
-class ProgramContentBlockInline(StackedInline):
+class ProgramContentBlockInline(TextoCompactoMixin, StackedInline):
     model = ProgramContentBlock
-
-    def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name == 'text':
-            kwargs['widget'] = MarkdownPreviewWidget(modo='programa')
-        return super().formfield_for_dbfield(db_field, request, **kwargs)
     extra = 0
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    tab = True
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'text':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='programa')
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
 @admin.register(Program)
-class ProgramAdmin(ModelAdmin):
+class ProgramAdmin(TextoCompactoMixin, ModelAdmin):
     inlines = [ProgramContentBlockInline]
+    linhas_dos_campos = {'description': 4, 'highlights': 4}
+    fieldsets = (
+        (None, {'fields': ('label', 'slug', 'subtitle', 'description', 'highlights', 'icon')}),
+        ('Exibição no site', {'fields': ('badge', 'badge_class', 'signup_url', 'is_active', 'order')}),
+    )
     list_display = ('label', 'slug', 'badge', 'is_active')
     list_editable = ('is_active',)
     ordering_field = 'order'
@@ -347,17 +384,20 @@ class StatisticAdmin(ModelAdmin):
 class ArticleImageInline(TabularInline):
     model = ArticleImage
     extra = 1
-    fields = ('number', 'image', 'caption', 'previa')
-    readonly_fields = ('previa',)
+    fields = ('number', 'image', 'caption')
     ordering = ('number',)
-
-    @admin.display(description='Prévia')
-    def previa(self, obj):
-        return miniatura(obj.image if obj.pk else None, 60)
+    tab = True
 
 
 @admin.register(Article)
-class ArticleAdmin(ModelAdmin):
+class ArticleAdmin(TextoCompactoMixin, ModelAdmin):
+    linhas_dos_campos = {'description': 4}
+    # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
+    prepopulated_fields = {'slug': ('title',)}
+    fieldsets = (
+        (None, {'fields': ('title', 'slug', 'authors', 'topics', 'description', 'content')}),
+        ('Publicação', {'fields': ('published', 'date', 'order', 'source', 'link', 'image')}),
+    )
     list_display = ('title', 'slug', 'authors', 'published', 'date', 'order')
     search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
     list_editable = ('published', 'order')
@@ -399,8 +439,9 @@ class ProgramCaseParticipantInline(TabularInline):
 
 
 @admin.register(ProgramCase)
-class ProgramCaseAdmin(ModelAdmin):
+class ProgramCaseAdmin(TextoCompactoMixin, ModelAdmin):
     inlines = [ProgramCaseParticipantInline]
+    linhas_dos_campos = {'theme': 3, 'panel': 3}
     list_display = ('semester', 'title', 'area', 'program', 'is_active')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'semester')
@@ -419,15 +460,18 @@ class SelectionProcessStageInline(TabularInline):
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    tab = True
 
 
-class SelectionProcessStepInline(StackedInline):
+class SelectionProcessStepInline(TextoCompactoMixin, StackedInline):
     model = SelectionProcessStep
     extra = 0
     fields = ('number', 'title', 'description', 'image', 'duration', 'tips', 'order')
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    linhas_dos_campos = {'description': 3, 'tips': 4}
+    tab = True
 
 
 class SelectionProcessRequirementInline(TabularInline):
@@ -437,10 +481,14 @@ class SelectionProcessRequirementInline(TabularInline):
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    tab = True
 
 
 @admin.register(SelectionProcess)
 class SelectionProcessAdmin(ModelAdmin):
+    fieldsets = (
+        (None, {'fields': ('title', 'is_active', 'registrations_open', 'registration_url')}),
+    )
     list_display = ('title', 'is_active', 'registrations_open')
     list_editable = ('is_active', 'registrations_open')
     list_filter = ('is_active',)
@@ -474,13 +522,14 @@ class PreparationMaterialAdmin(ModelAdmin):
 # Configuração do site (textos e contatos que não pertencem a outro cadastro)
 # ---------------------------------------------------------------------------
 
-class PartnerBenefitInline(TabularInline):
+class PartnerBenefitInline(TextoCompactoMixin, TabularInline):
     model = PartnerBenefit
     extra = 0
     fields = ('title', 'description', 'order')
     ordering = ('order',)
     ordering_field = 'order'
     hide_ordering_field = True
+    linhas_dos_campos = {'description': 2}
     tab = True
 
 
@@ -546,15 +595,15 @@ class NavItemInline(TabularInline):
 
 
 @admin.register(SiteConfig)
-class SiteConfigAdmin(ModelAdmin):
+class SiteConfigAdmin(TextoCompactoMixin, ModelAdmin):
     form = SiteConfigForm
+    linhas_dos_campos = {'home_about_text': 4, 'mission': 3, 'mission_how': 3, 'mission_goal': 3}
     inlines = [NavItemInline, PartnerBenefitInline]
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'privacy_text':
             kwargs['widget'] = MarkdownPreviewWidget(modo='politica')
         return super().formfield_for_dbfield(db_field, request, **kwargs)
-    readonly_fields = ('foto_atual', 'logo_atual', 'favicon_atual', 'og_image_atual')
     fieldsets = (
         ('Marca e compartilhamento', {
             'classes': ['tab'],
@@ -563,7 +612,7 @@ class SiteConfigAdmin(ModelAdmin):
                            'sistema pede sozinho ao salvar.',
             'fields': (
                 'site_name', 'site_description',
-                'logo', 'logo_atual', 'favicon', 'favicon_atual', 'og_image', 'og_image_atual',
+                'logo', 'favicon', 'og_image',
             ),
         }),
         ('Contatos', {
@@ -584,7 +633,7 @@ class SiteConfigAdmin(ModelAdmin):
             'fields': (
                 'home_hero_title', 'home_statement',
                 'home_about_title', 'home_about_title_highlight', 'home_about_text',
-                'home_about_photo', 'foto_atual', 'home_about_photo_alt',
+                'home_about_photo', 'home_about_photo_alt',
                 'mission', 'mission_how', 'mission_goal',
                 'home_cta_title',
             ),
@@ -608,22 +657,6 @@ class SiteConfigAdmin(ModelAdmin):
             'fields': ('privacy_updated', 'privacy_text'),
         }),
     )
-
-    @admin.display(description='Foto atual')
-    def foto_atual(self, obj):
-        return miniatura(obj.home_about_photo, 120)
-
-    @admin.display(description='Logo atual')
-    def logo_atual(self, obj):
-        return miniatura(obj.logo, 60)
-
-    @admin.display(description='Ícone atual')
-    def favicon_atual(self, obj):
-        return miniatura(obj.favicon, 48)
-
-    @admin.display(description='Imagem atual')
-    def og_image_atual(self, obj):
-        return miniatura(obj.og_image, 90)
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

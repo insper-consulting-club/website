@@ -51,7 +51,7 @@ class MemberDetailView(generics.RetrieveAPIView):
     # na listagem da equipe, mas o perfil deles continua acessível por link
     # (ex.: a partir da equipe de um projeto).
     queryset = Member.objects.select_related("position").prefetch_related(
-        "projects__partners", "directorate_memberships__directorate"
+        "projects__partners", "directorate_memberships__directorate", "trajectory_steps"
     ).all()
 
 

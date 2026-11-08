@@ -182,7 +182,6 @@ class Command(BaseCommand):
             "name": person["nome"],
             "course": course,
             "year": year,
-            "trajetoria": trajetoria,
         }
         if cargo:
             position, _ = Position.objects.get_or_create(
@@ -207,7 +206,20 @@ class Command(BaseCommand):
             setattr(member, field, value)
         self._attach_image(member, "photo", self.base / "members", person_id)
         member.save()
+        self._save_trajectory(member, trajetoria)
         return member
+
+    @staticmethod
+    def _save_trajectory(member, trajetoria):
+        """A trajetória do icc.json substitui a que estava cadastrada."""
+        etapas = {
+            (str(e.get("semestre", "")).strip(), str(e.get("cargo", "")).strip())
+            for e in trajetoria
+        }
+        member.trajectory_steps.all().delete()
+        for semestre, cargo in sorted(etapas):
+            if semestre and cargo:
+                member.trajectory_steps.create(semester=semestre, role=cargo)
 
     def _archive_former_members(self, people, current_ids):
         """

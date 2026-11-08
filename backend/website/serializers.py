@@ -234,6 +234,7 @@ class MemberDetailSerializer(serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
     projects = serializers.SerializerMethodField()
     number_of_projects = serializers.IntegerField()
+    trajetoria = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
@@ -243,6 +244,10 @@ class MemberDetailSerializer(serializers.ModelSerializer):
             "entry_date", "exit_date", "course", "year", "linkedin",
             "trajetoria",
         ]
+
+    def get_trajetoria(self, obj):
+        # Mesmo formato de antes: o frontend lê [{"semestre", "cargo"}], em ordem de semestre.
+        return [{"semestre": etapa.semester, "cargo": etapa.role} for etapa in obj.trajectory_steps.all()]
 
     def get_projects(self, obj):
         # Projetos arquivados não aparecem no perfil do membro.
