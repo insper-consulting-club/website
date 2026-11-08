@@ -1,8 +1,9 @@
 const apiUrl = import.meta.env.VITE_API_URL;
 
+// Só cabeçalhos que o navegador aceita sem consulta prévia (preflight CORS).
+// Um "Content-Type" em um GET faria cada endpoint novo custar uma requisição OPTIONS a mais.
 const headers = {
   "Accept": "application/json",
-  "Content-Type": "application/json",
 };
 
 export const api = {
