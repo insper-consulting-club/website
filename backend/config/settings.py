@@ -118,7 +118,8 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # Templates do projeto que substituem os do Unfold (ex.: a página inicial do admin)
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -196,6 +197,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
+# Quem entra direto pela tela de login (sem vir de outra página) cai no admin; o
+# padrão do Django seria /accounts/profile/, que não existe.
+LOGIN_REDIRECT_URL = '/admin/'
+
 # Tema do /admin (django-unfold). A escala "primary" é o vermelho da marca
 # (o #b20000 do site fica perto do tom 700), no formato oklch que o Unfold usa.
 # Endereço público do site (frontend). Usado pelos botões "Ver no site" do admin.
@@ -211,6 +216,7 @@ UNFOLD = {
     'SITE_HEADER': 'Insper Consulting Club',
     'SITE_SUBHEADER': 'Conteúdo do site',
     'SITE_URL': FRONTEND_URL or None,
+    'DASHBOARD_CALLBACK': 'config.dashboard.painel',
     'SIDEBAR': {
         'show_search': True,
         'show_all_applications': False,
@@ -235,6 +241,10 @@ UNFOLD = {
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'website' / 'static'
+
+# Arquivos estáticos do projeto que não pertencem a um app (por exemplo, o script da
+# prévia de Markdown do admin). Não pode ser a mesma pasta de STATIC_ROOT.
+STATICFILES_DIRS = [BASE_DIR / 'admin_static']
 
 # Media files (Upload) — armazenados no Cloudinary em produção/dev compartilhado
 MEDIA_URL = '/media/'

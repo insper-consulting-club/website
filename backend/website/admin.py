@@ -1,5 +1,7 @@
 from django import forms
 from django.conf import settings
+from django.core.files.images import get_image_dimensions
+from django.core.files.uploadedfile import UploadedFile
 from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -14,6 +16,7 @@ from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .site_texts import PADRAO as PADRAO_TEXTOS
+from .widgets import MarkdownPreviewWidget
 from .models import (
     PartnerCategory, ProgramComponent,
     Partner, Member, Article, ArticleImage, Position, Directorate,
@@ -301,6 +304,11 @@ class ProgramComponentAdmin(ModelAdmin):
 
 class ProgramContentBlockInline(StackedInline):
     model = ProgramContentBlock
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'text':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='programa')
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
     extra = 0
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
     ordering = ('order',)
@@ -357,6 +365,22 @@ class ArticleAdmin(ModelAdmin):
     date_hierarchy = 'date'
     ordering = ('-date', 'order')
     inlines = [ArticleImageInline]
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'content':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='artigo', imagens=self._imagens_do_artigo(request))
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+    def _imagens_do_artigo(self, request):
+        # Imagens já salvas do artigo, para a prévia trocar ![](imagem-N) pela foto.
+        # A foto de um artigo novo, ainda sem registro, só aparece depois de salvar.
+        id_do_artigo = (request.resolver_match.kwargs or {}).get('object_id') if request.resolver_match else None
+        if not id_do_artigo or not str(id_do_artigo).isdigit():
+            return []
+        return [
+            {'number': imagem.number, 'image_url': request.build_absolute_uri(imagem.image.url), 'caption': imagem.caption}
+            for imagem in ArticleImage.objects.filter(article_id=int(id_do_artigo))
+        ]
 
     def view_on_site(self, obj):
         # Rascunho responde 404 no site.
@@ -460,6 +484,57 @@ class PartnerBenefitInline(TabularInline):
     tab = True
 
 
+class SiteConfigForm(forms.ModelForm):
+    """Confere o formato das imagens de marca no momento do envio."""
+
+    class Meta:
+        model = SiteConfig
+        fields = '__all__'
+
+    @staticmethod
+    def _medidas(arquivo):
+        # Só confere o que acabou de ser enviado. Uma imagem já salva (FieldFile) ou
+        # a opção de remover não passam por aqui, e abrir uma imagem guardada no
+        # Cloudinary só para medir seria um acesso de rede desnecessário.
+        if not isinstance(arquivo, UploadedFile):
+            return None
+        return get_image_dimensions(arquivo)
+
+    def clean_favicon(self):
+        arquivo = self.cleaned_data.get('favicon')
+        medidas = self._medidas(arquivo)
+        if medidas:
+            largura, altura = medidas
+            if largura != altura:
+                raise forms.ValidationError(
+                    f'O ícone precisa ser quadrado, mas a imagem enviada tem {largura} x {altura} pixels. '
+                    'Recorte-a para um quadrado (de preferência 256 x 256).'
+                )
+            if largura < 32:
+                raise forms.ValidationError(
+                    f'O ícone está pequeno demais ({largura} x {altura} pixels). Use pelo menos 32 x 32.'
+                )
+        return arquivo
+
+    def clean_og_image(self):
+        arquivo = self.cleaned_data.get('og_image')
+        medidas = self._medidas(arquivo)
+        if medidas:
+            largura, altura = medidas
+            proporcao = largura / altura if altura else 0
+            if largura < 600:
+                raise forms.ValidationError(
+                    f'A imagem de compartilhamento está pequena demais ({largura} x {altura} pixels). '
+                    'Use pelo menos 600 de largura; o ideal é 1200 x 630.'
+                )
+            if not 1.6 <= proporcao <= 2.2:
+                raise forms.ValidationError(
+                    f'A proporção da imagem ({largura} x {altura} pixels) é muito diferente da usada pelo '
+                    'WhatsApp e pelo LinkedIn, e ela seria cortada. Use 1200 x 630.'
+                )
+        return arquivo
+
+
 class NavItemInline(TabularInline):
     model = NavItem
     extra = 0
@@ -472,7 +547,13 @@ class NavItemInline(TabularInline):
 
 @admin.register(SiteConfig)
 class SiteConfigAdmin(ModelAdmin):
+    form = SiteConfigForm
     inlines = [NavItemInline, PartnerBenefitInline]
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'privacy_text':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='politica')
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
     readonly_fields = ('foto_atual', 'logo_atual', 'favicon_atual', 'og_image_atual')
     fieldsets = (
         ('Marca e compartilhamento', {

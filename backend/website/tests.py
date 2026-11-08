@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection
 from pathlib import Path
@@ -17,6 +18,15 @@ from website.models import (
     Article, Member, Partner, PartnerCategory, Program, ProgramCase,
     Directorate, NavItem, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
 )
+
+
+# As páginas do admin usam arquivos estáticos. O armazenamento do projeto exige o
+# manifesto criado pelo collectstatic, que não existe num ambiente limpo; nos
+# testes basta o armazenamento simples.
+SEM_MANIFESTO = override_settings(STORAGES={
+    **settings.STORAGES,
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
 
 
 class ArticleDetailSlugTests(TestCase):
@@ -429,6 +439,7 @@ class SiteConfigTests(TestCase):
         config.clean()
 
 
+@SEM_MANIFESTO
 class SiteConfigAdminTests(TestCase):
     def setUp(self):
         user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
@@ -519,6 +530,7 @@ class SiteTextTests(TestCase):
         )
 
 
+@SEM_MANIFESTO
 class SiteTextAdminTests(TestCase):
     def setUp(self):
         user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
@@ -693,6 +705,7 @@ class FrontendDeployTests(TestCase):
         self.assertNotIn("segredo", texto)
 
 
+@SEM_MANIFESTO
 class TranslationFixesTests(TestCase):
     """A tradução em português do Django traz erros de grafia; locale/ os corrige."""
 
@@ -756,6 +769,7 @@ class TranslationFixesTests(TestCase):
         self.assertNotIn("ordenção", pagina)
 
 
+@SEM_MANIFESTO
 class AdminNavigationTests(TestCase):
     def test_superuser_sees_every_group_in_order(self):
         from config.navigation import navegacao
@@ -840,6 +854,7 @@ class AdminViewOnSiteTests(TestCase):
         self.assertIsNone(admin.site._registry[Program].view_on_site(programa))
 
 
+@SEM_MANIFESTO
 class AdminReorderTests(TestCase):
     def test_saving_the_list_stores_the_new_order(self):
         usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
@@ -875,3 +890,245 @@ class AdminReorderTests(TestCase):
                 continue
             self.assertEqual(inline.ordering_field, "order", inline.__name__)
             self.assertTrue(inline.hide_ordering_field, inline.__name__)
+
+
+@SEM_MANIFESTO
+class EditorsGroupTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import Group
+
+        self.grupo = Group.objects.get(name="Editores")
+        self.editor = get_user_model().objects.create_user("editora", "ed@example.com", "senha-de-teste", is_staff=True)
+        self.editor.groups.add(self.grupo)
+
+    def codenames(self):
+        return set(self.grupo.permissions.values_list("codename", flat=True))
+
+    def test_group_is_created_by_migrate_with_the_expected_permissions(self):
+        codenames = self.codenames()
+
+        for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_sitetext",
+                         "delete_navitem", "delete_projectimage", "view_position"):
+            self.assertIn(esperado, codenames)
+        for proibido in ("delete_article", "delete_member", "delete_project", "add_siteconfig", "delete_siteconfig",
+                         "add_sitetext", "add_position", "change_position", "view_user", "change_user", "view_group"):
+            self.assertNotIn(proibido, codenames)
+
+    def test_editor_edits_content_but_cannot_reach_users_or_delete_articles(self):
+        self.client.force_login(self.editor)
+        artigo = Article.objects.create(title="A", description="d", published=True)
+
+        self.assertEqual(self.client.get("/admin/website/article/").status_code, 200)
+        self.assertEqual(self.client.get(f"/admin/website/article/{artigo.pk}/change/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/website/siteconfig/1/change/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/auth/user/").status_code, 403)
+        self.assertEqual(self.client.get("/admin/auth/group/").status_code, 403)
+        self.assertEqual(self.client.get(f"/admin/website/article/{artigo.pk}/delete/").status_code, 403)
+
+    def test_editor_sees_no_access_group_in_the_menu(self):
+        from config.navigation import navegacao
+
+        usuario = get_user_model().objects.get(pk=self.editor.pk)
+        titulos = [g["title"] for g in navegacao(mock.Mock(user=usuario))]
+
+        self.assertIn("Site", titulos)
+        self.assertIn("Artigos", titulos)
+        self.assertNotIn("Acesso", titulos)
+
+    def test_migrate_keeps_adjustments_but_the_command_restores_the_default(self):
+        from django.apps import apps
+        from django.contrib.auth.models import Permission
+        from django.core.management import call_command
+        from website.editors_group import sincroniza_grupo_editores
+
+        self.grupo.permissions.add(Permission.objects.get(codename="delete_article"))
+        self.grupo.permissions.remove(Permission.objects.get(codename="change_sitetext"))
+
+        self.assertFalse(sincroniza_grupo_editores(apps, apps.get_app_config("website")))
+        self.assertIn("delete_article", self.codenames())
+        self.assertNotIn("change_sitetext", self.codenames())
+
+        call_command("sincroniza_grupo_editores", stdout=mock.Mock())
+
+        self.assertNotIn("delete_article", self.codenames())
+        self.assertIn("change_sitetext", self.codenames())
+
+
+class BrandImageValidationTests(TestCase):
+    def imagem(self, largura, altura, nome="imagem.png"):
+        import io
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        buffer = io.BytesIO()
+        Image.new("RGB", (largura, altura), "red").save(buffer, format="PNG")
+        return SimpleUploadedFile(nome, buffer.getvalue(), content_type="image/png")
+
+    def formulario(self, **arquivos):
+        from django.forms.models import model_to_dict
+        from website.admin import SiteConfigForm
+
+        config = SiteConfig.get_solo()
+        dados = {k: v for k, v in model_to_dict(config).items()
+                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo")}
+        # O banco de teste não tem o programa do slug padrão, e essa regra não é o assunto aqui.
+        dados["featured_program_slug"] = ""
+        return SiteConfigForm(data=dados, files=arquivos, instance=config)
+
+    def test_square_favicon_is_accepted(self):
+        self.assertTrue(self.formulario(favicon=self.imagem(256, 256)).is_valid())
+
+    def test_non_square_favicon_is_refused_with_the_real_size(self):
+        form = self.formulario(favicon=self.imagem(300, 200))
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("300 x 200", form.errors["favicon"][0])
+        self.assertIn("quadrado", form.errors["favicon"][0])
+
+    def test_tiny_favicon_is_refused(self):
+        self.assertIn("pequeno demais", self.formulario(favicon=self.imagem(16, 16)).errors["favicon"][0])
+
+    def test_share_image_with_the_right_proportion_is_accepted(self):
+        self.assertTrue(self.formulario(og_image=self.imagem(1200, 630)).is_valid())
+        self.assertTrue(self.formulario(og_image=self.imagem(800, 420)).is_valid())
+
+    def test_share_image_too_small_or_too_square_is_refused(self):
+        self.assertIn("pequena demais", self.formulario(og_image=self.imagem(400, 210)).errors["og_image"][0])
+        self.assertIn("proporção", self.formulario(og_image=self.imagem(1000, 1000)).errors["og_image"][0])
+        self.assertIn("proporção", self.formulario(og_image=self.imagem(1200, 300)).errors["og_image"][0])
+
+    def test_logo_has_no_size_requirement(self):
+        self.assertTrue(self.formulario(logo=self.imagem(40, 400)).is_valid())
+
+    def test_saving_without_new_images_does_not_measure_anything(self):
+        with mock.patch("website.admin.get_image_dimensions") as medir:
+            self.assertTrue(self.formulario().is_valid())
+
+        medir.assert_not_called()
+
+
+@SEM_MANIFESTO
+class AdminLoginRedirectTests(TestCase):
+    def test_login_without_next_goes_to_the_admin(self):
+        get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+
+        resposta = self.client.post("/admin/login/", {"username": "root", "password": "senha-de-teste"})
+
+        self.assertRedirects(resposta, "/admin/", fetch_redirect_response=False)
+
+
+@SEM_MANIFESTO
+class DashboardTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+
+    def alertas(self, usuario=None):
+        from config.dashboard import painel
+
+        requisicao = mock.Mock(user=usuario or self.admin)
+        return [a["texto"] for a in painel(requisicao, {})["painel"]["alertas"]]
+
+    def test_drafts_and_archived_items_are_counted_with_agreeing_words(self):
+        Article.objects.create(title="A", description="d", published=False)
+        Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1), is_active=False)
+
+        textos = self.alertas()
+        self.assertIn("1 artigo em rascunho: não aparece no site até ser publicado.", textos)
+        self.assertIn("1 projeto arquivado: fora do site, mas guardado.", textos)
+
+        Article.objects.create(title="B", description="d", published=False)
+        self.assertIn("2 artigos em rascunho: não aparecem no site até serem publicados.", self.alertas())
+
+    def test_missing_active_process_is_a_warning(self):
+        self.assertTrue(any("Nenhum processo seletivo ativo" in t for t in self.alertas()))
+
+        SelectionProcess.objects.create(title="PS 2026.2", is_active=True)
+        textos = self.alertas()
+
+        self.assertFalse(any("Nenhum processo seletivo ativo" in t for t in textos))
+        self.assertIn("Processo seletivo ativo: “PS 2026.2”. Inscrições encerradas.", textos)
+
+    def test_featured_program_that_does_not_exist_is_a_warning(self):
+        self.assertTrue(any("programa em destaque" in t for t in self.alertas()))
+
+        Program.objects.create(slug="jornada-do-consultor", label="Jornada", description="d")
+
+        self.assertFalse(any("programa em destaque" in t for t in self.alertas()))
+
+    def test_empty_menu_is_a_warning(self):
+        NavItem.objects.update(is_active=False)
+
+        self.assertTrue(any("sem navegação" in t for t in self.alertas()))
+
+    def test_deploy_hook_warning_is_only_for_superusers(self):
+        editor = get_user_model().objects.create_user("ed", "e@example.com", "senha-de-teste", is_staff=True)
+        editor.groups.add(__import__("django.contrib.auth.models", fromlist=["Group"]).Group.objects.get(name="Editores"))
+        editor = get_user_model().objects.get(pk=editor.pk)
+
+        with override_settings(DEBUG=False, RENDER_FRONTEND_DEPLOY_HOOK=""):
+            self.assertTrue(any("deploy automático" in t for t in self.alertas(self.admin)))
+            self.assertFalse(any("deploy automático" in t for t in self.alertas(editor)))
+        with override_settings(DEBUG=False, RENDER_FRONTEND_DEPLOY_HOOK="https://api.render.com/deploy/x"):
+            self.assertFalse(any("deploy automático" in t for t in self.alertas(self.admin)))
+
+    def test_items_follow_the_user_permissions(self):
+        from django.contrib.auth.models import Permission
+        from config.dashboard import painel
+
+        usuario = get_user_model().objects.create_user("so-projetos", "p@example.com", "senha-de-teste", is_staff=True)
+        usuario.user_permissions.add(Permission.objects.get(codename="view_project"))
+        usuario = get_user_model().objects.get(pk=usuario.pk)
+        Article.objects.create(title="A", description="d", published=False)
+
+        dados = painel(mock.Mock(user=usuario), {})["painel"]
+
+        self.assertEqual([n["rotulo"] for n in dados["numeros"]], ["Projetos no site"])
+        self.assertFalse(any("rascunho" in a["texto"] for a in dados["alertas"]))
+        self.assertFalse(any(a["texto"] == "Novo artigo" for a in dados["atalhos"]))
+
+    def test_index_page_renders_for_a_superuser(self):
+        self.client.force_login(self.admin)
+
+        pagina = self.client.get("/admin/").content.decode()
+
+        self.assertIn("Situação do site", pagina)
+        self.assertIn("Novo artigo", pagina)
+
+
+@SEM_MANIFESTO
+class MarkdownPreviewWidgetTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(self.admin)
+
+    @override_settings(FRONTEND_URL="https://exemplo.com.br/")
+    def test_article_page_has_the_preview_with_the_saved_images(self):
+        artigo = Article.objects.create(title="A", description="d")
+        from website.models import ArticleImage
+        ArticleImage.objects.create(article=artigo, number=1, image="articles/x.png", caption="Legenda 1")
+
+        pagina = self.client.get(f"/admin/website/article/{artigo.pk}/change/").content.decode()
+
+        self.assertIn('data-url="https://exemplo.com.br/previa"', pagina)
+        self.assertIn('data-modo="artigo"', pagina)
+        self.assertIn("Legenda 1", pagina)
+        self.assertIn("markdown_preview.js", pagina)
+
+    @override_settings(FRONTEND_URL="https://exemplo.com.br")
+    def test_each_markdown_field_uses_its_own_style(self):
+        programa = Program.objects.create(slug="p", label="P", description="d")
+
+        config = self.client.get("/admin/website/siteconfig/1/change/").content.decode()
+        prog = self.client.get(f"/admin/website/program/{programa.pk}/change/").content.decode()
+
+        self.assertIn('data-modo="politica"', config)
+        self.assertIn('data-modo="programa"', prog)
+
+    @override_settings(FRONTEND_URL="")
+    def test_without_the_site_address_the_field_has_no_preview_button(self):
+        artigo = Article.objects.create(title="A", description="d")
+
+        pagina = self.client.get(f"/admin/website/article/{artigo.pk}/change/").content.decode()
+
+        self.assertNotIn("md-previa__botao", pagina)
+        self.assertIn('name="content"', pagina)

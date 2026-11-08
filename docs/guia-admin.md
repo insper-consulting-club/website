@@ -20,6 +20,7 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 - Clicar no nome de um registro abre a edição.
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
+- **Painel da página inicial:** mostra atalhos (novo artigo, novo projeto, configuração do site, ver o site), o quadro **Situação do site** e os números do site. A **Situação do site** avisa o que merece atenção: artigos em rascunho, processo seletivo ativo e se as inscrições estão abertas, itens escondidos ou arquivados e problemas de configuração (por exemplo, menu do topo vazio ou programa em destaque inexistente). Os avisos em vermelho pedem ação. Cada pessoa vê só o que tem permissão de ver.
 - **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
 - **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
@@ -33,6 +34,10 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 | Textos publicados pelos membros | Artigos |
 | Próximo processo seletivo | Processos seletivos, Materiais de preparação |
 | Números da Home | Estatísticas |
+
+### Prévia dos textos em Markdown
+
+Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Mostrar prévia** abre, logo abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
 
 ### Esconder ou apagar
 
@@ -49,8 +54,15 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
 1. Crie o nome de usuário e a senha.
 2. Na tela seguinte, marque **"Membro da equipe"**. Sem isso, a pessoa não consegue entrar no admin.
 3. Escolha o nível de acesso:
-   - marque **"Status de superusuário"** para acesso total, incluindo criar outros logins. Deixe isso para uma ou duas pessoas;
-   - ou deixe desmarcado e, em **Permissões do usuário**, escolha o que a pessoa pode mexer (por exemplo, todas as de "website", que cobrem o conteúdo do site).
+   - **Para quem cuida do conteúdo (o caso comum):** deixe "Status de superusuário" desmarcado e, em **Grupos**, escolha **Editores**. O grupo já traz as permissões certas, sem precisar escolher uma a uma.
+   - **Status de superusuário** dá acesso total, incluindo criar outros logins e apagar qualquer registro. Deixe isso para uma ou duas pessoas.
+
+**O que o grupo Editores pode e não pode:**
+- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, configuração e textos do site, e mexer nas listas dentro de cada registro (blocos, imagens, etapas, itens de menu), inclusive removendo linhas.
+- **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Cargos aparecem só para consulta, porque definem quem é liderança na Home.
+- O menu mostra só o que a pessoa pode usar.
+
+O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, quem administra o servidor roda `python manage.py sincroniza_grupo_editores`.
 
 **Quando alguém sai da gestão:** abra o usuário dela e desmarque **"Ativo"**. Ela perde o acesso na hora.
 
@@ -228,7 +240,7 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de preparação
 
 **Configuração do site** abre direto na edição, porque existe um único registro. Não há botão de adicionar nem de excluir. A tela tem abas:
 
-- **Marca e compartilhamento:** o **Nome do site** (aba do navegador, rodapé e prévia dos links), a **Descrição do site** e três imagens opcionais: o **Logo** em versão clara (usado no topo, no rodapé e na Home), o **Ícone da aba** (PNG quadrado, de preferência 256 x 256) e a **Imagem de compartilhamento** (1200 x 630, a que aparece no WhatsApp e no LinkedIn). Sem imagem enviada, o site usa a original. Como o site é estático, essas mudanças só aparecem depois que o site é reconstruído, o que o sistema pede sozinho ao salvar (leva alguns minutos). Se o deploy automático não estiver configurado, o admin avisa que é preciso publicar o frontend de novo.
+- **Marca e compartilhamento:** o **Nome do site** (aba do navegador, rodapé e prévia dos links), a **Descrição do site** e três imagens opcionais: o **Logo** em versão clara (usado no topo, no rodapé e na Home), o **Ícone da aba** (PNG quadrado, de preferência 256 x 256) e a **Imagem de compartilhamento** (1200 x 630, a que aparece no WhatsApp e no LinkedIn). Sem imagem enviada, o site usa a original. O admin confere o formato ao enviar: o **ícone** precisa ser **quadrado** (pelo menos 32 x 32), e a **imagem de compartilhamento** precisa ter pelo menos 600 pixels de largura e proporção parecida com 1200 x 630, senão o WhatsApp e o LinkedIn a cortariam. O logo não tem exigência de tamanho. Como o site é estático, essas mudanças só aparecem depois que o site é reconstruído, o que o sistema pede sozinho ao salvar (leva alguns minutos). Se o deploy automático não estiver configurado, o admin avisa que é preciso publicar o frontend de novo.
 - **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
 - **Home:** título do topo, frase de destaque, o bloco "Quem somos" (com a foto, que é opcional), a missão, "como preparamos", "onde queremos chegar" e a chamada final.
 - **Rodapé:** a frase de apresentação.

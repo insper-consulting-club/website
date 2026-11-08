@@ -13,6 +13,17 @@ def sincroniza_textos_do_site(sender, apps, **kwargs):
     sincroniza_textos(SiteText)
 
 
+def cria_grupo_editores(sender, apps, **kwargs):
+    # Cria o grupo "Editores" na primeira vez; depois não mexe mais (ver editors_group.py).
+    from .editors_group import sincroniza_grupo_editores
+    try:
+        apps.get_model('auth', 'Group')
+        apps.get_model('website', 'Article')
+    except LookupError:
+        return
+    sincroniza_grupo_editores(apps, sender)
+
+
 class WebsiteConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'website'
@@ -21,3 +32,4 @@ class WebsiteConfig(AppConfig):
 
     def ready(self):
         post_migrate.connect(sincroniza_textos_do_site, sender=self)
+        post_migrate.connect(cria_grupo_editores, sender=self)
