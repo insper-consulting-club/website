@@ -8,7 +8,8 @@ from .models import (
     SelectionProcess, SelectionProcessRequirement,
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
-    ProgramCase, ProgramCaseParticipant
+    ProgramCase, ProgramCaseParticipant,
+    SiteConfig, PartnerBenefit
 )
 
 
@@ -374,3 +375,25 @@ class ProgramCaseSerializer(serializers.ModelSerializer):
 
     def get_panel(self, obj):
         return obj.get_panel_list()
+
+
+class PartnerBenefitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PartnerBenefit
+        fields = ["id", "title", "description", "order"]
+
+
+class SiteConfigSerializer(serializers.ModelSerializer):
+    home_about_photo_url = serializers.SerializerMethodField()
+    partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SiteConfig
+        # A foto não sai como campo de arquivo: o site recebe só o endereço.
+        exclude = ["id", "home_about_photo"]
+
+    def get_home_about_photo_url(self, obj):
+        request = self.context.get("request")
+        if obj.home_about_photo and request:
+            return request.build_absolute_uri(obj.home_about_photo.url)
+        return None

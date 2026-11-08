@@ -1,8 +1,14 @@
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group, User
+from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 from .models import (
     PartnerCategory, ProgramComponent,
@@ -13,11 +19,33 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
+    SiteConfig, PartnerBenefit,
 )
 
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
 # no settings.
 admin.site.index_title = 'Conteúdo do site'
+
+
+# ---------------------------------------------------------------------------
+# Usuários e grupos (models do Django, refeitos com as classes do Unfold para
+# o painel ter um visual só)
+# ---------------------------------------------------------------------------
+
+admin.site.unregister(User)
+admin.site.unregister(Group)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin, ModelAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+
+
+@admin.register(Group)
+class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+    pass
 
 
 def miniatura(imagem, altura=40):
@@ -361,3 +389,79 @@ class PreparationMaterialAdmin(ModelAdmin):
     list_filter = ('process',)
     search_fields = ('title',)
     inlines = [PreparationMaterialItemInline]
+
+
+# ---------------------------------------------------------------------------
+# Configuração do site (textos e contatos que não pertencem a outro cadastro)
+# ---------------------------------------------------------------------------
+
+class PartnerBenefitInline(TabularInline):
+    model = PartnerBenefit
+    extra = 0
+    fields = ('title', 'description', 'order')
+    ordering = ('order',)
+    tab = True
+
+
+@admin.register(SiteConfig)
+class SiteConfigAdmin(ModelAdmin):
+    inlines = [PartnerBenefitInline]
+    readonly_fields = ('foto_atual',)
+    fieldsets = (
+        ('Contatos', {
+            'classes': ['tab'],
+            'description': 'Aparecem no topo, no rodapé, na página Contato, na Política de Privacidade e '
+                           'no botão de inscrições. Trocar aqui atualiza o site inteiro.',
+            'fields': (
+                'email',
+                ('instagram_url', 'instagram_label'),
+                ('linkedin_url', 'linkedin_label'),
+                ('github_url', 'github_label'),
+            ),
+        }),
+        ('Home', {
+            'classes': ['tab'],
+            'description': 'Textos da página inicial. As estatísticas ficam em Estatísticas, e os programas, '
+                           'os membros e os parceiros vêm dos próprios cadastros.',
+            'fields': (
+                'home_hero_title', 'home_statement',
+                'home_about_title', 'home_about_title_highlight', 'home_about_text',
+                'home_about_photo', 'foto_atual', 'home_about_photo_alt',
+                'mission', 'mission_how', 'mission_goal',
+                'home_cta_title',
+            ),
+        }),
+        ('Rodapé', {
+            'classes': ['tab'],
+            'fields': ('footer_tagline',),
+        }),
+        ('Páginas', {
+            'classes': ['tab'],
+            'description': 'O texto que aparece logo abaixo do título de cada página.',
+            'fields': (
+                'team_lead', 'partners_lead', 'partners_benefits_title',
+                'projects_lead', 'featured_program_slug',
+                'articles_lead', 'contact_lead',
+                'process_lead', 'process_closed_message',
+            ),
+        }),
+        ('Política de Privacidade', {
+            'classes': ['tab'],
+            'fields': ('privacy_updated', 'privacy_text'),
+        }),
+    )
+
+    @admin.display(description='Foto atual')
+    def foto_atual(self, obj):
+        return miniatura(obj.home_about_photo, 120)
+
+    # Registro único: não há lista, nem adicionar, nem excluir. Abrir o item
+    # no menu leva direto para a edição.
+    def changelist_view(self, request, extra_context=None):
+        return redirect(reverse('admin:website_siteconfig_change', args=[SiteConfig.get_solo().pk]))
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

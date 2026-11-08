@@ -604,3 +604,189 @@ class ProgramCaseParticipant(models.Model):
 
     def __str__(self):
         return f"{self.member.name} ({self.get_role_display()})"
+
+
+class SiteConfig(models.Model):
+    """
+    Textos e contatos do site que ficam fora dos demais cadastros:
+    a Home, o rodapé, a abertura de cada página, os canais de contato e a
+    Política de Privacidade. Existe um único registro (pk=1), criado pela
+    migration com os textos que o site já tinha.
+    """
+    # Contatos
+    email = models.EmailField(default='insperconsultingclub@gmail.com', verbose_name='E-mail')
+    instagram_url = models.URLField(
+        max_length=300, default='https://www.instagram.com/insperconsultingclub/',
+        verbose_name='Link do Instagram'
+    )
+    instagram_label = models.CharField(max_length=100, default='@insperconsultingclub', verbose_name='Nome exibido do Instagram')
+    linkedin_url = models.URLField(
+        max_length=300, default='https://br.linkedin.com/company/insperconsultingclub',
+        verbose_name='Link do LinkedIn'
+    )
+    linkedin_label = models.CharField(max_length=100, default='Insper Consulting Club', verbose_name='Nome exibido do LinkedIn')
+    github_url = models.URLField(
+        max_length=300, default='https://github.com/insper-consulting-club',
+        verbose_name='Link do GitHub'
+    )
+    github_label = models.CharField(max_length=100, default='insper-consulting-club', verbose_name='Nome exibido do GitHub')
+
+    # Home
+    home_hero_title = models.CharField(
+        max_length=200, default='O futuro consultor começa no ICC', verbose_name='Título do topo'
+    )
+    home_statement = models.CharField(
+        max_length=300,
+        default='Preparamos nossos membros para os processos seletivos mais exigentes do mercado.',
+        verbose_name='Frase de destaque'
+    )
+    home_about_title = models.CharField(
+        max_length=200, default='Mais do que um clube, somos um ambiente de formação',
+        verbose_name='Título de "Quem somos"'
+    )
+    home_about_title_highlight = models.CharField(
+        max_length=200, blank=True, default='para futuros consultores.',
+        verbose_name='Final do título, em destaque',
+        help_text='Opcional. Aparece em vermelho, logo depois do título.'
+    )
+    home_about_text = models.TextField(
+        default='A Liga Insper Consulting Club é uma organização estudantil fundada em 2020, '
+                'dedicada ao desenvolvimento de futuros consultores. Ao longo do semestre, '
+                'promovemos capacitações, resolução de cases, visitas corporativas e iniciativas '
+                'que aproximam nossos membros da realidade das principais empresas do mercado.',
+        verbose_name='Texto de "Quem somos"'
+    )
+    home_about_photo = models.ImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Foto de "Quem somos"',
+        help_text='Opcional. Sem foto enviada, o site usa a foto da reunião inaugural.'
+    )
+    home_about_photo_alt = models.CharField(
+        max_length=200, default='Membros da Liga Insper Consulting Club na reunião inaugural',
+        verbose_name='Descrição da foto',
+        help_text='Lida por leitores de tela. Descreva o que aparece na foto.'
+    )
+    mission = models.TextField(
+        default='Conectar alunos do Insper ao mercado de consultoria, desenvolvendo as competências '
+                'técnicas e comportamentais exigidas pelas principais firmas do setor.',
+        verbose_name='Missão'
+    )
+    mission_how = models.TextField(
+        default='Treinamento para processos seletivos (GMAT, Verbal, Data e Fit Interview) e '
+                'capacitação prática na resolução de cases reais de negócio.',
+        verbose_name='Como preparamos'
+    )
+    mission_goal = models.TextField(
+        default='Consolidar o ICC como referência em consultoria entre os clubes estudantis do Brasil '
+                'e expandir a atuação para tecnologia e empreendedorismo.',
+        verbose_name='Onde queremos chegar'
+    )
+    home_cta_title = models.CharField(
+        max_length=200, default='Pronto para dar o próximo passo na sua carreira?',
+        verbose_name='Chamada final'
+    )
+
+    # Rodapé
+    footer_tagline = models.CharField(
+        max_length=300,
+        default='Mais do que um clube, somos um ambiente de formação para futuros consultores.',
+        verbose_name='Frase do rodapé'
+    )
+
+    # Abertura de cada página (o texto abaixo do título)
+    team_lead = models.CharField(
+        max_length=300, default='Conheça os membros que fazem parte da Liga Insper Consulting Club',
+        verbose_name='Página Equipe'
+    )
+    partners_lead = models.CharField(
+        max_length=300,
+        default='Conheça as empresas que apoiam o Insper Consulting Club e contribuem para a '
+                'formação dos futuros líderes em consultoria.',
+        verbose_name='Página Parceiros'
+    )
+    partners_benefits_title = models.CharField(
+        max_length=200, default='O que sua empresa ganha ao apoiar o Insper Consulting Club',
+        verbose_name='Título de "Por que ser parceiro"',
+        help_text='Os benefícios em si ficam na aba Parceiros.'
+    )
+    projects_lead = models.CharField(
+        max_length=300,
+        default='Como formamos consultores, do primeiro semestre na entidade aos cases reais '
+                'resolvidos ao longo da Jornada do Consultor.',
+        verbose_name='Página Projetos'
+    )
+    featured_program_slug = models.CharField(
+        max_length=50, blank=True, default='jornada-do-consultor',
+        verbose_name='Programa dos cases em destaque',
+        help_text='Identificador (slug) do programa para onde o botão "Ver os cases" da página Projetos leva. '
+                  'Precisa ser igual ao slug de um programa cadastrado. Deixe vazio para esconder a seção.'
+    )
+    articles_lead = models.CharField(
+        max_length=300, default='Artigos e publicações produzidos por membros do ICC',
+        verbose_name='Página Artigos'
+    )
+    contact_lead = models.CharField(
+        max_length=300, default='Entre em contato com o Insper Consulting Club',
+        verbose_name='Página Contato'
+    )
+    process_lead = models.CharField(
+        max_length=300,
+        default='Participe do processo seletivo e faça parte da Liga Insper Consulting Club',
+        verbose_name='Página Processo Seletivo'
+    )
+    process_closed_message = models.CharField(
+        max_length=300,
+        default='Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.',
+        verbose_name='Mensagem de inscrições encerradas'
+    )
+
+    # Política de Privacidade (o texto inicial é criado pela migration)
+    privacy_updated = models.CharField(
+        max_length=100, default='novembro de 2026', verbose_name='Última atualização',
+        help_text='Como deve aparecer no site. Ex.: novembro de 2026.'
+    )
+    privacy_text = models.TextField(
+        blank=True, verbose_name='Texto da política',
+        help_text='Em Markdown: ## Título, **negrito**, - item de lista, [link](https://...). '
+                  'Separe os parágrafos com uma linha em branco.'
+    )
+
+    class Meta:
+        verbose_name = 'Configuração do site'
+        verbose_name_plural = 'Configuração do site'
+
+    def __str__(self):
+        return 'Configuração do site'
+
+    def clean(self):
+        if self.featured_program_slug and not Program.objects.filter(slug=self.featured_program_slug).exists():
+            raise ValidationError({
+                'featured_program_slug': 'Não existe programa com esse slug. Confira em Programas.'
+            })
+
+    def save(self, *args, **kwargs):
+        # Registro único: qualquer salvamento atualiza sempre o mesmo.
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PartnerBenefit(models.Model):
+    """Item de "Por que ser parceiro", na página Parceiros."""
+    site_config = models.ForeignKey(
+        SiteConfig, on_delete=models.CASCADE, related_name='partner_benefits', verbose_name='Configuração'
+    )
+    title = models.CharField(max_length=200, verbose_name='Título')
+    description = models.TextField(verbose_name='Descrição')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Benefício para parceiros'
+        verbose_name_plural = 'Benefícios para parceiros'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title

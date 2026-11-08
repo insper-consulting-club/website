@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
@@ -8,7 +9,7 @@ from rest_framework.test import APIClient
 
 from website.models import (
     Article, Member, Partner, PartnerCategory, Program, ProgramCase,
-    ProgramComponent, Project, SelectionProcess,
+    ProgramComponent, Project, SelectionProcess, SiteConfig,
 )
 
 
@@ -373,3 +374,66 @@ class ApiCacheHeaderTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertNotIn("max-age", response.get("Cache-Control", ""))
+
+
+class SiteConfigTests(TestCase):
+    def test_migration_creates_the_single_record_with_current_texts(self):
+        config = SiteConfig.objects.get()
+
+        self.assertEqual(config.pk, 1)
+        self.assertEqual(config.email, "insperconsultingclub@gmail.com")
+        self.assertIn("## 1. Quais dados coletamos", config.privacy_text)
+        self.assertEqual(
+            list(config.partner_benefits.values_list("title", flat=True)),
+            ["Acesso a talentos", "Visibilidade Institucional", "Cases aplicados à realidade"],
+        )
+
+    def test_endpoint_returns_texts_benefits_and_no_photo(self):
+        response = APIClient().get("/api/site-config/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["home_hero_title"], "O futuro consultor começa no ICC")
+        self.assertEqual(response.data["featured_program_slug"], "jornada-do-consultor")
+        self.assertEqual(len(response.data["partner_benefits"]), 3)
+        self.assertIsNone(response.data["home_about_photo_url"])
+        self.assertNotIn("id", response.data)
+        self.assertNotIn("home_about_photo", response.data)
+
+    def test_saving_never_creates_a_second_record(self):
+        SiteConfig(email="outro@example.com").save()
+
+        self.assertEqual(SiteConfig.objects.count(), 1)
+        self.assertEqual(SiteConfig.get_solo().email, "outro@example.com")
+
+    def test_get_solo_recreates_the_record_if_it_is_missing(self):
+        SiteConfig.objects.all().delete()
+
+        self.assertEqual(SiteConfig.get_solo().pk, 1)
+
+    def test_featured_program_slug_must_match_an_existing_program(self):
+        config = SiteConfig.get_solo()
+        config.featured_program_slug = "nao-existe"
+        with self.assertRaises(ValidationError):
+            config.clean()
+
+        Program.objects.create(slug="nao-existe", label="Programa", description="d")
+        config.clean()
+
+        config.featured_program_slug = ""
+        config.clean()
+
+
+class SiteConfigAdminTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(user)
+
+    def test_list_redirects_to_the_edit_page(self):
+        response = self.client.get("/admin/website/siteconfig/")
+
+        self.assertRedirects(response, "/admin/website/siteconfig/1/change/")
+
+    def test_edit_page_opens_but_add_and_delete_are_blocked(self):
+        self.assertEqual(self.client.get("/admin/website/siteconfig/1/change/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/website/siteconfig/add/").status_code, 403)
+        self.assertEqual(self.client.get("/admin/website/siteconfig/1/delete/").status_code, 403)

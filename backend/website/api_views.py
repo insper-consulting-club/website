@@ -4,7 +4,7 @@ from rest_framework import generics
 from .models import (
     Member, Partner, Statistic, Project, ProgramComponent,
     Program, SelectionProcess,
-    Article, Directorate, ProgramCase
+    Article, Directorate, ProgramCase, SiteConfig
 )
 from .serializers import (
     MemberListSerializer, MemberDetailSerializer,
@@ -12,7 +12,8 @@ from .serializers import (
     ProjectListSerializer, ProjectDetailSerializer,
     ProgramComponentSerializer, ProgramSerializer,
     DirectorateSerializer, ProgramCaseSerializer,
-    SelectionProcessSerializer, ArticleSerializer, ArticleListSerializer
+    SelectionProcessSerializer, ArticleSerializer, ArticleListSerializer,
+    SiteConfigSerializer
 )
 
 
@@ -184,6 +185,14 @@ class SelectionProcessView(generics.RetrieveAPIView):
         if processo is None:
             raise Http404
         return processo
+
+
+class SiteConfigView(generics.RetrieveAPIView):
+    serializer_class = SiteConfigSerializer
+
+    def get_object(self):
+        # Registro único; criado na hora se, por algum motivo, ainda não existir.
+        return SiteConfig.get_solo()
 
 
 def health(request):

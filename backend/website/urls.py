@@ -16,5 +16,6 @@ urlpatterns = [
     path('api/articles/', api_views.ArticleListView.as_view(), name='api-articles-list'),
     path('api/articles/<str:identifier>/', api_views.ArticleDetailView.as_view(), name='api-articles-detail'),
     path('api/selection-process/', api_views.SelectionProcessView.as_view(), name='api-selection-process'),
+    path('api/site-config/', api_views.SiteConfigView.as_view(), name='api-site-config'),
     path('api/health/', api_views.health, name='api-health'),
 ]
