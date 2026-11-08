@@ -83,7 +83,7 @@ Para artigos, esta é a forma recomendada de revisar antes de publicar (ver [Rev
 
 ### Mudanças no visual ou no código
 
-Quem altera arquivos do projeto (textos fixos, estilos, componentes) vê o resultado no site local assim que salva o arquivo, sem religar nada. Antes de abrir um PR, siga as verificações de [`desenvolvimento.md`](desenvolvimento.md#verificações-antes-do-pr).
+Quem altera arquivos do projeto (textos fixos, estilos, componentes) vê o resultado no site local assim que salva o arquivo, sem precisar religar o ambiente. Antes de abrir um PR, siga as verificações de [`desenvolvimento.md`](desenvolvimento.md#verificações-antes-do-pr).
 
 ---
 
