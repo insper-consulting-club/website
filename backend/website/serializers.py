@@ -10,7 +10,7 @@ from .models import (
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
     ProgramCase, ProgramCaseParticipant,
-    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem
 )
 
 
@@ -407,15 +407,30 @@ class PartnerBenefitSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "description", "order"]
 
 
+class NavItemSerializer(serializers.ModelSerializer):
+    path = serializers.CharField(read_only=True)
+    external = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = NavItem
+        fields = ["id", "label", "area", "page", "path", "external", "order"]
+
+
 class SiteConfigSerializer(serializers.ModelSerializer):
     home_about_photo_url = serializers.SerializerMethodField()
     partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
     texts = serializers.SerializerMethodField()
+    nav_items = serializers.SerializerMethodField()
 
     class Meta:
         model = SiteConfig
         # A foto não sai como campo de arquivo: o site recebe só o endereço.
         exclude = ["id", "home_about_photo"]
+
+    def get_nav_items(self, obj):
+        # Item escondido no admin não chega ao site.
+        ativos = [item for item in obj.nav_items.all() if item.is_active]
+        return NavItemSerializer(ativos, many=True).data
 
     def get_texts(self, obj):
         # Parte do catálogo: um texto que ainda não chegou ao banco sai com o

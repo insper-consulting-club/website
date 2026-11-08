@@ -1,27 +1,22 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import logoBranca from "../../images/logo-icc-branca.png";
 import useProgramas from "../../hooks/useProgramas";
 import useDiretorias from "../../hooks/useDiretorias";
 import { ChevronDownIcon, CloseIcon, GitHubIcon, InstagramIcon, LinkedInIcon, MenuIcon } from "../Icons";
 import useSiteConfig from "../../hooks/useSiteConfig";
+import LinkDoSite from "../LinkDoSite";
 
 const COMPACT_THRESHOLD = 40;
 
-type NavItem = {
+type ItemMenu = {
+  id: number;
   label: string;
   to: string;
+  externo: boolean;
   children?: { label: string; to: string }[];
 };
-
-const NAV: NavItem[] = [
-  { label: "Nossa Equipe", to: "/equipe" },
-  { label: "Parceiros", to: "/parceiros" },
-  { label: "Projetos", to: "/projetos" },
-  { label: "Artigos", to: "/artigos" },
-  { label: "Contato", to: "/contato" },
-];
 
 export default function Header() {
   const headerRef = useRef<HTMLElement>(null);
@@ -32,19 +27,23 @@ export default function Header() {
   const config = useSiteConfig();
   // O submenu de Projetos vem do banco, então só aparece depois que a lista
   // chega; até lá o item continua navegável, levando ao índice.
-  const nav = useMemo(
+  const nav = useMemo<ItemMenu[]>(
     () =>
-      NAV.map((item) => {
-        if (item.to === "/projetos" && programas.length > 0) {
-          return { ...item, children: programas.map((p) => ({ label: p.label, to: `/projetos/${p.slug}` })) };
-        }
-        if (item.to === "/equipe" && diretorias.length > 0) {
-          return { ...item, children: diretorias.map((d) => ({ label: d.name, to: `/equipe#${d.slug}` })) };
-        }
-        return item;
-      }),
-    [programas, diretorias]
+      config.nav_items
+        .filter((item) => item.area === "menu" || item.area === "topo")
+        .map((item) => {
+          const base: ItemMenu = { id: item.id, label: item.label, to: item.path, externo: item.external };
+          if (item.page === "projetos" && programas.length > 0) {
+            return { ...base, children: programas.map((p) => ({ label: p.label, to: `/projetos/${p.slug}` })) };
+          }
+          if (item.page === "equipe" && diretorias.length > 0) {
+            return { ...base, children: diretorias.map((d) => ({ label: d.name, to: `/equipe#${d.slug}` })) };
+          }
+          return base;
+        }),
+    [config.nav_items, programas, diretorias]
   );
+  const botao = config.nav_items.find((item) => item.area === "botao");
   const [compact, setCompact] = useState(false);
   // Guardam em qual página/navegação o estado vale, então trocar de página
   // "reseta" os dois sem precisar de setState dentro de effect.
@@ -123,11 +122,11 @@ export default function Header() {
         <nav className="header__nav" aria-label="Navegação principal">
           <ul className="header__menu">
             {nav.map((item) => (
-              <li key={item.to} className={item.children ? "header__item header__item--dropdown" : "header__item"}>
-                <NavLink to={item.to} className="header__link">
+              <li key={item.id} className={item.children ? "header__item header__item--dropdown" : "header__item"}>
+                <LinkDoSite to={item.to} externo={item.externo} menu className="header__link">
                   {item.label}
                   {item.children && <ChevronDownIcon size={10} />}
-                </NavLink>
+                </LinkDoSite>
                 {item.children && (
                   <ul className="header__dropdown">
                     {item.children.map((child) => (
@@ -154,9 +153,11 @@ export default function Header() {
           <a href={config.github_url} target="_blank" rel="noopener noreferrer" className="header__social" aria-label="GitHub do ICC">
             <GitHubIcon size={17} />
           </a>
-          <Link to="/processo" className="header__cta">
-            Seja membro
-          </Link>
+          {botao && (
+            <LinkDoSite to={botao.path} externo={botao.external} className="header__cta">
+              {botao.label}
+            </LinkDoSite>
+          )}
           <button
             type="button"
             className="header__toggle"
@@ -173,10 +174,10 @@ export default function Header() {
       <div id="menu-mobile" className="header__mobile" hidden={!menuOpen}>
         <ul className="header__mobile-list">
           {nav.map((item) => (
-            <li key={item.to}>
-              <NavLink to={item.to} end className="header__mobile-link">
+            <li key={item.id}>
+              <LinkDoSite to={item.to} externo={item.externo} menu end className="header__mobile-link">
                 {item.label}
-              </NavLink>
+              </LinkDoSite>
               {item.children && (
                 <ul className="header__mobile-sub">
                   {item.children.map((child) => (
@@ -190,9 +191,11 @@ export default function Header() {
           ))}
         </ul>
         <div className="header__mobile-footer">
-          <Link to="/processo" className="btn btn--light">
-            Seja membro
-          </Link>
+          {botao && (
+            <LinkDoSite to={botao.path} externo={botao.external} className="btn btn--light">
+              {botao.label}
+            </LinkDoSite>
+          )}
           <div className="header__mobile-social">
             <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram do ICC">
               <InstagramIcon size={20} />

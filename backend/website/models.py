@@ -841,3 +841,84 @@ class SiteText(models.Model):
 
     def __str__(self):
         return f'{self.group}: {self.description}'
+
+
+class NavItem(models.Model):
+    """
+    Item do menu do topo, do rodapé ou botão de destaque do topo. Aponta para
+    uma página do site (lista fixa) ou para um link livre.
+    """
+    class Area(models.TextChoices):
+        MENU = 'menu', 'Menu (topo e rodapé)'
+        TOPO = 'topo', 'Só no menu do topo'
+        RODAPE = 'rodape', 'Só no rodapé'
+        BOTAO = 'botao', 'Botão de destaque do topo'
+
+    # Páginas que existem no site. Quem edita escolhe daqui, em vez de digitar
+    # o endereço, para o link não quebrar por erro de digitação.
+    PAGINAS = {
+        'home': '/',
+        'equipe': '/equipe',
+        'parceiros': '/parceiros',
+        'projetos': '/projetos',
+        'artigos': '/artigos',
+        'processo': '/processo',
+        'contato': '/contato',
+        'politica-de-privacidade': '/politica-de-privacidade',
+    }
+    PAGE_CHOICES = [
+        ('home', 'Página inicial'),
+        ('equipe', 'Equipe'),
+        ('parceiros', 'Parceiros'),
+        ('projetos', 'Projetos'),
+        ('artigos', 'Artigos'),
+        ('processo', 'Processo seletivo'),
+        ('contato', 'Contato'),
+        ('politica-de-privacidade', 'Política de Privacidade'),
+    ]
+
+    site_config = models.ForeignKey(
+        SiteConfig, on_delete=models.CASCADE, related_name='nav_items', verbose_name='Configuração'
+    )
+    label = models.CharField(max_length=60, verbose_name='Texto exibido')
+    area = models.CharField(max_length=10, choices=Area.choices, default=Area.MENU, verbose_name='Onde aparece')
+    page = models.CharField(
+        max_length=40, choices=PAGE_CHOICES, blank=True, verbose_name='Página do site',
+        help_text='Escolha uma página do site, ou deixe vazio e preencha "Link livre". '
+                  'Em Projetos e Equipe, o menu do topo mostra também a lista de programas e de diretorias.'
+    )
+    url = models.CharField(
+        max_length=300, blank=True, verbose_name='Link livre',
+        help_text='Endereço completo (https://...) ou um caminho do site (/equipe). Use só se não houver página na lista.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+    is_active = models.BooleanField(
+        default=True, verbose_name='Exibir no site',
+        help_text='Desmarque para esconder o item sem apagar.'
+    )
+
+    class Meta:
+        verbose_name = 'Item de navegação'
+        verbose_name_plural = 'Itens de navegação'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.label
+
+    @property
+    def path(self):
+        return self.PAGINAS[self.page] if self.page else self.url
+
+    @property
+    def external(self):
+        return self.path.startswith(('http://', 'https://', 'mailto:'))
+
+    def clean(self):
+        if self.page and self.url:
+            raise ValidationError('Preencha a página do site ou o link livre, não os dois.')
+        if not self.page and not self.url:
+            raise ValidationError('Escolha uma página do site ou informe um link livre.')
+        if self.url and not self.url.startswith(('/', 'http://', 'https://', 'mailto:')):
+            raise ValidationError({
+                'url': 'O link precisa começar com https://, http://, mailto: ou / (caminho do site).'
+            })

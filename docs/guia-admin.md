@@ -231,6 +231,14 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação
 - **Rodapé:** a frase de apresentação.
 - **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** recebe o slug de um programa existente (por exemplo, `jornada-do-consultor`) e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
 - **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
+- **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
+  - **Texto exibido** e **Ordem**.
+  - **Onde aparece:** menu (topo e rodapé), só no topo, só no rodapé ou botão de destaque do topo.
+  - **Página do site**, escolhida numa lista (Equipe, Parceiros, Projetos, Artigos, Processo seletivo, Contato, Política de Privacidade, Página inicial). Prefira esta opção: o link não quebra.
+  - **Link livre**, só quando não houver página na lista: um endereço completo (`https://...`) ou um caminho do site (`/equipe`). Preencha a página **ou** o link livre, nunca os dois. Links externos abrem em outra aba.
+  - **Exibir no site:** desmarque para esconder um item sem apagá-lo.
+
+  Os submenus de **Projetos** (programas) e **Equipe** (diretorias) aparecem sozinhos nos itens que apontam para essas páginas. Cuidado para não esconder todos os itens do menu.
 - **Benefícios para parceiros:** a lista de "Por que ser parceiro" da página Parceiros, com título, descrição e ordem.
 
 As mudanças podem levar até um minuto para aparecer no site.
@@ -253,7 +261,6 @@ Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem
 
 Alguns itens fixos são alterados no código pelo responsável técnico:
 
-- o menu de navegação e os títulos das páginas;
 - a descrição e a imagem usadas na prévia ao compartilhar um link (WhatsApp, LinkedIn), que ficam no `index.html`, porque esses aplicativos não executam o site.
 
 ---

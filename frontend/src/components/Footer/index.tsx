@@ -4,24 +4,18 @@ import logoBranca from "../../images/logo-icc-branca.png";
 import useProgramas from "../../hooks/useProgramas";
 import { GitHubIcon, InstagramIcon, LinkedInIcon, MailIcon } from "../Icons";
 import useSiteConfig from "../../hooks/useSiteConfig";
+import LinkDoSite from "../LinkDoSite";
 import useTextos from "../../hooks/useTextos";
 
 // O admin fica no backend, no mesmo endereço da API sem o "/api"
 // (local: localhost:8000/admin/; produção: icc-backend…onrender.com/admin/).
 const ADMIN_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "/admin/")
-const NAVEGACAO = [
-  { label: "Nossa Equipe", to: "/equipe" },
-  { label: "Parceiros", to: "/parceiros" },
-  { label: "Projetos", to: "/projetos" },
-  { label: "Artigos", to: "/artigos" },
-  { label: "Seja membro", to: "/processo" },
-  { label: "Contato", to: "/contato" },
-];
 
 export default function Footer() {
   const t = useTextos();
   const programas = useProgramas();
   const config = useSiteConfig();
+  const navegacao = config.nav_items.filter((item) => item.area === "menu" || item.area === "rodape");
 
   return (
     <footer className="footer">
@@ -36,9 +30,11 @@ export default function Footer() {
         <nav className="footer__col" aria-label="Navegação do rodapé">
           <h2 className="footer__title">{t("rodape.navegacao")}</h2>
           <ul className="footer__list">
-            {NAVEGACAO.map((item) => (
-              <li key={item.to}>
-                <Link to={item.to}>{item.label}</Link>
+            {navegacao.map((item) => (
+              <li key={item.id}>
+                <LinkDoSite to={item.path} externo={item.external}>
+                  {item.label}
+                </LinkDoSite>
               </li>
             ))}
           </ul>

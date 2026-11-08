@@ -245,6 +245,17 @@ export interface PartnerBenefit {
   order: number
 }
 
+// Item do menu, do rodapé ou botão de destaque do topo (Configuração do site).
+export interface NavItem {
+  id: number
+  label: string
+  area: "menu" | "topo" | "rodape" | "botao"
+  page: string
+  path: string
+  external: boolean
+  order: number
+}
+
 // Textos e contatos editáveis no admin (Configuração do site).
 export interface SiteConfig {
   email: string
@@ -280,4 +291,5 @@ export interface SiteConfig {
   partner_benefits: PartnerBenefit[]
   // Textos curtos (títulos, rótulos, botões), por chave. Ver textosPadrao.ts.
   texts: Record<string, string>
+  nav_items: NavItem[]
 }

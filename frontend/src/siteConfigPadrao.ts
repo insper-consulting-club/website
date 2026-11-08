@@ -45,6 +45,15 @@ export const SITE_CONFIG_PADRAO: SiteConfig = {
   privacy_updated: "novembro de 2026",
   privacy_text: "",
   texts: TEXTOS_PADRAO,
+  nav_items: [
+    { id: 0, label: "Nossa Equipe", area: "menu", page: "equipe", path: "/equipe", external: false, order: 1 },
+    { id: 1, label: "Parceiros", area: "menu", page: "parceiros", path: "/parceiros", external: false, order: 2 },
+    { id: 2, label: "Projetos", area: "menu", page: "projetos", path: "/projetos", external: false, order: 3 },
+    { id: 3, label: "Artigos", area: "menu", page: "artigos", path: "/artigos", external: false, order: 4 },
+    { id: 4, label: "Seja membro", area: "rodape", page: "processo", path: "/processo", external: false, order: 5 },
+    { id: 5, label: "Contato", area: "menu", page: "contato", path: "/contato", external: false, order: 6 },
+    { id: 6, label: "Seja membro", area: "botao", page: "processo", path: "/processo", external: false, order: 7 },
+  ],
   partner_benefits: [
     {
       id: 0,

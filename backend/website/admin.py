@@ -22,7 +22,7 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
-    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText,
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem,
 )
 
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
@@ -414,9 +414,17 @@ class PartnerBenefitInline(TabularInline):
     tab = True
 
 
+class NavItemInline(TabularInline):
+    model = NavItem
+    extra = 0
+    fields = ('label', 'area', 'page', 'url', 'order', 'is_active')
+    ordering = ('order',)
+    tab = True
+
+
 @admin.register(SiteConfig)
 class SiteConfigAdmin(ModelAdmin):
-    inlines = [PartnerBenefitInline]
+    inlines = [NavItemInline, PartnerBenefitInline]
     readonly_fields = ('foto_atual',)
     fieldsets = (
         ('Contatos', {

@@ -199,7 +199,7 @@ class SiteConfigView(generics.RetrieveAPIView):
 
     def get_object(self):
         # Registro único; criado na hora se, por algum motivo, ainda não existir.
-        return SiteConfig.get_solo()
+        return SiteConfig.objects.prefetch_related("nav_items", "partner_benefits").get(pk=SiteConfig.get_solo().pk)
 
 
 def health(request):

@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from website.models import (
     Article, Member, Partner, PartnerCategory, Program, ProgramCase,
-    ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
+    NavItem, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
 )
 
 
@@ -548,3 +548,56 @@ class SiteTextAdminTests(TestCase):
 
         self.texto.refresh_from_db()
         self.assertEqual(self.texto.value, "{programa}: {n} cases")
+
+
+class NavItemTests(TestCase):
+    def test_migration_reproduces_the_previous_menu(self):
+        itens = list(NavItem.objects.values_list("label", "area", "page"))
+
+        self.assertEqual(itens, [
+            ("Nossa Equipe", "menu", "equipe"),
+            ("Parceiros", "menu", "parceiros"),
+            ("Projetos", "menu", "projetos"),
+            ("Artigos", "menu", "artigos"),
+            ("Seja membro", "rodape", "processo"),
+            ("Contato", "menu", "contato"),
+            ("Seja membro", "botao", "processo"),
+        ])
+
+    def test_endpoint_lists_active_items_with_resolved_paths(self):
+        config = SiteConfig.get_solo()
+        NavItem.objects.create(site_config=config, label="Instagram", url="https://example.com/ig", order=8)
+        NavItem.objects.filter(label="Artigos").update(is_active=False)
+
+        itens = APIClient().get("/api/site-config/").data["nav_items"]
+        por_texto = {i["label"]: i for i in itens}
+
+        self.assertNotIn("Artigos", por_texto)
+        self.assertEqual(por_texto["Nossa Equipe"]["path"], "/equipe")
+        self.assertFalse(por_texto["Nossa Equipe"]["external"])
+        self.assertEqual(por_texto["Instagram"]["path"], "https://example.com/ig")
+        self.assertTrue(por_texto["Instagram"]["external"])
+
+    def test_home_page_points_to_the_root(self):
+        item = NavItem(site_config=SiteConfig.get_solo(), label="Início", page="home")
+
+        self.assertEqual(item.path, "/")
+
+    def test_item_needs_exactly_one_destination(self):
+        config = SiteConfig.get_solo()
+
+        with self.assertRaises(ValidationError):
+            NavItem(site_config=config, label="x").clean()
+        with self.assertRaises(ValidationError):
+            NavItem(site_config=config, label="x", page="equipe", url="/equipe").clean()
+        NavItem(site_config=config, label="x", page="equipe").clean()
+        NavItem(site_config=config, label="x", url="/equipe").clean()
+
+    def test_free_link_must_be_an_address_or_a_site_path(self):
+        config = SiteConfig.get_solo()
+
+        with self.assertRaises(ValidationError):
+            NavItem(site_config=config, label="x", url="javascript:alert(1)").clean()
+        with self.assertRaises(ValidationError):
+            NavItem(site_config=config, label="x", url="equipe").clean()
+        NavItem(site_config=config, label="x", url="mailto:a@example.com").clean()
