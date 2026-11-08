@@ -135,6 +135,7 @@ Modelo comentado em [`backend/.env.example`](../backend/.env.example). Nunca reg
 | `CORS_ALLOWED_ORIGINS` | Sim | Origens do site, com `https://`. Em produção: `https://insperconsultingclub.com.br` |
 | `CSRF_TRUSTED_ORIGINS` | Sim | Domínio do backend com `https://`, necessário para o login do admin. Em produção: `https://api.insperconsultingclub.com.br` |
 | `BEHIND_PROXY` | Sim | `True` atrás do proxy do Render |
+| `API_CACHE_SECONDS` | Não | Segundos que o navegador reaproveita as respostas de leitura da API (`Cache-Control`). Padrão: `60`. `0` desliga |
 | `DATABASE_URL` | Sim | Conexão com o Postgres do Neon |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Sim | Armazenamento de imagens. Sem elas, as imagens enviadas se perdem a cada deploy |
 

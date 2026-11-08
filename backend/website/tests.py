@@ -346,3 +346,21 @@ class HealthTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+
+
+class ApiCacheHeaderTests(TestCase):
+    def test_read_endpoints_can_be_cached_by_the_browser(self):
+        response = self.client.get("/api/statistics/")
+
+        self.assertEqual(response["Cache-Control"], "public, max-age=60")
+
+    def test_health_is_never_cached(self):
+        response = self.client.get("/api/health/")
+
+        self.assertNotIn("max-age", response.get("Cache-Control", ""))
+
+    def test_errors_are_not_cached(self):
+        response = self.client.get("/api/partners/999999/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn("max-age", response.get("Cache-Control", ""))
