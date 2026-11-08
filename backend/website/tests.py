@@ -1550,3 +1550,55 @@ class PasswordAndSessionPolicyTests(TestCase):
     def test_session_expires_after_twelve_hours_without_use(self):
         self.assertEqual(settings.SESSION_COOKIE_AGE, 12 * 60 * 60)
         self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+
+
+@SEM_MANIFESTO
+class ActionPermissionTests(TestCase):
+    """Toda ação em lote do projeto exige uma permissão; quem só pode ler não consegue executá-la."""
+
+    def test_every_custom_bulk_action_declares_the_permission_it_needs(self):
+        from django.contrib import admin
+
+        sem_permissao = []
+        for modelo, modelo_admin in admin.site._registry.items():
+            if modelo._meta.app_label != "website":
+                continue
+            for nome in modelo_admin.actions:
+                if not getattr(getattr(modelo_admin, nome), "allowed_permissions", None):
+                    sem_permissao.append(f"{modelo.__name__}.{nome}")
+
+        self.assertEqual(sem_permissao, [])
+
+    def test_a_read_only_user_cannot_archive_members_or_restore_texts(self):
+        from django.contrib.auth.models import Permission
+        from website.models import SiteText
+
+        leitor = get_user_model().objects.create_user("leitor", "l@example.com", "senha-de-teste", is_staff=True)
+        leitor.user_permissions.add(*Permission.objects.filter(codename__in=["view_member", "view_project", "view_sitetext"]))
+        self.client.force_login(leitor)
+        membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
+        texto = SiteText.objects.get(key="equipe.titulo")
+        SiteText.objects.filter(pk=texto.pk).update(value="Editado")
+
+        self.client.post("/admin/website/member/", {"action": "arquivar", "_selected_action": [membro.pk]})
+        self.client.post("/admin/website/project/", {"action": "arquivar", "_selected_action": [projeto.pk]})
+        self.client.post("/admin/website/sitetext/", {"action": "restaurar", "_selected_action": [texto.pk]})
+
+        membro.refresh_from_db(); projeto.refresh_from_db(); texto.refresh_from_db()
+        self.assertIsNone(membro.exit_date)
+        self.assertTrue(projeto.is_active)
+        self.assertEqual(texto.value, "Editado")
+
+    def test_the_editors_group_can_still_use_the_actions(self):
+        from django.contrib.auth.models import Group
+
+        editora = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste", is_staff=True)
+        editora.groups.add(Group.objects.get(name="Editores"))
+        self.client.force_login(editora)
+        membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+
+        self.client.post("/admin/website/member/", {"action": "arquivar", "_selected_action": [membro.pk]})
+
+        membro.refresh_from_db()
+        self.assertIsNotNone(membro.exit_date)

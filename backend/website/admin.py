@@ -297,12 +297,12 @@ class MemberAdmin(AdminDoSite):
     def atual(self, obj):
         return obj.exit_date is None
 
-    @admin.action(description='Arquivar selecionados (sai da página Equipe)')
+    @admin.action(description='Arquivar selecionados (sai da página Equipe)', permissions=['change'])
     def arquivar(self, request, queryset):
         n = queryset.filter(exit_date__isnull=True).update(exit_date=timezone.localdate())
         self.message_user(request, f'{n} membro(s) arquivado(s). O histórico continua guardado.', messages.SUCCESS)
 
-    @admin.action(description='Reativar selecionados (volta para a página Equipe)')
+    @admin.action(description='Reativar selecionados (volta para a página Equipe)', permissions=['change'])
     def reativar(self, request, queryset):
         n = queryset.exclude(exit_date__isnull=True).update(exit_date=None)
         self.message_user(request, f'{n} membro(s) reativado(s).', messages.SUCCESS)
@@ -363,12 +363,12 @@ class ProjectAdmin(AdminDoSite):
     actions = ['arquivar', 'reativar']
     inlines = [ProjectImageInline, ProjectTimelineEventInline, ProjectContentBlockInline]
 
-    @admin.action(description='Arquivar selecionados (somem do site)')
+    @admin.action(description='Arquivar selecionados (somem do site)', permissions=['change'])
     def arquivar(self, request, queryset):
         n = queryset.filter(is_active=True).update(is_active=False)
         self.message_user(request, f'{n} projeto(s) arquivado(s). O histórico continua guardado.', messages.SUCCESS)
 
-    @admin.action(description='Reativar selecionados (voltam para o site)')
+    @admin.action(description='Reativar selecionados (voltam para o site)', permissions=['change'])
     def reativar(self, request, queryset):
         n = queryset.filter(is_active=False).update(is_active=True)
         self.message_user(request, f'{n} projeto(s) reativado(s).', messages.SUCCESS)
@@ -828,7 +828,7 @@ class SiteTextAdmin(AdminDoSite):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    @admin.action(description='Restaurar texto original')
+    @admin.action(description='Restaurar texto original', permissions=['change'])
     def restaurar(self, request, queryset):
         n = 0
         for texto in queryset:
