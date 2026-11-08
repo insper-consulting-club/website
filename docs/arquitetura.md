@@ -65,7 +65,7 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 |---|---|---|
 | Equipe | `Member`, `Position`, `Directorate`, `DirectorateMembership` | Uma pessoa pode estar em mais de uma diretoria, com cargo diferente em cada. `Position.power` define a ordem e a presença na liderança da Home (valores até 2). Membro com `exit_date` é considerado arquivado |
 | Parceiros | `Partner`, `PartnerCategory` | `is_active` esconde o parceiro sem apagá-lo |
-| Programas | `Program`, `ProgramComponent` | `Program` representa cada programa do ICC, e seu `slug` é usado na URL `/projetos/<slug>`. `ProgramComponent` guarda os componentes de um programa (título e descrição), exibidos em "Como funciona" na página dele. No admin, os nomes são **Programas** e **Componentes dos programas** |
+| Programas | `Program`, `ProgramComponent`, `ProgramContentBlock` | `Program` representa cada programa do ICC, e seu `slug` é usado na URL `/projetos/<slug>`. `ProgramComponent` guarda os componentes de um programa (título e descrição), exibidos em "Como funciona" na página dele. `ProgramContentBlock` guarda os blocos de texto livres (Markdown, com imagem opcional) que descrevem o programa em detalhe, abaixo do topo da página. No admin, os nomes são **Programas** e **Componentes dos programas** |
 | Projetos | `Project`, `ProjectContentBlock`, `ProjectImage`, `ProjectTimelineEvent` | `is_active=False` arquiva. Um projeto sem programa (`program` vazio) aparece em "Outros projetos". Um projeto com `end_date` conta como projeto concluído do parceiro |
 | Cases | `ProgramCase`, `ProgramCaseParticipant` | Case resolvido por um grupo de membros dentro de um programa. Os participantes ligam o case a membros, como integrantes ou mentores |
 | Artigos | `Article`, `ArticleImage` | O texto é Markdown e as imagens são chamadas por número. `published=False` é rascunho |
@@ -102,6 +102,7 @@ Todos os endpoints são públicos e somente leitura. Itens ocultos ou arquivados
 | GET | `/partners/` | Parceiros visíveis. Aceita `?category=<id>` |
 | GET | `/partners/<id>/` | Detalhe de um parceiro, com seus projetos concluídos |
 | GET | `/programs/` | Programas visíveis |
+| GET | `/programs/<slug>/` | Detalhe de um programa visível, com os blocos de conteúdo; oculto responde 404. A lista não leva os blocos, porque alimenta o menu, o rodapé e a Home |
 | GET | `/components/` | Componentes dos programas. Aceita `?program=<slug>` |
 | GET | `/projects/` | Projetos ativos. Aceita `?program=<slug>` |
 | GET | `/projects/<id>/` | Detalhe de um projeto ativo; arquivado responde 404 |

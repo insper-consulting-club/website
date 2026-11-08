@@ -25,6 +25,9 @@ export const api = {
   getPrograms: () =>
     fetch(`${apiUrl}/programs/`, { headers }).then((res) => res.json()),
 
+  getProgram: (slug: string) =>
+    fetch(`${apiUrl}/programs/${slug}/`, { headers }).then((res) => res.json()),
+
   getProjects: (program?: string) =>
     fetch(`${apiUrl}/projects/${program ? `?program=${program}` : ""}`, { headers }).then((res) => res.json()),
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { api } from "../../api"
-import type { Project, ProgramCase, ProgramCaseParticipant, ProgramComponent } from "../../types"
+import type { Project, ProgramCase, ProgramCaseParticipant, ProgramComponent, ProgramContentBlock } from "../../types"
 import PageHero from "../../components/PageHero"
 import ProjetoCard from "../../components/ProjetoCard"
+import TextoMarkdown from "../../components/TextoMarkdown"
 import NaoEncontrada from "../NaoEncontrada"
 import { ArrowRightIcon, CheckIcon, ExternalIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
@@ -35,12 +36,19 @@ export default function Programa() {
   const [componentes, setComponentes] = useState<ProgramComponent[]>([])
   const [cases, setCases] = useState<ProgramCase[]>([])
   const [projetos, setProjetos] = useState<Project[]>([])
+  // Guarda de qual programa são os blocos: ao trocar de programa, os do
+  // anterior não aparecem na página nova enquanto a resposta não chega.
+  const [blocosDe, setBlocosDe] = useState<{ slug: string; blocos: ProgramContentBlock[] } | null>(null)
 
   const programa = programas.find((p) => p.slug === slug)
   usePageTitle(programa?.label, programa?.description)
 
   useEffect(() => {
     if (!slug) return
+    api
+      .getProgram(slug)
+      .then((data) => setBlocosDe({ slug, blocos: Array.isArray(data?.content_blocks) ? data.content_blocks : [] }))
+      .catch(() => setBlocosDe({ slug, blocos: [] }))
     api.getComponents(slug).then(setComponentes).catch(() => setComponentes([]))
     api.getProgramCases(slug).then(setCases).catch(() => setCases([]))
     api.getProjects(slug).then(setProjetos).catch(() => setProjetos([]))
@@ -56,6 +64,7 @@ export default function Programa() {
   if (!programa) return <NaoEncontrada />
 
   const outros = programas.filter((p) => p.slug !== programa.slug)
+  const blocos = blocosDe && blocosDe.slug === slug ? blocosDe.blocos : []
 
   return (
     <div className="projeto-page">
@@ -72,6 +81,33 @@ export default function Programa() {
           </a>
         )}
       </PageHero>
+
+      {blocos.length > 0 && (
+        <section className="section">
+          <div className="container programa-blocos">
+            {blocos.map((bloco) => {
+              const comImagem = Boolean(bloco.image_url)
+              return (
+                <div
+                  className={`programa-bloco${comImagem ? ` programa-bloco--${bloco.image_align}` : ""}`}
+                  key={bloco.id}
+                >
+                  <div className="programa-bloco__texto">
+                    {bloco.title && <h2 className="section-title">{bloco.title}</h2>}
+                    {bloco.text && <TextoMarkdown>{bloco.text}</TextoMarkdown>}
+                  </div>
+                  {comImagem && (
+                    <figure className="programa-bloco__figura">
+                      <img src={bloco.image_url ?? ""} alt={bloco.image_caption || bloco.title} loading="lazy" />
+                      {bloco.image_caption && <figcaption>{bloco.image_caption}</figcaption>}
+                    </figure>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {componentes.length > 0 && (
         <section className="section">

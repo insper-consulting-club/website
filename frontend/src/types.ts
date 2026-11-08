@@ -12,6 +12,21 @@ export interface Program {
   order: number
 }
 
+export interface ProgramContentBlock {
+  id: number
+  title: string
+  text: string
+  image_url: string | null
+  image_caption: string
+  image_align: "left" | "right" | "center"
+  order: number
+}
+
+// Detalhe de um programa: a lista (Program) não leva os blocos de texto.
+export interface ProgramDetail extends Program {
+  content_blocks: ProgramContentBlock[]
+}
+
 export interface ProgramCaseParticipant {
   member_id: number
   name: string

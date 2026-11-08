@@ -286,6 +286,33 @@ class ProgramComponent(models.Model):
         return self.title
 
 
+class ProgramContentBlock(models.Model):
+    """
+    Bloco de texto da página de um programa. Cada programa tem uma estrutura
+    própria (Jornada, Pedagógico, Escola de Mentores...), por isso os blocos
+    são livres: quem edita escolhe os títulos e a ordem.
+    """
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Programa')
+    title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
+    text = models.TextField(
+        blank=True, verbose_name='Texto',
+        help_text='Em Markdown: **negrito**, ## Subtítulo, - item de lista, [link](https://...). '
+                  'Separe os parágrafos com uma linha em branco.'
+    )
+    image = models.ImageField(upload_to='programs/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
+    image_caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda da imagem')
+    image_align = models.CharField(max_length=10, choices=IMAGE_ALIGN_CHOICES, default='right', verbose_name='Posição da imagem')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Bloco de conteúdo'
+        verbose_name_plural = 'Blocos de conteúdo'
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Bloco {self.order} — {self.program.label}"
+
+
 class Article(models.Model):
     title = models.CharField(max_length=200, verbose_name='Título')
     slug = models.SlugField(

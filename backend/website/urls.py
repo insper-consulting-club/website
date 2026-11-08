@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/partners/<int:pk>/', api_views.PartnerDetailView.as_view(), name='api-partners-detail'),
     path('api/directorates/', api_views.DirectorateListView.as_view(), name='api-directorates-list'),
     path('api/programs/', api_views.ProgramListView.as_view(), name='api-programs-list'),
+    path('api/programs/<slug:slug>/', api_views.ProgramDetailView.as_view(), name='api-programs-detail'),
     path('api/projects/', api_views.ProjectListView.as_view(), name='api-projects-list'),
     path('api/projects/<int:pk>/', api_views.ProjectDetailView.as_view(), name='api-projects-detail'),
     path('api/components/', api_views.ProgramComponentListView.as_view(), name='api-components-list'),

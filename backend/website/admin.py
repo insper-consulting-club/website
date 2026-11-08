@@ -19,7 +19,7 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
-    SiteConfig, PartnerBenefit,
+    SiteConfig, PartnerBenefit, ProgramContentBlock,
 )
 
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
@@ -273,8 +273,16 @@ class ProgramComponentAdmin(ModelAdmin):
     list_select_related = ('program',)
 
 
+class ProgramContentBlockInline(StackedInline):
+    model = ProgramContentBlock
+    extra = 0
+    fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
+    ordering = ('order',)
+
+
 @admin.register(Program)
 class ProgramAdmin(ModelAdmin):
+    inlines = [ProgramContentBlockInline]
     list_display = ('label', 'slug', 'badge', 'is_active', 'order')
     list_editable = ('is_active', 'order')
     list_filter = ('is_active',)

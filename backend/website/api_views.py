@@ -13,7 +13,7 @@ from .serializers import (
     ProgramComponentSerializer, ProgramSerializer,
     DirectorateSerializer, ProgramCaseSerializer,
     SelectionProcessSerializer, ArticleSerializer, ArticleListSerializer,
-    SiteConfigSerializer
+    SiteConfigSerializer, ProgramDetailSerializer
 )
 
 
@@ -88,6 +88,13 @@ class PartnerDetailView(generics.RetrieveAPIView):
 class ProgramListView(generics.ListAPIView):
     serializer_class = ProgramSerializer
     queryset = Program.objects.filter(is_active=True).order_by("order")
+
+
+class ProgramDetailView(generics.RetrieveAPIView):
+    serializer_class = ProgramDetailSerializer
+    lookup_field = "slug"
+    # Programa oculto responde 404, como se não existisse.
+    queryset = Program.objects.filter(is_active=True).prefetch_related("content_blocks")
 
 
 class ProjectListView(generics.ListAPIView):

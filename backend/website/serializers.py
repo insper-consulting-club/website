@@ -9,7 +9,7 @@ from .models import (
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
     ProgramCase, ProgramCaseParticipant,
-    SiteConfig, PartnerBenefit
+    SiteConfig, PartnerBenefit, ProgramContentBlock
 )
 
 
@@ -47,6 +47,29 @@ class ProgramSerializer(serializers.ModelSerializer):
         if obj.icon and request:
             return request.build_absolute_uri(obj.icon.url)
         return None
+
+
+class ProgramContentBlockSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProgramContentBlock
+        fields = ["id", "title", "text", "image_url", "image_caption", "image_align", "order"]
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+
+class ProgramDetailSerializer(ProgramSerializer):
+    # Só o detalhe leva os blocos: a lista de programas alimenta o menu, o
+    # rodapé e a Home, e não precisa carregar os textos de todas as páginas.
+    content_blocks = ProgramContentBlockSerializer(many=True, read_only=True)
+
+    class Meta(ProgramSerializer.Meta):
+        fields = ProgramSerializer.Meta.fields + ["content_blocks"]
 
 
 class PartnerProjectSerializer(serializers.ModelSerializer):

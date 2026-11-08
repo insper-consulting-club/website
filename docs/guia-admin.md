@@ -118,6 +118,13 @@ Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá p
 - **Ícone do card**, **Frequência (badge)** e **Estilo do badge**.
 - **Link de inscrição:** só para programas com formulário próprio.
 - **Exibir no site** e **Ordem de exibição**.
+- **Blocos de conteúdo:** no fim do formulário, em **Blocos de conteúdo**, você escreve a descrição detalhada da página, no formato que fizer sentido para aquele programa. Clique em adicionar bloco e preencha:
+  - **Título** (opcional), como "Para quem é", "Como funciona" ou "Requisitos".
+  - **Texto**, em Markdown: `## Subtítulo`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
+  - **Imagem** (opcional), com **Legenda** e **Posição da imagem** (à direita, à esquerda ou centralizada, abaixo do texto).
+  - **Ordem:** os blocos aparecem na página nessa ordem, logo abaixo do topo e antes de "Como funciona".
+
+  Não há estrutura obrigatória: cada programa pode ter os blocos que precisar. A **Descrição** continua sendo o resumo curto que aparece nos cards e no topo da página.
 
 ### Componentes dos programas
 

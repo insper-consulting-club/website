@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from website.models import (
     Article, Member, Partner, PartnerCategory, Program, ProgramCase,
-    ProgramComponent, Project, SelectionProcess, SiteConfig,
+    ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig,
 )
 
 
@@ -437,3 +437,36 @@ class SiteConfigAdminTests(TestCase):
         self.assertEqual(self.client.get("/admin/website/siteconfig/1/change/").status_code, 200)
         self.assertEqual(self.client.get("/admin/website/siteconfig/add/").status_code, 403)
         self.assertEqual(self.client.get("/admin/website/siteconfig/1/delete/").status_code, 403)
+
+
+class ProgramDetailTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.program = Program.objects.create(slug="pedagogico", label="Pedagógico", description="Resumo")
+        ProgramContentBlock.objects.create(program=self.program, title="Segundo", text="B", order=2)
+        ProgramContentBlock.objects.create(program=self.program, title="Primeiro", text="**A**", order=1)
+
+    def test_detail_returns_blocks_in_order(self):
+        response = self.client.get("/api/programs/pedagogico/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([b["title"] for b in response.data["content_blocks"]], ["Primeiro", "Segundo"])
+        self.assertIsNone(response.data["content_blocks"][0]["image_url"])
+        self.assertEqual(response.data["content_blocks"][0]["image_align"], "right")
+
+    def test_list_does_not_carry_the_blocks(self):
+        response = self.client.get("/api/programs/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("content_blocks", response.data[0])
+
+    def test_hidden_or_unknown_program_returns_404(self):
+        Program.objects.filter(pk=self.program.pk).update(is_active=False)
+
+        self.assertEqual(self.client.get("/api/programs/pedagogico/").status_code, 404)
+        self.assertEqual(self.client.get("/api/programs/nao-existe/").status_code, 404)
+
+    def test_deleting_the_program_deletes_its_blocks(self):
+        self.program.delete()
+
+        self.assertEqual(ProgramContentBlock.objects.count(), 0)
