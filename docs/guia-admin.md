@@ -14,23 +14,34 @@ Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site a
 
 ## Como a tela está organizada
 
-Na página inicial do admin, o conteúdo fica no quadro **"Website"**. Cada linha é um tipo de conteúdo. Em todas as telas o padrão é o mesmo:
+O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários e grupos). Quem tem um login limitado vê só os grupos que pode usar. A busca no topo do menu acha qualquer tela pelo nome. Na página inicial, o conteúdo também aparece no quadro **"Conteúdo do site"**. Em todas as telas o padrão é o mesmo:
 
 - **Adicionar** (botão no canto superior direito da lista) cria um registro novo.
 - Clicar no nome de um registro abre a edição.
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
+- **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
+- **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
 | Quero cadastrar ou editar | Linha do admin |
 |---|---|
 | Pessoas da equipe | Membros, Cargos, Diretorias |
-| Empresas parceiras | Parceiros, Categorias dos Parceiros |
+| Empresas parceiras | Parceiros, Categorias dos parceiros |
 | Programas do ICC e o que os compõe | Programas, Componentes dos programas |
 | Trabalhos feitos com parceiros | Projetos |
 | Cases dos programas | Cases dos programas |
 | Textos publicados pelos membros | Artigos |
-| Próximo processo seletivo | Processos Seletivos, Materiais de Preparação |
+| Próximo processo seletivo | Processos seletivos, Materiais de preparação |
 | Números da Home | Estatísticas |
+
+### Prévia dos textos em Markdown
+
+Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Mostrar prévia** abre, logo abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
+
+### Depois de salvar e ao enviar imagens
+
+- **Aviso depois de salvar:** o admin mostra "A mudança aparece no site em até 1 minuto". É o tempo que o navegador de quem visita guarda as respostas do site. Se a mudança ainda não apareceu, espere um pouco e recarregue a página.
+- **Tamanho das imagens:** cada imagem enviada pode ter até **5 MB**. Acima disso, o admin recusa e mostra o tamanho real. Fotos de celular costumam ser maiores: reduza ou comprima a imagem antes de enviar (qualquer editor de imagens ou site de compressão serve).
 
 ### Esconder ou apagar
 
@@ -46,11 +57,21 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
 
 1. Crie o nome de usuário e a senha.
 2. Na tela seguinte, marque **"Membro da equipe"**. Sem isso, a pessoa não consegue entrar no admin.
-3. Escolha o nível de acesso:
-   - marque **"Status de superusuário"** para acesso total, incluindo criar outros logins. Deixe isso para uma ou duas pessoas;
-   - ou deixe desmarcado e, em **Permissões do usuário**, escolha o que a pessoa pode mexer (por exemplo, todas as de "website", que cobrem o conteúdo do site).
+3. Escolha o nível de acesso. Existem dois:
+   - **Editor (o caso comum):** deixe "Status de superusuário" desmarcado e, em **Grupos**, escolha **Editores**. O grupo já traz as permissões certas, sem precisar escolher uma a uma.
+   - **Administrador:** marque "Status de superusuário". Dá acesso total, incluindo criar outros logins, apagar qualquer registro e mexer na estrutura do site. Deixe isso para duas pessoas (por exemplo, o Diretor Tech e alguém da presidência), para nunca depender de uma só.
+
+**O que o grupo Editores pode e não pode:**
+- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (Home, Rodapé, Páginas), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
+- **Não** vê as abas **Marca e compartilhamento** e **Política de Privacidade** da configuração, nem o menu do site e os benefícios para parceiros. Isso fica com os administradores.
+- **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Cargos aparecem só para consulta, porque definem quem é liderança na Home.
+- O menu mostra só o que a pessoa pode usar.
+
+O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, apague o grupo **Editores** em **Grupos**: ele é recriado com as permissões originais no próximo deploy (as pessoas que estavam nele precisam ser colocadas de novo).
 
 **Quando alguém sai da gestão:** abra o usuário dela e desmarque **"Ativo"**. Ela perde o acesso na hora.
+
+**Senhas:** o admin exige pelo menos **12 caracteres** e recusa senhas comuns ou só de números. Cada pessoa deve ter uma senha longa e só dela, de preferência guardada num gerenciador de senhas (assim ninguém precisa decorar nem reaproveitar a de outro serviço). O login do admin não bloqueia depois de várias tentativas erradas, então a senha longa é a principal proteção. A sessão expira depois de 12 horas sem uso, e aí é preciso entrar de novo.
 
 ---
 
@@ -63,14 +84,12 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
 1. **Nome**, **Foto** (JPG ou PNG, de preferência quadrada), **Cargo principal**, **LinkedIn** e **Email**.
 2. **Formação:** Curso e Período.
 3. **No ICC:** Data de entrada, Biografia (até 200 caracteres) e, se quiser, Horas dedicadas e Projetos participados.
-4. Embaixo, em **Vínculos com Diretorias**, adicione uma linha por diretoria da pessoa: a diretoria, o cargo nela e a ordem em que ela aparece dentro da diretoria.
+4. Nas abas **Trajetória** e **Vínculos com diretorias**, no alto do formulário, ficam as listas da pessoa:
+   - **Trajetória** (opcional): uma linha por semestre, com o **Semestre** no formato `AAAA.S` (por exemplo, `2026.1`) e o **Cargo nesse semestre**. O perfil público mostra as etapas em ordem de semestre, e o admin recusa um semestre fora do formato.
+   - **Vínculos com diretorias:** uma linha por diretoria da pessoa, com o cargo nela. Arraste a linha para mudar a ordem dentro da diretoria.
 5. Salvar.
 
-O campo **Trajetória** é opcional e guarda os cargos da pessoa ao longo dos semestres, neste formato, com o mais recente por último:
-
-```
-[{"semestre": "2026.1", "cargo": "Trainee"}, {"semestre": "2026.2", "cargo": "Membro"}]
-```
+Em **Projetos participados**, digite parte do nome do projeto para buscar e escolha; os escolhidos aparecem como etiquetas, e o "x" tira cada um.
 
 O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança.
 
@@ -87,7 +106,7 @@ A pessoa some da página Equipe, mas o histórico (cases, trajetória) continua 
 
 ### Diretorias
 
-Em **Diretorias** você cria, renomeia e reordena as diretorias. A **Ordem de exibição** define a ordem das seções na página Equipe e no menu "Nossa Equipe".
+Em **Diretorias** você cria, renomeia e reordena as diretorias. A ordem das linhas (arraste para mudar) define a ordem das seções na página Equipe e no menu "Nossa Equipe".
 
 ---
 
@@ -95,11 +114,11 @@ Em **Diretorias** você cria, renomeia e reordena as diretorias. A **Ordem de ex
 
 **Parceiros > Adicionar parceiro** (ou clique em um existente para editar)
 
-1. **Nome**, **Categoria**, **Site do parceiro** e **Descrição**. As categorias ficam em **Categorias dos Parceiros**.
+1. **Nome**, **Categoria**, **Site do parceiro** e **Descrição**. As categorias ficam em **Categorias dos parceiros**.
 2. **Logo:**
    - use **PNG com fundo transparente**, de preferência recortado rente ao logo, sem margem vazia em volta. Assim ele fica do tamanho certo no carrossel da Home e na página de parceiros;
    - **SVG é recusado** pelo admin.
-3. **Ordem de exibição:** o menor número aparece primeiro.
+3. **Ordem de exibição:** na lista de parceiros, arraste a linha para mudar a posição.
 4. Salvar. A miniatura na lista mostra o logo atual.
 
 Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá para fazer isso direto na lista.
@@ -118,6 +137,13 @@ Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá p
 - **Ícone do card**, **Frequência (badge)** e **Estilo do badge**.
 - **Link de inscrição:** só para programas com formulário próprio.
 - **Exibir no site** e **Ordem de exibição**.
+- **Blocos de conteúdo:** no fim do formulário, em **Blocos de conteúdo**, você escreve a descrição detalhada da página, no formato que fizer sentido para aquele programa. Clique em adicionar bloco e preencha:
+  - **Título** (opcional), como "Para quem é", "Como funciona" ou "Requisitos".
+  - **Texto**, em Markdown: `## Subtítulo`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
+  - **Imagem** (opcional), com **Legenda** e **Posição da imagem** (à direita, à esquerda ou centralizada, abaixo do texto).
+  - **Ordem:** os blocos aparecem na página nessa ordem, logo abaixo do topo e antes de "Como funciona".
+
+  Não há estrutura obrigatória: cada programa pode ter os blocos que precisar. A **Descrição** continua sendo o resumo curto que aparece nos cards e no topo da página.
 
 ### Componentes dos programas
 
@@ -145,8 +171,8 @@ A página **Projetos** do site mostra os programas, e a página de cada programa
 2. **Data de conclusão**, quando o projeto terminar.
 3. **Parceiros envolvidos:** escolha na caixa da esquerda e passe para a direita.
 4. Embaixo, se quiser, o conteúdo da página do projeto:
-   - **Blocos de Conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). A **Ordem** define a sequência. Para separar parágrafos, quebre a linha.
-   - **Imagens do Projeto:** a galeria, com uma **Legenda** e uma **Ordem** para cada imagem.
+   - **Blocos de Conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). Arraste para mudar a sequência. Para separar parágrafos, quebre a linha.
+   - **Imagens do Projeto:** a galeria, com uma **Legenda** para cada imagem. Arraste para reordenar.
    - **Eventos do Cronograma:** data, título e descrição de cada etapa.
 5. Salvar.
 
@@ -182,15 +208,21 @@ O passo a passo completo, com a referência de Markdown, imagens, fórmulas, con
 4. Revise o artigo antes de publicar, de preferência no ambiente local (ver o [guia do ambiente local](guia-ambiente-local.md)).
 5. Salve com **Publicado** desmarcado (rascunho). Quando estiver pronto, marque **Publicado**, salve e confira a página no site.
 
+Na lista de artigos, as ações **Publicar selecionados** e **Despublicar selecionados** mudam vários de uma vez (despublicar devolve o artigo a rascunho, sem apagar o texto). Ao publicar, o admin avisa se algum artigo está sem data de publicação, porque a ordem no site depende dela.
+
 ---
 
 ## Processo seletivo
 
 O site mostra **um processo seletivo por vez**: o que estiver marcado como **Ativo**. Ativar um processo desativa os outros sozinho.
 
+### Duplicar o processo anterior
+
+Para o próximo semestre, em vez de recadastrar tudo: abra o processo anterior e clique em **Duplicar este processo**, no alto da página (ou marque o processo na lista e use a ação **Duplicar selecionados**). A cópia traz as datas, as etapas detalhadas, os requisitos e os materiais de preparação, e nasce **inativa, com as inscrições fechadas e sem o link do formulário**, com o título "... (cópia)". Depois é só ajustar as datas, escrever o novo título, preencher o link do formulário e marcar **Ativo** quando for a hora. O processo original não muda.
+
 ### Cadastrar um processo
 
-**Processos Seletivos > Adicionar**
+**Processos seletivos > Adicionar**
 
 1. **Título** (por exemplo, `Processo Seletivo 2027.1`) e **Ativo** marcado.
 2. **Datas do Processo:** uma linha por fase, com nome, data ou período e ordem.
@@ -198,7 +230,7 @@ O site mostra **um processo seletivo por vez**: o que estiver marcado como **Ati
 4. **Requisitos:** uma linha por requisito.
 5. Salvar.
 
-Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação > Adicionar**: escolha o processo, dê um título e liste os itens.
+Os **materiais de preparação** (opcional) ficam em **Materiais de preparação > Adicionar**: escolha o processo, dê um título e liste os itens.
 
 ### Abrir e fechar as inscrições
 
@@ -215,13 +247,47 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação
 
 ---
 
+## Configuração do site
+
+**Configuração do site** abre direto na edição, porque existe um único registro. Não há botão de adicionar nem de excluir. A tela tem abas:
+
+- **Marca e compartilhamento:** o **Nome do site** (aba do navegador, rodapé e prévia dos links), a **Descrição do site** e três imagens opcionais: o **Logo** em versão clara (usado no topo, no rodapé e na Home), o **Ícone da aba** (PNG quadrado, de preferência 256 x 256) e a **Imagem de compartilhamento** (1200 x 630, a que aparece no WhatsApp e no LinkedIn). Sem imagem enviada, o site usa a original. O admin confere o formato ao enviar: o **ícone** precisa ser **quadrado** (pelo menos 32 x 32), e a **imagem de compartilhamento** precisa ter pelo menos 600 pixels de largura e proporção parecida com 1200 x 630, senão o WhatsApp e o LinkedIn a cortariam. O logo não tem exigência de tamanho. Só administradores veem esta aba. Como o site é estático, essas mudanças só aparecem depois que o frontend é publicado de novo: no Render, serviço do frontend, **Manual Deploy** (o admin avisa ao salvar).
+- **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
+- **Home:** título do topo, frase de destaque, o bloco "Quem somos" (com a foto, que é opcional), a missão, "como preparamos", "onde queremos chegar" e a chamada final.
+- **Rodapé:** a frase de apresentação.
+- **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** recebe o slug de um programa existente (por exemplo, `jornada-do-consultor`) e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
+- **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
+- **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
+  - **Texto exibido**. A ordem é a das linhas (arraste para mudar).
+  - **Onde aparece:** menu (topo e rodapé), só no topo, só no rodapé ou botão de destaque do topo.
+  - **Página do site**, escolhida numa lista (Equipe, Parceiros, Projetos, Artigos, Processo seletivo, Contato, Política de Privacidade, Página inicial). Prefira esta opção: o link não quebra.
+  - **Link livre**, só quando não houver página na lista: um endereço completo (`https://...`) ou um caminho do site (`/equipe`). Preencha a página **ou** o link livre, nunca os dois. Links externos abrem em outra aba.
+  - **Exibir no site:** desmarque para esconder um item sem apagá-lo.
+
+  Os submenus de **Projetos** (programas) e **Equipe** (diretorias) aparecem sozinhos nos itens que apontam para essas páginas. Cuidado para não esconder todos os itens do menu.
+- **Benefícios para parceiros:** a lista de "Por que ser parceiro" da página Parceiros, com título, descrição e ordem.
+
+As mudanças podem levar até um minuto para aparecer no site.
+
+---
+
+## Textos do site
+
+Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem constrói o clube", "Calendário", "Nenhum artigo cadastrado no momento") ficam em **Textos do site**. A lista traz a **página** onde cada texto aparece e uma descrição de **onde aparece**.
+
+- Use o filtro **Página** (à direita) ou a busca para achar o texto. Edite direto na coluna **Texto** e clique em **Salvar**.
+- Alguns textos têm trechos entre chaves, como `{n}`, `{data}` ou `{programa}`. O site preenche esses trechos, então eles precisam continuar no texto. O admin avisa se algum for apagado.
+- Para voltar ao texto original, marque os textos e use a ação **Restaurar texto original**.
+- Não há botão para adicionar ou excluir: os textos existentes são os que o site usa.
+- Os textos longos (missão, "Quem somos", Política de Privacidade) ficam em **Configuração do site**.
+
+---
+
 ## O que fica fora do admin
 
-Alguns itens fixos são alterados no código pelo responsável técnico:
+Pouca coisa fica fora do admin:
 
-- textos institucionais da Home (missão, "Quem somos");
-- links do Instagram, do LinkedIn e do GitHub, e o e-mail de contato;
-- o texto da Política de Privacidade.
+- o conteúdo da prévia ao compartilhar **um artigo ou página específica**: o WhatsApp e o LinkedIn sempre mostram a prévia geral do site, porque só leem o HTML estático, e ele é o mesmo para todas as páginas.
 
 ---
 
@@ -229,9 +295,9 @@ Alguns itens fixos são alterados no código pelo responsável técnico:
 
 | Quando | O quê | Onde |
 |---|---|---|
-| Antes do processo seletivo | Cadastrar o novo processo (datas, etapas, requisitos) e deixar **Ativo** | Processos Seletivos |
-| Abertura do processo | Marcar **Inscrições abertas** e colar o link do formulário | Processos Seletivos |
-| Fim das inscrições | Desmarcar **Inscrições abertas** (o processo continua ativo, com as datas visíveis) | Processos Seletivos |
+| Antes do processo seletivo | **Duplicar** o processo anterior, ajustar datas e etapas e deixar **Ativo** | Processos seletivos |
+| Abertura do processo | Marcar **Inscrições abertas** e colar o link do formulário | Processos seletivos |
+| Fim das inscrições | Desmarcar **Inscrições abertas** (o processo continua ativo, com as datas visíveis) | Processos seletivos |
 | Entrada dos aprovados | Cadastrar os novos membros, com foto e diretoria | Membros |
 | Troca de gestão | Arquivar quem saiu; atualizar cargos e diretorias | Membros, Cargos, Diretorias |
 | Fim do semestre | Cadastrar os cases e projetos do semestre e atualizar os números da Home | Cases dos programas, Projetos, Estatísticas |

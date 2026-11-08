@@ -12,6 +12,21 @@ export interface Program {
   order: number
 }
 
+export interface ProgramContentBlock {
+  id: number
+  title: string
+  text: string
+  image_url: string | null
+  image_caption: string
+  image_align: "left" | "right" | "center"
+  order: number
+}
+
+// Detalhe de um programa: a lista (Program) não leva os blocos de texto.
+export interface ProgramDetail extends Program {
+  content_blocks: ProgramContentBlock[]
+}
+
 export interface ProgramCaseParticipant {
   member_id: number
   name: string
@@ -221,4 +236,65 @@ export interface PreparationMaterial {
   title: string
   items: PreparationMaterialItem[]
   order: number
+}
+
+export interface PartnerBenefit {
+  id: number
+  title: string
+  description: string
+  order: number
+}
+
+// Item do menu, do rodapé ou botão de destaque do topo (Configuração do site).
+export interface NavItem {
+  id: number
+  label: string
+  area: "menu" | "topo" | "rodape" | "botao"
+  page: string
+  path: string
+  external: boolean
+  order: number
+}
+
+// Textos e contatos editáveis no admin (Configuração do site).
+export interface SiteConfig {
+  site_name: string
+  site_description: string
+  logo_url: string | null
+  favicon_url: string | null
+  og_image_url: string | null
+  email: string
+  instagram_url: string
+  instagram_label: string
+  linkedin_url: string
+  linkedin_label: string
+  github_url: string
+  github_label: string
+  home_hero_title: string
+  home_statement: string
+  home_about_title: string
+  home_about_title_highlight: string
+  home_about_text: string
+  home_about_photo_url: string | null
+  home_about_photo_alt: string
+  mission: string
+  mission_how: string
+  mission_goal: string
+  home_cta_title: string
+  footer_tagline: string
+  team_lead: string
+  partners_lead: string
+  partners_benefits_title: string
+  projects_lead: string
+  featured_program_slug: string
+  articles_lead: string
+  contact_lead: string
+  process_lead: string
+  process_closed_message: string
+  privacy_updated: string
+  privacy_text: string
+  partner_benefits: PartnerBenefit[]
+  // Textos curtos (títulos, rótulos, botões), por chave. Ver textosPadrao.ts.
+  texts: Record<string, string>
+  nav_items: NavItem[]
 }

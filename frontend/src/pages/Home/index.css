@@ -8,12 +8,11 @@
   justify-content: center;
   min-height: 100dvh;
   padding: calc(var(--header-height) + 24px) var(--gutter) 64px;
-  background: #140004 url("../../images/hero-pattern.jpg") center / cover no-repeat;
+  background: #140004;
   text-align: center;
 }
 
-/* Escurece a textura do tabuleiro pra garantir contraste do texto branco
-   e reforçar o degradê de marca por cima da foto. */
+/* Degradê de marca sobre o fundo escuro, que garante o contraste do texto branco. */
 .home-hero::before {
   content: "";
   position: absolute;

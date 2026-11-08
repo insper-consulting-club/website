@@ -7,10 +7,14 @@ import ProjetoCard from "../../components/ProjetoCard"
 import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useProgramas from "../../hooks/useProgramas"
+import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 export default function Projetos() {
-  usePageTitle("Projetos", "Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor.")
+  const config = useSiteConfig()
+  const t = useTextos()
+  usePageTitle(t("projetos.eyebrow"), config.projects_lead)
   const programas = useProgramas()
   const [cases, setCases] = useState<ProgramCase[]>([])
   const [outrosProjetos, setOutrosProjetos] = useState<Project[]>([])
@@ -25,12 +29,18 @@ export default function Projetos() {
       .catch(() => setOutrosProjetos([]))
   }, [])
 
+  // A seção de cases leva ao programa escolhido em Configuração do site. Sem
+  // slug, ou com um slug que não existe mais, a seção não aparece.
+  const slugDestaque = config.featured_program_slug
+  const programaDestaque = programas.find((p) => p.slug === slugDestaque)
+  const casesDestaque = cases.filter((c) => c.program === slugDestaque)
+
   return (
     <div className="projetos-page">
       <PageHero
-        eyebrow="Projetos"
-        title={<>Programas e <span className="destaque">cases</span></>}
-        lead="Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor."
+        eyebrow={t("projetos.eyebrow")}
+        title={<>{t("projetos.titulo")} <span className="destaque">{t("projetos.titulo_destaque")}</span></>}
+        lead={config.projects_lead}
       />
 
       <section className="section">
@@ -59,8 +69,8 @@ export default function Projetos() {
         <section className="section section--muted" id="outros-projetos">
           <div className="container">
             <div className="section-head">
-              <p className="eyebrow">Além dos programas</p>
-              <h2 className="section-title">Outros projetos</h2>
+              <p className="eyebrow">{t("projetos.outros_eyebrow")}</p>
+              <h2 className="section-title">{t("projetos.outros_titulo")}</h2>
             </div>
             <div className="grid grid--2">
               {outrosProjetos.map((projeto) => (
@@ -71,15 +81,15 @@ export default function Projetos() {
         </section>
       )}
 
-      {cases.length > 0 && (
+      {programaDestaque && casesDestaque.length > 0 && (
         <section className={`section${outrosProjetos.length > 0 ? "" : " section--muted"}`}>
           <div className="container projetos-cases">
             <div>
-              <p className="eyebrow">Cases resolvidos</p>
-              <h2 className="section-title">{cases.length} cases na Jornada do Consultor</h2>
+              <p className="eyebrow">{t("projetos.cases_eyebrow")}</p>
+              <h2 className="section-title">{t(casesDestaque.length === 1 ? "projetos.cases_titulo_um" : "projetos.cases_titulo_varios", { programa: programaDestaque.label, n: casesDestaque.length })}</h2>
             </div>
-            <Link to="/projetos/jornada-do-consultor#cases" className="btn btn--primary">
-              Ver os cases
+            <Link to={`/projetos/${programaDestaque.slug}#cases`} className="btn btn--primary">
+              {t("projetos.cases_botao")}
               <ArrowRightIcon />
             </Link>
           </div>

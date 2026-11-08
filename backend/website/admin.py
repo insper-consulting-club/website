@@ -1,8 +1,23 @@
 from django import forms
+from django.conf import settings
+from django.core.files.images import get_image_dimensions
+from django.core.files.uploadedfile import UploadedFile
 from django.contrib import admin, messages
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group, User
+import re
+
+from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.decorators import action as acao_unfold
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
+from .site_texts import PADRAO as PADRAO_TEXTOS
+from .widgets import MarkdownPreviewWidget
 from .models import (
     PartnerCategory, ProgramComponent,
     Partner, Member, Article, ArticleImage, Position, Directorate,
@@ -12,12 +27,39 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem, MemberTrajectory,
 )
 
-# Títulos do topo e da página inicial do /admin
-admin.site.site_header = 'Administração · Insper Consulting Club'
-admin.site.site_title = 'Admin ICC'
+# Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
+# no settings.
 admin.site.index_title = 'Conteúdo do site'
+
+
+# ---------------------------------------------------------------------------
+# Usuários e grupos (models do Django, refeitos com as classes do Unfold para
+# o painel ter um visual só)
+# ---------------------------------------------------------------------------
+
+admin.site.unregister(User)
+admin.site.unregister(Group)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin, ModelAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+
+
+@admin.register(Group)
+class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+    pass
+
+
+def url_do_site(caminho):
+    """Endereço público de uma página do site, ou None se FRONTEND_URL não estiver definido."""
+    base = settings.FRONTEND_URL.rstrip('/')
+    return f'{base}{caminho}' if base else None
 
 
 def miniatura(imagem, altura=40):
@@ -30,34 +72,82 @@ def miniatura(imagem, altura=40):
     )
 
 
+class TextoCompactoMixin:
+    """
+    Deixa as caixas de texto com poucas linhas, em vez da altura padrão (que faz
+    uma descrição de uma frase ocupar meia tela). Em linhas_dos_campos, cada campo
+    recebe o número de linhas desejado.
+    """
+    linhas_dos_campos = {}
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        campo = super().formfield_for_dbfield(db_field, request, **kwargs)
+        linhas = self.linhas_dos_campos.get(db_field.name)
+        if campo is not None and linhas:
+            campo.widget.attrs['rows'] = linhas
+        return campo
+
+
+class AvisoDeAtrasoMixin:
+    """
+    Depois de salvar, avisa que a mudança pode levar um pouco para aparecer no site: a API
+    deixa o navegador de quem visita reaproveitar as respostas por API_CACHE_SECONDS. Sem o
+    aviso, quem edita acha que a mudança não pegou. Só uma mensagem por requisição, mesmo
+    que a lista salve várias linhas de uma vez.
+    """
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        segundos = settings.API_CACHE_SECONDS
+        if segundos <= 0 or getattr(request, '_aviso_de_atraso', False):
+            return
+        request._aviso_de_atraso = True
+        if segundos < 60:
+            tempo = f'{segundos} segundos'
+        elif segundos % 60 == 0:
+            tempo = '1 minuto' if segundos == 60 else f'{segundos // 60} minutos'
+        else:
+            tempo = f'{segundos} segundos'
+        self.message_user(
+            request,
+            f'A mudança aparece no site em até {tempo}: o navegador de quem visita guarda as respostas por esse tempo.',
+            messages.INFO,
+        )
+
+
+class AdminDoSite(AvisoDeAtrasoMixin, TextoCompactoMixin, ModelAdmin):
+    """Base dos admins de conteúdo do site (não vale para Usuários e Grupos)."""
+
+
 # ---------------------------------------------------------------------------
 # Parceiros
 # ---------------------------------------------------------------------------
 
 @admin.register(PartnerCategory)
-class PartnerCategoryAdmin(admin.ModelAdmin):
+class PartnerCategoryAdmin(AdminDoSite):
     list_display = ('title',)
     search_fields = ('title',)
 
 
 @admin.register(Partner)
-class PartnerAdmin(admin.ModelAdmin):
-    list_display = ('logo', 'name', 'category', 'is_active', 'order')
+class PartnerAdmin(AdminDoSite):
+    list_display = ('logo', 'name', 'category', 'is_active')
     list_display_links = ('logo', 'name')
-    list_editable = ('is_active', 'order')
+    list_editable = ('is_active',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     list_filter = ('is_active', 'category')
     search_fields = ('name', 'description')
     ordering = ('order', 'name')
-    readonly_fields = ('logo_atual',)
-    fields = ('name', 'logo_url', 'logo_atual', 'category', 'site', 'description', 'is_active', 'order')
+    fields = ('name', 'logo_url', 'category', 'site', 'description', 'is_active', 'order')
+    linhas_dos_campos = {'description': 4}
 
     @admin.display(description='Logo')
     def logo(self, obj):
         return miniatura(obj.logo_url)
 
-    @admin.display(description='Logo atual')
-    def logo_atual(self, obj):
-        return miniatura(obj.logo_url, 80)
+    def view_on_site(self, obj):
+        return url_do_site(f'/parceiros/{obj.pk}') if obj.is_active else None
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +155,7 @@ class PartnerAdmin(admin.ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(Position)
-class PositionAdmin(admin.ModelAdmin):
+class PositionAdmin(AdminDoSite):
     list_display = ('title', 'power')
     list_editable = ('power',)
     search_fields = ('title',)
@@ -73,9 +163,10 @@ class PositionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Directorate)
-class DirectorateAdmin(admin.ModelAdmin):
-    list_display = ('name', 'order')
-    list_editable = ('order',)
+class DirectorateAdmin(AdminDoSite):
+    list_display = ('name',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     search_fields = ('name',)
     ordering = ('order',)
 
@@ -87,12 +178,23 @@ class DirectorateMembershipForm(forms.ModelForm):
         labels = {'directorate': 'Diretoria'}
 
 
-class DirectorateMembershipInline(admin.TabularInline):
+class DirectorateMembershipInline(TabularInline):
     model = DirectorateMembership
     form = DirectorateMembershipForm
     extra = 1
     fields = ('directorate', 'cargo', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
+
+
+class MemberTrajectoryInline(TabularInline):
+    # Uma linha por semestre, em ordem de semestre no perfil público.
+    model = MemberTrajectory
+    extra = 1
+    fields = ('semester', 'role')
+    tab = True
 
 
 class SituacaoFilter(admin.SimpleListFilter):
@@ -133,9 +235,9 @@ class MemberForm(forms.ModelForm):
 
 
 @admin.register(Member)
-class MemberAdmin(admin.ModelAdmin):
+class MemberAdmin(AdminDoSite):
     form = MemberForm
-    inlines = [DirectorateMembershipInline]
+    inlines = [MemberTrajectoryInline, DirectorateMembershipInline]
     list_display = ('foto', 'name', 'get_directorates', 'position', 'course', 'year', 'atual')
     list_display_links = ('foto', 'name')
     list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position', 'year')
@@ -143,15 +245,16 @@ class MemberAdmin(admin.ModelAdmin):
     # quando a lista acumula alumni além dos membros ativos.
     search_fields = ('name', 'email', 'course', 'linkedin')
     list_select_related = ('position',)
-    filter_horizontal = ('projects',)
+    # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
+    autocomplete_fields = ('projects',)
     date_hierarchy = 'entry_date'
     list_per_page = 50
     actions = ['arquivar', 'reativar']
-    readonly_fields = ('foto_atual',)
+    linhas_dos_campos = {'biography': 3}
     fieldsets = (
-        (None, {'fields': ('name', 'photo', 'foto_atual', 'position', 'linkedin', 'email')}),
+        (None, {'fields': ('name', 'photo', 'position', 'linkedin', 'email')}),
         ('Formação', {'fields': ('course', 'year')}),
-        ('No ICC', {'fields': ('entry_date', 'exit_date', 'biography', 'trajetoria', 'hours', 'projects')}),
+        ('No ICC', {'fields': ('entry_date', 'exit_date', 'biography', 'hours', 'projects')}),
     )
 
     def get_queryset(self, request):
@@ -166,122 +269,186 @@ class MemberAdmin(admin.ModelAdmin):
     def foto(self, obj):
         return miniatura(obj.photo)
 
-    @admin.display(description='Foto atual')
-    def foto_atual(self, obj):
-        return miniatura(obj.photo, 120)
-
     @admin.display(description='Atual', boolean=True)
     def atual(self, obj):
         return obj.exit_date is None
 
-    @admin.action(description='Arquivar selecionados (sai da página Equipe)')
+    @admin.action(description='Arquivar selecionados (sai da página Equipe)', permissions=['change'])
     def arquivar(self, request, queryset):
         n = queryset.filter(exit_date__isnull=True).update(exit_date=timezone.localdate())
         self.message_user(request, f'{n} membro(s) arquivado(s). O histórico continua guardado.', messages.SUCCESS)
 
-    @admin.action(description='Reativar selecionados (volta para a página Equipe)')
+    @admin.action(description='Reativar selecionados (volta para a página Equipe)', permissions=['change'])
     def reativar(self, request, queryset):
         n = queryset.exclude(exit_date__isnull=True).update(exit_date=None)
         self.message_user(request, f'{n} membro(s) reativado(s).', messages.SUCCESS)
+
+    def view_on_site(self, obj):
+        # O perfil de quem saiu continua acessível por link, então o botão vale para todos.
+        return url_do_site(f'/equipe/{obj.pk}')
 
 
 # ---------------------------------------------------------------------------
 # Projetos
 # ---------------------------------------------------------------------------
 
-class ProjectImageInline(admin.TabularInline):
+class ProjectImageInline(TabularInline):
     model = ProjectImage
     extra = 1
     fields = ('image', 'caption', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
 
 
-class ProjectTimelineEventInline(admin.TabularInline):
+class ProjectTimelineEventInline(TextoCompactoMixin, TabularInline):
     model = ProjectTimelineEvent
     extra = 1
     fields = ('date', 'title', 'description', 'order')
     ordering = ('order',)
+    linhas_dos_campos = {'description': 2}
+    tab = True
 
 
-class ProjectContentBlockInline(admin.StackedInline):
+class ProjectContentBlockInline(TextoCompactoMixin, StackedInline):
     model = ProjectContentBlock
     extra = 1
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    linhas_dos_campos = {'text': 6}
+    tab = True
 
 
 @admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'program', 'start_date', 'end_date', 'is_active')
+class ProjectAdmin(AdminDoSite):
+    list_display = ('imagem', 'title', 'program', 'start_date', 'end_date', 'is_active')
+    list_display_links = ('imagem', 'title')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'start_date')
     search_fields = ('title', 'description')
-    filter_horizontal = ('partners',)
+    list_select_related = ('program',)
+    # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
+    autocomplete_fields = ('partners',)
+    linhas_dos_campos = {'description': 4}
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('images')
+
+    @admin.display(description='Imagem')
+    def imagem(self, obj):
+        # Usa a lista já carregada (prefetch) para não consultar o banco linha a linha.
+        primeira = next(iter(obj.images.all()), None)
+        return miniatura(primeira.image if primeira else None)
+    fieldsets = (
+        (None, {'fields': ('title', 'description', 'program', 'partners', 'start_date', 'end_date', 'is_active')}),
+    )
     date_hierarchy = 'start_date'
     list_select_related = ('program',)
     actions = ['arquivar', 'reativar']
     inlines = [ProjectImageInline, ProjectTimelineEventInline, ProjectContentBlockInline]
 
-    @admin.action(description='Arquivar selecionados (somem do site)')
+    @admin.action(description='Arquivar selecionados (somem do site)', permissions=['change'])
     def arquivar(self, request, queryset):
         n = queryset.filter(is_active=True).update(is_active=False)
         self.message_user(request, f'{n} projeto(s) arquivado(s). O histórico continua guardado.', messages.SUCCESS)
 
-    @admin.action(description='Reativar selecionados (voltam para o site)')
+    @admin.action(description='Reativar selecionados (voltam para o site)', permissions=['change'])
     def reativar(self, request, queryset):
         n = queryset.filter(is_active=False).update(is_active=True)
         self.message_user(request, f'{n} projeto(s) reativado(s).', messages.SUCCESS)
 
+    def view_on_site(self, obj):
+        return url_do_site(f'/projetos/projeto/{obj.pk}') if obj.is_active else None
 
 # ---------------------------------------------------------------------------
 # Programas e componentes
 # ---------------------------------------------------------------------------
 
 @admin.register(ProgramComponent)
-class ProgramComponentAdmin(admin.ModelAdmin):
+class ProgramComponentAdmin(AdminDoSite):
+    linhas_dos_campos = {'description': 3}
     list_display = ('title', 'program')
     list_filter = ('program',)
     search_fields = ('title', 'description')
     list_select_related = ('program',)
 
 
+class ProgramContentBlockInline(TextoCompactoMixin, StackedInline):
+    model = ProgramContentBlock
+    extra = 0
+    fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
+    ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'text':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='programa')
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+
 @admin.register(Program)
-class ProgramAdmin(admin.ModelAdmin):
-    list_display = ('label', 'slug', 'badge', 'is_active', 'order')
-    list_editable = ('is_active', 'order')
+class ProgramAdmin(AdminDoSite):
+    inlines = [ProgramContentBlockInline]
+    linhas_dos_campos = {'description': 4, 'highlights': 4}
+    fieldsets = (
+        (None, {'fields': ('label', 'slug', 'subtitle', 'description', 'highlights', 'icon')}),
+        ('Exibição no site', {'fields': ('badge', 'badge_class', 'signup_url', 'is_active', 'order')}),
+    )
+    list_display = ('icone', 'label', 'slug', 'badge', 'is_active')
+    list_display_links = ('icone', 'label')
+    list_editable = ('is_active',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     list_filter = ('is_active',)
     search_fields = ('label', 'slug', 'description')
     ordering = ('order',)
     prepopulated_fields = {'slug': ('label',)}
 
+    @admin.display(description='Ícone')
+    def icone(self, obj):
+        return miniatura(obj.icon)
+
+    def view_on_site(self, obj):
+        return url_do_site(f'/projetos/{obj.slug}') if obj.is_active else None
 
 # ---------------------------------------------------------------------------
 # Home e notícias
 # ---------------------------------------------------------------------------
 
 @admin.register(Statistic)
-class StatisticAdmin(admin.ModelAdmin):
-    list_display = ('value', 'description', 'order')
-    list_editable = ('order',)
+class StatisticAdmin(AdminDoSite):
+    list_display = ('value', 'description')
+    ordering_field = 'order'
+    hide_ordering_field = True
     search_fields = ('value', 'description')
     ordering = ('order',)
 
 
-class ArticleImageInline(admin.TabularInline):
+class ArticleImageInline(TabularInline):
     model = ArticleImage
     extra = 1
-    fields = ('number', 'image', 'caption', 'previa')
-    readonly_fields = ('previa',)
+    fields = ('number', 'image', 'caption')
     ordering = ('number',)
-
-    @admin.display(description='Prévia')
-    def previa(self, obj):
-        return miniatura(obj.image if obj.pk else None, 60)
+    tab = True
 
 
 @admin.register(Article)
-class ArticleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'slug', 'authors', 'published', 'date', 'order')
+class ArticleAdmin(AdminDoSite):
+    linhas_dos_campos = {'description': 4}
+    # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
+    prepopulated_fields = {'slug': ('title',)}
+    fieldsets = (
+        (None, {'fields': ('title', 'slug', 'authors', 'topics', 'description', 'content')}),
+        ('Publicação', {'fields': ('published', 'date', 'order', 'source', 'link', 'image')}),
+    )
+    actions = ['publicar', 'despublicar']
+    list_display = ('capa', 'title', 'slug', 'authors', 'published', 'date', 'order')
+    list_display_links = ('capa', 'title')
     search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
     list_editable = ('published', 'order')
     list_filter = ('published', 'source', 'date')
@@ -289,12 +456,53 @@ class ArticleAdmin(admin.ModelAdmin):
     ordering = ('-date', 'order')
     inlines = [ArticleImageInline]
 
+    @admin.display(description='Capa')
+    def capa(self, obj):
+        return miniatura(obj.image)
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'content':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='artigo', imagens=self._imagens_do_artigo(request))
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+    def _imagens_do_artigo(self, request):
+        # Imagens já salvas do artigo, para a prévia trocar ![](imagem-N) pela foto.
+        # A foto de um artigo novo, ainda sem registro, só aparece depois de salvar.
+        id_do_artigo = (request.resolver_match.kwargs or {}).get('object_id') if request.resolver_match else None
+        if not id_do_artigo or not str(id_do_artigo).isdigit():
+            return []
+        return [
+            {'number': imagem.number, 'image_url': request.build_absolute_uri(imagem.image.url), 'caption': imagem.caption}
+            for imagem in ArticleImage.objects.filter(article_id=int(id_do_artigo))
+        ]
+
+    @admin.action(description='Publicar selecionados (aparecem no site)', permissions=['change'])
+    def publicar(self, request, queryset):
+        n = queryset.filter(published=False).update(published=True)
+        sem_data = queryset.filter(date__isnull=True).count()
+        self.message_user(request, f'{n} artigo(s) publicado(s).', messages.SUCCESS)
+        if sem_data:
+            self.message_user(
+                request,
+                f'{sem_data} artigo(s) selecionado(s) estão sem data de publicação: a ordem na lista do site '
+                'depende dela. Preencha a data em cada um.',
+                messages.WARNING,
+            )
+
+    @admin.action(description='Despublicar selecionados (voltam a rascunho)', permissions=['change'])
+    def despublicar(self, request, queryset):
+        n = queryset.filter(published=True).update(published=False)
+        self.message_user(request, f'{n} artigo(s) despublicado(s). O texto continua guardado como rascunho.', messages.SUCCESS)
+
+    def view_on_site(self, obj):
+        # Rascunho responde 404 no site.
+        return url_do_site(f'/artigos/{obj.slug or obj.pk}') if obj.published else None
 
 # ---------------------------------------------------------------------------
 # Cases dos programas
 # ---------------------------------------------------------------------------
 
-class ProgramCaseParticipantInline(admin.TabularInline):
+class ProgramCaseParticipantInline(TabularInline):
     model = ProgramCaseParticipant
     extra = 1
     fields = ('member', 'role', 'order')
@@ -303,8 +511,9 @@ class ProgramCaseParticipantInline(admin.TabularInline):
 
 
 @admin.register(ProgramCase)
-class ProgramCaseAdmin(admin.ModelAdmin):
+class ProgramCaseAdmin(AdminDoSite):
     inlines = [ProgramCaseParticipantInline]
+    linhas_dos_campos = {'theme': 3, 'panel': 3}
     list_display = ('semester', 'title', 'area', 'program', 'is_active')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'semester')
@@ -316,48 +525,328 @@ class ProgramCaseAdmin(admin.ModelAdmin):
 # Processo seletivo (página /processo)
 # ---------------------------------------------------------------------------
 
-class SelectionProcessStageInline(admin.TabularInline):
+class SelectionProcessStageInline(TabularInline):
     model = SelectionProcessStage
     extra = 1
     fields = ('label', 'date', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
 
 
-class SelectionProcessStepInline(admin.StackedInline):
+class SelectionProcessStepInline(TextoCompactoMixin, StackedInline):
     model = SelectionProcessStep
     extra = 0
     fields = ('number', 'title', 'description', 'image', 'duration', 'tips', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    linhas_dos_campos = {'description': 3, 'tips': 4}
+    tab = True
 
 
-class SelectionProcessRequirementInline(admin.TabularInline):
+class SelectionProcessRequirementInline(TabularInline):
     model = SelectionProcessRequirement
     extra = 1
     fields = ('text', 'icon', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
 
 
 @admin.register(SelectionProcess)
-class SelectionProcessAdmin(admin.ModelAdmin):
+class SelectionProcessAdmin(AdminDoSite):
+    fieldsets = (
+        (None, {'fields': ('title', 'is_active', 'registrations_open', 'registration_url')}),
+    )
     list_display = ('title', 'is_active', 'registrations_open')
     list_editable = ('is_active', 'registrations_open')
     list_filter = ('is_active',)
     search_fields = ('title',)
+    actions = ['duplicar']
+    actions_detail = ['duplicar_este']
     inlines = [SelectionProcessStageInline, SelectionProcessStepInline,
                SelectionProcessRequirementInline]
 
+    def has_duplicar_permission(self, request, object_id=None):
+        # Usada pelo botão da página de edição (o Unfold a chama com o id do processo).
+        return request.user.has_perm('website.add_selectionprocess')
 
-class PreparationMaterialItemInline(admin.TabularInline):
+    @admin.action(description='Duplicar selecionados (cópia inativa, para o próximo semestre)', permissions=['add'])
+    def duplicar(self, request, queryset):
+        copias = [processo.duplicate() for processo in queryset]
+        self.message_user(
+            request,
+            f'{len(copias)} processo(s) duplicado(s). As cópias estão inativas e com as inscrições fechadas: '
+            'ajuste as datas, preencha o link do formulário e ative quando for a hora.',
+            messages.SUCCESS,
+        )
+
+    @acao_unfold(description='Duplicar este processo', icon='content_copy', permissions=['duplicar'])
+    def duplicar_este(self, request, object_id):
+        copia = SelectionProcess.objects.get(pk=object_id).duplicate()
+        self.message_user(
+            request,
+            'Cópia criada. Ela está inativa e com as inscrições fechadas: ajuste as datas, preencha o link do '
+            'formulário e ative quando for a hora.',
+            messages.SUCCESS,
+        )
+        return redirect(reverse('admin:website_selectionprocess_change', args=[copia.pk]))
+
+    def view_on_site(self, obj):
+        return url_do_site('/processo') if obj.is_active else None
+
+class PreparationMaterialItemInline(TabularInline):
     model = PreparationMaterialItem
     extra = 1
     fields = ('text', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 @admin.register(PreparationMaterial)
-class PreparationMaterialAdmin(admin.ModelAdmin):
-    list_display = ('title', 'process', 'order')
-    list_editable = ('order',)
+class PreparationMaterialAdmin(AdminDoSite):
+    list_display = ('title', 'process')
+    ordering_field = 'order'
+    hide_ordering_field = True
     list_filter = ('process',)
     search_fields = ('title',)
     inlines = [PreparationMaterialItemInline]
+
+
+# ---------------------------------------------------------------------------
+# Configuração do site (textos e contatos que não pertencem a outro cadastro)
+# ---------------------------------------------------------------------------
+
+class PartnerBenefitInline(TextoCompactoMixin, TabularInline):
+    model = PartnerBenefit
+    extra = 0
+    fields = ('title', 'description', 'order')
+    ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    linhas_dos_campos = {'description': 2}
+    tab = True
+
+
+class SiteConfigForm(forms.ModelForm):
+    """Confere o formato das imagens de marca no momento do envio."""
+
+    class Meta:
+        model = SiteConfig
+        fields = '__all__'
+
+    @staticmethod
+    def _medidas(arquivo):
+        # Só confere o que acabou de ser enviado. Uma imagem já salva (FieldFile) ou
+        # a opção de remover não passam por aqui, e abrir uma imagem guardada no
+        # Cloudinary só para medir seria um acesso de rede desnecessário.
+        if not isinstance(arquivo, UploadedFile):
+            return None
+        return get_image_dimensions(arquivo)
+
+    def clean_favicon(self):
+        arquivo = self.cleaned_data.get('favicon')
+        medidas = self._medidas(arquivo)
+        if medidas:
+            largura, altura = medidas
+            if largura != altura:
+                raise forms.ValidationError(
+                    f'O ícone precisa ser quadrado, mas a imagem enviada tem {largura} x {altura} pixels. '
+                    'Recorte-a para um quadrado (de preferência 256 x 256).'
+                )
+            if largura < 32:
+                raise forms.ValidationError(
+                    f'O ícone está pequeno demais ({largura} x {altura} pixels). Use pelo menos 32 x 32.'
+                )
+        return arquivo
+
+    def clean_og_image(self):
+        arquivo = self.cleaned_data.get('og_image')
+        medidas = self._medidas(arquivo)
+        if medidas:
+            largura, altura = medidas
+            proporcao = largura / altura if altura else 0
+            if largura < 600:
+                raise forms.ValidationError(
+                    f'A imagem de compartilhamento está pequena demais ({largura} x {altura} pixels). '
+                    'Use pelo menos 600 de largura; o ideal é 1200 x 630.'
+                )
+            if not 1.6 <= proporcao <= 2.2:
+                raise forms.ValidationError(
+                    f'A proporção da imagem ({largura} x {altura} pixels) é muito diferente da usada pelo '
+                    'WhatsApp e pelo LinkedIn, e ela seria cortada. Use 1200 x 630.'
+                )
+        return arquivo
+
+
+class NavItemInline(TabularInline):
+    model = NavItem
+    extra = 0
+    fields = ('label', 'area', 'page', 'url', 'order', 'is_active')
+    ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
+
+
+@admin.register(SiteConfig)
+class SiteConfigAdmin(AdminDoSite):
+    form = SiteConfigForm
+    # Estrutura do site: só administradores (superusuários) veem e editam estas abas. As
+    # demais ficam com quem tem permissão de alterar a configuração (o grupo Editores).
+    SO_ADMINISTRADORES = ('Marca e compartilhamento', 'Política de Privacidade')
+    # Campos que entram no HTML do site durante o build do frontend.
+    CAMPOS_DA_MARCA = ('site_name', 'site_description', 'logo', 'favicon', 'og_image')
+    linhas_dos_campos = {'home_about_text': 4, 'mission': 3, 'mission_how': 3, 'mission_goal': 3}
+    inlines = [NavItemInline, PartnerBenefitInline]
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'privacy_text':
+            kwargs['widget'] = MarkdownPreviewWidget(modo='politica')
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+    fieldsets = (
+        ('Marca e compartilhamento', {
+            'classes': ['tab'],
+            'description': 'Nome, descrição e imagens do site. Só administradores veem esta aba. Mudanças aqui só '
+                           'aparecem na prévia dos links (WhatsApp, LinkedIn) e no ícone da aba depois que o '
+                           'frontend é publicado de novo no Render (Manual Deploy).',
+            'fields': (
+                'site_name', 'site_description',
+                'logo', 'favicon', 'og_image',
+            ),
+        }),
+        ('Contatos', {
+            'classes': ['tab'],
+            'description': 'Aparecem no topo, no rodapé, na página Contato, na Política de Privacidade e '
+                           'no botão de inscrições. Trocar aqui atualiza o site inteiro.',
+            'fields': (
+                'email',
+                ('instagram_url', 'instagram_label'),
+                ('linkedin_url', 'linkedin_label'),
+                ('github_url', 'github_label'),
+            ),
+        }),
+        ('Home', {
+            'classes': ['tab'],
+            'description': 'Textos da página inicial. As estatísticas ficam em Estatísticas, e os programas, '
+                           'os membros e os parceiros vêm dos próprios cadastros.',
+            'fields': (
+                'home_hero_title', 'home_statement',
+                'home_about_title', 'home_about_title_highlight', 'home_about_text',
+                'home_about_photo', 'home_about_photo_alt',
+                'mission', 'mission_how', 'mission_goal',
+                'home_cta_title',
+            ),
+        }),
+        ('Rodapé', {
+            'classes': ['tab'],
+            'fields': ('footer_tagline',),
+        }),
+        ('Páginas', {
+            'classes': ['tab'],
+            'description': 'O texto que aparece logo abaixo do título de cada página.',
+            'fields': (
+                'team_lead', 'partners_lead', 'partners_benefits_title',
+                'projects_lead', 'featured_program_slug',
+                'articles_lead', 'contact_lead',
+                'process_lead', 'process_closed_message',
+            ),
+        }),
+        ('Política de Privacidade', {
+            'classes': ['tab'],
+            'fields': ('privacy_updated', 'privacy_text'),
+        }),
+    )
+
+    def get_fieldsets(self, request, obj=None):
+        conjuntos = super().get_fieldsets(request, obj)
+        if request.user.is_superuser:
+            return conjuntos
+        # Os campos das abas escondidas saem do formulário, então também não são gravados.
+        return [conjunto for conjunto in conjuntos if conjunto[0] not in self.SO_ADMINISTRADORES]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if set(form.changed_data) & set(self.CAMPOS_DA_MARCA):
+            self.message_user(
+                request,
+                'Para a mudança na marca aparecer na prévia dos links e no ícone da aba, publique o frontend '
+                'de novo: no Render, serviço do frontend, Manual Deploy.',
+                messages.WARNING,
+            )
+
+    # Registro único: não há lista, nem adicionar, nem excluir. Abrir o item
+    # no menu leva direto para a edição.
+    def changelist_view(self, request, extra_context=None):
+        return redirect(reverse('admin:website_siteconfig_change', args=[SiteConfig.get_solo().pk]))
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def view_on_site(self, obj):
+        return url_do_site('/')
+
+# ---------------------------------------------------------------------------
+# Textos do site (títulos de seção, rótulos, botões e mensagens)
+# ---------------------------------------------------------------------------
+
+class SiteTextForm(forms.ModelForm):
+    class Meta:
+        model = SiteText
+        fields = ('value',)
+
+    def clean_value(self):
+        valor = self.cleaned_data['value']
+        original = PADRAO_TEXTOS.get(self.instance.key, '')
+        faltando = sorted(set(re.findall(r'\{\w+\}', original)) - set(re.findall(r'\{\w+\}', valor)))
+        if faltando:
+            raise forms.ValidationError(
+                'Mantenha no texto: ' + ', '.join(faltando) + '. O site preenche esses trechos.'
+            )
+        return valor
+
+
+@admin.register(SiteText)
+class SiteTextAdmin(AdminDoSite):
+    list_display = ('group', 'description', 'value')
+    list_display_links = ('description',)
+    list_editable = ('value',)
+    list_filter = ('group',)
+    search_fields = ('key', 'description', 'value')
+    list_per_page = 200
+    ordering = ('order',)
+    actions = ['restaurar']
+    readonly_fields = ('group', 'description', 'key')
+    fields = ('group', 'description', 'key', 'value')
+
+    def get_changelist_form(self, request, **kwargs):
+        return SiteTextForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        kwargs['form'] = SiteTextForm
+        return super().get_form(request, obj, **kwargs)
+
+    # As entradas vêm do catálogo no código: aqui só se edita o texto.
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.action(description='Restaurar texto original', permissions=['change'])
+    def restaurar(self, request, queryset):
+        n = 0
+        for texto in queryset:
+            original = PADRAO_TEXTOS.get(texto.key)
+            if original is not None and texto.value != original:
+                texto.value = original
+                texto.save(update_fields=['value'])
+                n += 1
+        self.message_user(request, f'{n} texto(s) restaurado(s) ao original.', messages.SUCCESS)

@@ -4,7 +4,7 @@ from rest_framework import generics
 from .models import (
     Member, Partner, Statistic, Project, ProgramComponent,
     Program, SelectionProcess,
-    Article, Directorate, ProgramCase
+    Article, Directorate, ProgramCase, SiteConfig
 )
 from .serializers import (
     MemberListSerializer, MemberDetailSerializer,
@@ -12,7 +12,8 @@ from .serializers import (
     ProjectListSerializer, ProjectDetailSerializer,
     ProgramComponentSerializer, ProgramSerializer,
     DirectorateSerializer, ProgramCaseSerializer,
-    SelectionProcessSerializer, ArticleSerializer, ArticleListSerializer
+    SelectionProcessSerializer, ArticleSerializer, ArticleListSerializer,
+    SiteConfigSerializer, ProgramDetailSerializer
 )
 
 
@@ -50,7 +51,7 @@ class MemberDetailView(generics.RetrieveAPIView):
     # na listagem da equipe, mas o perfil deles continua acessível por link
     # (ex.: a partir da equipe de um projeto).
     queryset = Member.objects.select_related("position").prefetch_related(
-        "projects__partners", "directorate_memberships__directorate"
+        "projects__partners", "directorate_memberships__directorate", "trajectory_steps"
     ).all()
 
 
@@ -87,6 +88,13 @@ class PartnerDetailView(generics.RetrieveAPIView):
 class ProgramListView(generics.ListAPIView):
     serializer_class = ProgramSerializer
     queryset = Program.objects.filter(is_active=True).order_by("order")
+
+
+class ProgramDetailView(generics.RetrieveAPIView):
+    serializer_class = ProgramDetailSerializer
+    lookup_field = "slug"
+    # Programa oculto responde 404, como se não existisse.
+    queryset = Program.objects.filter(is_active=True).prefetch_related("content_blocks")
 
 
 class ProjectListView(generics.ListAPIView):
@@ -184,6 +192,14 @@ class SelectionProcessView(generics.RetrieveAPIView):
         if processo is None:
             raise Http404
         return processo
+
+
+class SiteConfigView(generics.RetrieveAPIView):
+    serializer_class = SiteConfigSerializer
+
+    def get_object(self):
+        # Registro único; criado na hora se, por algum motivo, ainda não existir.
+        return SiteConfig.objects.prefetch_related("nav_items", "partner_benefits").get(pk=SiteConfig.get_solo().pk)
 
 
 def health(request):

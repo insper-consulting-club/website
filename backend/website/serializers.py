@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .site_texts import PADRAO as PADRAO_TEXTOS
 from .models import (
     Member, Partner, Statistic, Project, ProjectImage,
     Directorate,
@@ -8,7 +9,8 @@ from .models import (
     SelectionProcess, SelectionProcessRequirement,
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
-    ProgramCase, ProgramCaseParticipant
+    ProgramCase, ProgramCaseParticipant,
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem
 )
 
 
@@ -46,6 +48,29 @@ class ProgramSerializer(serializers.ModelSerializer):
         if obj.icon and request:
             return request.build_absolute_uri(obj.icon.url)
         return None
+
+
+class ProgramContentBlockSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProgramContentBlock
+        fields = ["id", "title", "text", "image_url", "image_caption", "image_align", "order"]
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+
+class ProgramDetailSerializer(ProgramSerializer):
+    # Só o detalhe leva os blocos: a lista de programas alimenta o menu, o
+    # rodapé e a Home, e não precisa carregar os textos de todas as páginas.
+    content_blocks = ProgramContentBlockSerializer(many=True, read_only=True)
+
+    class Meta(ProgramSerializer.Meta):
+        fields = ProgramSerializer.Meta.fields + ["content_blocks"]
 
 
 class PartnerProjectSerializer(serializers.ModelSerializer):
@@ -209,6 +234,7 @@ class MemberDetailSerializer(serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
     projects = serializers.SerializerMethodField()
     number_of_projects = serializers.IntegerField()
+    trajetoria = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
@@ -218,6 +244,10 @@ class MemberDetailSerializer(serializers.ModelSerializer):
             "entry_date", "exit_date", "course", "year", "linkedin",
             "trajetoria",
         ]
+
+    def get_trajetoria(self, obj):
+        # Mesmo formato de antes: o frontend lê [{"semestre", "cargo"}], em ordem de semestre.
+        return [{"semestre": etapa.semester, "cargo": etapa.role} for etapa in obj.trajectory_steps.all()]
 
     def get_projects(self, obj):
         # Projetos arquivados não aparecem no perfil do membro.
@@ -374,3 +404,61 @@ class ProgramCaseSerializer(serializers.ModelSerializer):
 
     def get_panel(self, obj):
         return obj.get_panel_list()
+
+
+class PartnerBenefitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PartnerBenefit
+        fields = ["id", "title", "description", "order"]
+
+
+class NavItemSerializer(serializers.ModelSerializer):
+    path = serializers.CharField(read_only=True)
+    external = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = NavItem
+        fields = ["id", "label", "area", "page", "path", "external", "order"]
+
+
+class SiteConfigSerializer(serializers.ModelSerializer):
+    home_about_photo_url = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
+    favicon_url = serializers.SerializerMethodField()
+    og_image_url = serializers.SerializerMethodField()
+    partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
+    texts = serializers.SerializerMethodField()
+    nav_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SiteConfig
+        # As imagens não saem como campo de arquivo: o site recebe só o endereço.
+        exclude = ["id", "home_about_photo", "logo", "favicon", "og_image"]
+
+    def get_nav_items(self, obj):
+        # Item escondido no admin não chega ao site.
+        ativos = [item for item in obj.nav_items.all() if item.is_active]
+        return NavItemSerializer(ativos, many=True).data
+
+    def get_texts(self, obj):
+        # Parte do catálogo: um texto que ainda não chegou ao banco sai com o
+        # valor original, em vez de faltar na resposta.
+        return {**PADRAO_TEXTOS, **dict(SiteText.objects.values_list("key", "value"))}
+
+    def _url(self, imagem):
+        request = self.context.get("request")
+        if imagem and request:
+            return request.build_absolute_uri(imagem.url)
+        return None
+
+    def get_home_about_photo_url(self, obj):
+        return self._url(obj.home_about_photo)
+
+    def get_logo_url(self, obj):
+        return self._url(obj.logo)
+
+    def get_favicon_url(self, obj):
+        return self._url(obj.favicon)
+
+    def get_og_image_url(self, obj):
+        return self._url(obj.og_image)

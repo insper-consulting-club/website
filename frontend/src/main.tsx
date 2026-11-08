@@ -11,6 +11,9 @@ import CargaInicial from './components/CargaInicial.tsx'
 // principal em vez de exigir mais uma viagem de rede pra quem chega aqui
 // pela primeira vez.
 const router = createBrowserRouter([
+  // Prévia do Markdown, aberta em iframe pelo admin. Fica fora do layout (sem
+  // Header nem Footer) para mostrar só o texto.
+  { path: "/previa", lazy: () => import('./pages/Previa/index.tsx').then((m) => ({ Component: m.default })) },
   {
     path: "/",
     element: <App />,

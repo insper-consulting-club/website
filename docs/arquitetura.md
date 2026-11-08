@@ -63,14 +63,16 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 
 | Grupo | Modelos | Observações |
 |---|---|---|
-| Equipe | `Member`, `Position`, `Directorate`, `DirectorateMembership` | Uma pessoa pode estar em mais de uma diretoria, com cargo diferente em cada. `Position.power` define a ordem e a presença na liderança da Home (valores até 2). Membro com `exit_date` é considerado arquivado |
+| Equipe | `Member`, `MemberTrajectory`, `Position`, `Directorate`, `DirectorateMembership` | Uma pessoa pode estar em mais de uma diretoria, com cargo diferente em cada. `Position.power` define a ordem e a presença na liderança da Home (valores até 2). Membro com `exit_date` é considerado arquivado |
 | Parceiros | `Partner`, `PartnerCategory` | `is_active` esconde o parceiro sem apagá-lo |
-| Programas | `Program`, `ProgramComponent` | `Program` representa cada programa do ICC, e seu `slug` é usado na URL `/projetos/<slug>`. `ProgramComponent` guarda os componentes de um programa (título e descrição), exibidos em "Como funciona" na página dele. No admin, os nomes são **Programas** e **Componentes dos programas** |
+| Programas | `Program`, `ProgramComponent`, `ProgramContentBlock` | `Program` representa cada programa do ICC, e seu `slug` é usado na URL `/projetos/<slug>`. `ProgramComponent` guarda os componentes de um programa (título e descrição), exibidos em "Como funciona" na página dele. `ProgramContentBlock` guarda os blocos de texto livres (Markdown, com imagem opcional) que descrevem o programa em detalhe, abaixo do topo da página. No admin, os nomes são **Programas** e **Componentes dos programas** |
 | Projetos | `Project`, `ProjectContentBlock`, `ProjectImage`, `ProjectTimelineEvent` | `is_active=False` arquiva. Um projeto sem programa (`program` vazio) aparece em "Outros projetos". Um projeto com `end_date` conta como projeto concluído do parceiro |
 | Cases | `ProgramCase`, `ProgramCaseParticipant` | Case resolvido por um grupo de membros dentro de um programa. Os participantes ligam o case a membros, como integrantes ou mentores |
 | Artigos | `Article`, `ArticleImage` | O texto é Markdown e as imagens são chamadas por número. `published=False` é rascunho |
 | Processo seletivo | `SelectionProcess`, `SelectionProcessStage`, `SelectionProcessStep`, `SelectionProcessRequirement`, `PreparationMaterial`, `PreparationMaterialItem` | Só um processo fica ativo por vez; ativar um desativa os outros. O admin não deixa abrir inscrições sem o link do formulário, e a API só informa inscrições abertas quando há link |
 | Home | `Statistic` | Números da faixa de estatísticas |
+| Textos do site | `SiteText` | Títulos de seção, rótulos, botões e mensagens curtas. As entradas nascem do catálogo `website/site_texts.py` (uma chave, o grupo, a descrição e o texto original) e são criadas pelo sinal `post_migrate`, que nunca altera um valor já editado. O admin edita só o valor, e recusa a remoção de trechos como `{n}`. Para acrescentar um texto: incluir a linha no catálogo, rodar `python manage.py export_site_texts --saida ../frontend/src/textosPadrao.ts` e usar a chave no frontend por `useTextos`. Um teste confere se o arquivo do frontend acompanha o catálogo |
+| Configuração do site | `SiteConfig`, `PartnerBenefit` | Registro único (`pk=1`, criado pela migration com os textos que o site já tinha), sem adicionar nem excluir no admin. Guarda contatos, textos da Home, do rodapé e da abertura das páginas, a Política de Privacidade (Markdown) e o slug do programa em destaque na página Projetos. `PartnerBenefit` é a lista "Por que ser parceiro". Nome, descrição, logo, ícone e imagem de compartilhamento do site também ficam aqui e entram no HTML durante o build. `NavItem` guarda os itens do menu do topo, do rodapé e o botão de destaque: cada um aponta para uma página de uma lista fixa (`NavItem.PAGINAS`) ou para um link livre validado, e os submenus de Projetos e Equipe continuam vindo dos programas e das diretorias. O admin usa o tema django-unfold, com os campos em abas |
 
 #### Arquivar em vez de apagar
 
@@ -101,6 +103,7 @@ Todos os endpoints são públicos e somente leitura. Itens ocultos ou arquivados
 | GET | `/partners/` | Parceiros visíveis. Aceita `?category=<id>` |
 | GET | `/partners/<id>/` | Detalhe de um parceiro, com seus projetos concluídos |
 | GET | `/programs/` | Programas visíveis |
+| GET | `/programs/<slug>/` | Detalhe de um programa visível, com os blocos de conteúdo; oculto responde 404. A lista não leva os blocos, porque alimenta o menu, o rodapé e a Home |
 | GET | `/components/` | Componentes dos programas. Aceita `?program=<slug>` |
 | GET | `/projects/` | Projetos ativos. Aceita `?program=<slug>` |
 | GET | `/projects/<id>/` | Detalhe de um projeto ativo; arquivado responde 404 |
@@ -108,6 +111,7 @@ Todos os endpoints são públicos e somente leitura. Itens ocultos ou arquivados
 | GET | `/articles/` | Artigos publicados, do mais recente para o mais antigo |
 | GET | `/articles/<slug ou id>/` | Detalhe de um artigo publicado; rascunho responde 404 |
 | GET | `/statistics/` | Números da Home |
+| GET | `/site-config/` | Textos e contatos do site (Configuração do site), com os benefícios para parceiros |
 | GET | `/selection-process/` | Processo seletivo ativo, com etapas, requisitos, materiais e estado das inscrições; 404 se não houver |
 | GET | `/health/` | `{"status": "ok"}`, sem consultar o banco |
 
@@ -117,6 +121,11 @@ O `/health/` não acessa o banco de propósito: o monitor de uptime o chama a ca
 
 - `SECRET_KEY` é obrigatória. O projeto não sobe sem ela. No ambiente local, o `docker-compose.yml` define uma chave de desenvolvimento, então o `.env` é opcional. Como essa chave é pública, o backend se recusa a subir com ela quando `DEBUG=False`.
 - Com `DEBUG=False`, o backend exige HTTPS, define cookies seguros e ativa o HSTS.
+- **Grupo "Editores":** `website/editors_group.py` define as permissões padrão de quem edita conteúdo sem ser superusuário (sem Usuários nem Grupos, sem apagar os cadastros que têm "esconder", sem menu nem benefícios para parceiros). As abas Marca e compartilhamento e Política de Privacidade da configuração são escondidas de quem não é superusuário em `SiteConfigAdmin.get_fieldsets`, o que também tira os campos do formulário. O grupo é criado no `post_migrate`, uma vez; ajustes feitos no admin não são desfeitos. Para voltar ao padrão, apague o grupo no admin: o próximo `migrate` o recria. Um modelo novo precisa ser incluído em `PERMISSOES` para entrar no grupo.
+- **Prévia de Markdown no admin:** o widget `website/widgets.py` mostra um botão que abre `FRONTEND_URL/previa` num iframe e envia o texto por `postMessage` (script em `backend/admin_static/website/markdown_preview.js`). A página `/previa` do frontend desenha o texto com os mesmos componentes do site (`ArtigoMarkdown` e `TextoMarkdown`) e só aceita mensagens vindas da origem do backend (`VITE_API_URL`), então o admin precisa ser aberto pelo endereço do backend. `STATICFILES_DIRS` aponta para `admin_static/`, que não pode ser a pasta de `STATIC_ROOT`.
+- **Formulários do admin:** as listas que se repetem (trajetória, vínculos, imagens, blocos, etapas) são abas no alto do formulário (`tab = True` nos inlines); os campos do registro ficam em seções na própria página. `TextoCompactoMixin` (em `admin.py`) define quantas linhas cada caixa de texto tem (`linhas_dos_campos`), e os relacionamentos com muitos registros usam busca com seleção (`autocomplete_fields`) em vez do seletor duplo. `admin_static/website/admin.css`, ligado por `UNFOLD['STYLES']`, mantém o seletor duplo restante (permissões) e os blocos de campos dentro da largura da tela. Todo modelo precisa de `verbose_name` em português no singular, e um teste confere.
+- **Menu e navegação do admin:** o menu lateral vem de `config/navigation.py` (`UNFOLD['SIDEBAR']`), que agrupa os modelos por assunto e esconde o que o usuário não tem permissão de ver. Um modelo novo só aparece no menu depois de ser incluído em `GRUPOS`. Os campos `order` são reordenados arrastando (`ordering_field` e `hide_ordering_field` nos admins e inlines do Unfold), exceto onde a ordem vem de outro campo (data do cronograma, data do artigo). Os botões "Ver no site" usam `view_on_site` em cada admin e `FRONTEND_URL`.
+- **Tradução do admin:** a tradução em português do Django traz erros de grafia (por exemplo, "ordenção"), e o tema django-unfold não traz português. A pasta `backend/locale/` tem um catálogo do projeto, ativado por `LOCALE_PATHS` em `settings.py`, que corrige as grafias e traduz os textos do Unfold; ele vale antes do catálogo do Django, e testes conferem as correções e os trechos como `%(nome)s`. Ao atualizar o `django-unfold`, textos novos dele aparecem em inglês até serem acrescentados ao catálogo. O `django.mo` compilado é versionado (exceção no `.gitignore`), porque o deploy não compila mensagens. Para corrigir outro texto, acrescente a entrada em `django.po` e rode `msgfmt -o locale/pt_BR/LC_MESSAGES/django.mo locale/pt_BR/LC_MESSAGES/django.po` dentro de `backend/`.
 - `BEHIND_PROXY=True` faz o Django confiar no cabeçalho `X-Forwarded-Proto`. É necessário no Render, que termina o HTTPS na frente do Django. Sem isso, o site entra em loop de redirecionamento.
 - O banco vem de `DATABASE_URL`. Sem ela, usa as variáveis `DB_*` do Compose.
 - O armazenamento de uploads é o Cloudinary quando `CLOUDINARY_CLOUD_NAME` está definido, e o disco local caso contrário.
@@ -135,6 +144,8 @@ Modelo comentado em [`backend/.env.example`](../backend/.env.example). Nunca reg
 | `CORS_ALLOWED_ORIGINS` | Sim | Origens do site, com `https://`. Em produção: `https://insperconsultingclub.com.br` |
 | `CSRF_TRUSTED_ORIGINS` | Sim | Domínio do backend com `https://`, necessário para o login do admin. Em produção: `https://api.insperconsultingclub.com.br` |
 | `BEHIND_PROXY` | Sim | `True` atrás do proxy do Render |
+| `FRONTEND_URL` | Não | Endereço público do site, usado pelos botões "Ver no site", pelo link "Voltar ao site" e pela prévia de Markdown do admin. Sem ela, vale a primeira origem de `CORS_ALLOWED_ORIGINS` e, em desenvolvimento, `http://localhost:5173` |
+| `MAX_IMAGE_UPLOAD_MB` | Não | Tamanho máximo, em MB, de cada imagem enviada pelo admin (padrão: `5`), para proteger a cota do Cloudinary |
 | `API_CACHE_SECONDS` | Não | Segundos que o navegador reaproveita as respostas de leitura da API (`Cache-Control`). Padrão: `60`. `0` desliga |
 | `DATABASE_URL` | Sim | Conexão com o Postgres do Neon |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Sim | Armazenamento de imagens. Sem elas, as imagens enviadas se perdem a cada deploy |
@@ -152,7 +163,8 @@ Resumo; os detalhes (rotas, tokens, componentes e como adicionar uma página) es
 - **Rotas** definidas em `src/main.tsx` com `createBrowserRouter`. Cada página carrega sob demanda, exceto a Home, que é a porta de entrada mais comum.
 - **Chamadas à API** concentradas em `src/api.ts`, com os tipos em `src/types.ts`. O endereço vem de `VITE_API_URL`.
 - **`VITE_API_URL`** entra no código no momento do build. Mudar o valor exige novo build e novo deploy. O link "Área administrativa" do rodapé é derivado dele, trocando o `/api` final por `/admin/`.
-- **Links de redes sociais e e-mail** ficam em `src/redes.ts`, num lugar só, e aparecem no header, no rodapé, no Contato e no Processo Seletivo.
+- **Build lê a API.** O plugin `plugins/siteConfig.ts` consulta `/api/site-config/` durante o `vite build` e grava no `index.html` o nome, a descrição, a imagem de compartilhamento (`og:image`), o ícone e o logo (preload), porque quem compartilha o link só lê o HTML estático. Ele também embute uma cópia da configuração em `window.__SITE_CONFIG__` (sem a Política de Privacidade), que `useSiteConfig` usa como estado inicial até a API responder, sem piscar. Se a API não responder, o build continua com os valores originais. Por isso, mudar um desses campos exige publicar o frontend de novo (Manual Deploy no Render), e o admin lembra disso ao salvar. Ver [`operacao.md`](operacao.md).
+- **Textos e contatos** (e-mail, redes sociais, Home, rodapé, abertura das páginas, Política de Privacidade) vêm de `GET /api/site-config/`, pelo hook `useSiteConfig`; os títulos, rótulos e botões vêm do campo `texts` da mesma resposta, pelo hook `useTextos`. Os valores de reserva, usados enquanto a resposta não chega ou se ela falhar, ficam em `src/siteConfigPadrao.ts` e em `src/textosPadrao.ts` (este gerado do catálogo do backend).
 - **Artigos** são exibidos com `react-markdown`, `remark-gfm` e KaTeX. A biblioteca não executa HTML, então marcação digitada no admin aparece como texto. O CSS e as fontes do KaTeX só carregam na página de artigo.
 - **Aplicação de página única:** o serviço de hospedagem precisa de uma regra que reescreva `/*` para `/index.html`. Sem ela, recarregar uma página interna dá 404.
 

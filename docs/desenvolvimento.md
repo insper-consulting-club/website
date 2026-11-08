@@ -45,13 +45,23 @@ As portas 8000 e 5173 só aceitam conexões da própria máquina, por causa da s
 
 ### 3. Dados de exemplo e administrador
 
-O `backend` roda o comando `setup_dev` a cada subida, e ele só age em `DEBUG=True`. Se não houver usuários, cria o superusuário `admin`. Se o banco não tiver membros, roda o `seed_mock_data`, que cria membros, projetos, parceiros, artigos e um processo seletivo fictícios. Para repetir manualmente:
+O `backend` roda o comando `setup_dev` a cada subida, e ele só age em `DEBUG=True`. Se não houver usuários, cria o superusuário `admin`. Se o banco não tiver membros, roda o `seed_mock_data`. Para repetir manualmente:
 
 ```bash
 docker compose exec backend python manage.py seed_mock_data
 ```
 
-O `seed_mock_data` pode ser repetido sem duplicar registros, mas desfaz edições feitas nesses registros. Nunca rode em produção. Para criar outro administrador:
+**O que o `seed_mock_data` cria.** Um conjunto único e completo de dados **fictícios** (exceto os nomes e as descrições dos quatro programas do ICC, que são os reais): 16 membros, 8 parceiros, os programas com blocos de conteúdo, componentes e cases, 7 projetos, 7 artigos, dois processos seletivos (um antigo e o ativo, com inscrições abertas), a trajetória e os vínculos de diretoria dos membros e dois itens de menu a mais. Pessoas, e-mails e links são inventados e usam `example.com`.
+
+Ele inclui de propósito os casos de borda que o admin e o site tratam, para testar a apresentação: nome e título muito longos, membro sem e-mail e sem LinkedIn, ex-membros (que somem da Equipe), parceiro sem logo e sem site, programa sem selo, projeto de um dia só, projeto sem parceiros nem programa, artigo sem slug, artigo só com link externo, rascunho, e itens ocultos ou arquivados (parceiro, programa, case e projeto), que aparecem no admin mas não no site. Fotos, logos, capas e galerias recebem imagens de exemplo geradas na hora; algumas entidades ficam sem imagem de propósito.
+
+**Repetir é seguro.** Por padrão, rodar de novo atualiza os registros de exemplo sem duplicá-los (e remove itens de lista que o seed não descreve mais), mas desfaz edições feitas nesses registros. As imagens são regravadas com o mesmo nome, então não se acumulam. A configuração do site (textos, contatos, menu padrão) não é alterada.
+
+**Começar do zero.** Para recomeçar com um banco limpo (por exemplo, para tirar duplicados de um seed antigo), use o caminho do [guia do ambiente local](guia-ambiente-local.md): `docker compose down -v` e depois `docker compose up --build`. Os dados de exemplo voltam sozinhos.
+
+**Segurança.** O seed só roda com `DEBUG=True`. Com o Cloudinary configurado (armazenamento remoto), ele não envia imagens de exemplo, para não encher o ambiente compartilhado: o resto dos dados é criado normalmente. Nunca rode em produção.
+
+Para criar outro administrador:
 
 ```bash
 docker compose exec backend python manage.py createsuperuser

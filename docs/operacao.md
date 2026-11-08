@@ -52,6 +52,14 @@ Para o caso de o serviço precisar ser recriado:
 
 O `VITE_API_URL` entra no código no momento do build. Se ele mudar, o frontend precisa de um novo deploy. O link "Área administrativa" do rodapé é derivado dele.
 
+### Marca do site e novo deploy do frontend
+
+O frontend é um site estático: o nome, a descrição, a imagem de compartilhamento, o ícone da aba e o logo de **Configuração do site > Marca e compartilhamento** são gravados no `index.html` **durante o build**, lendo a API. Por isso, mudar um desses campos no admin só aparece depois de um novo deploy do frontend. Só administradores (superusuários) veem essa aba, e quem as altera tem acesso ao Render. Depois de salvar, no Render abra o serviço do frontend (`insperconsultingclub`) e use **Manual Deploy**. O admin lembra disso ao salvar.
+
+Textos, contatos, menu e as demais imagens são lidos pela API a cada visita e aparecem em até um minuto, sem deploy.
+
+Se a API estiver fora do ar durante o build, ele não falha: usa os valores originais do `index.html` e avisa no log (`[site-config]`). O backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera por isso. Para pular a consulta à API (por exemplo, num build local sem backend), use `SKIP_SITE_CONFIG=1`.
+
 ### Configuração do backend (`icc-backend`)
 
 Para o caso de o serviço precisar ser recriado:

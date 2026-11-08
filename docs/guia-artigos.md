@@ -57,7 +57,7 @@ Dica: antes de abrir o admin, prepare numa ficha o título, os autores, os temas
 | **Autores** | Não | 300 caracteres | Nomes separados por vírgula, por exemplo `Ana Silva, João Souza`. O texto aparece igual no card, no topo da página e na citação |
 | **Temas** | Não | 200 caracteres no total | Palavras-chave separadas por vírgula, por exemplo `Estratégia, Varejo`. Viram etiquetas no topo do artigo |
 | **Resumo** | Sim | - | Duas ou três frases. Aparece no card da lista e no quadro "Resumo" do artigo |
-| **Texto do artigo** | Não, mas é o conteúdo | - | O texto completo, em Markdown |
+| **Texto do artigo** | Não, mas é o conteúdo | - | O texto completo, em Markdown. O botão **Mostrar prévia**, abaixo do campo, mostra como o texto ficará no site, com imagens e fórmulas |
 | **Link externo** | Não | 200 caracteres | Endereço de outra publicação do mesmo artigo (revista, LinkedIn ou um PDF em uma pasta do ICC com acesso "Qualquer pessoa com o link"). Cria o botão "Ver publicação original" |
 | **Publicação** | Não | 200 caracteres | Nome da revista ou do evento, quando o artigo também saiu fora do site. Aparece no card |
 | **Data de publicação** | Recomendado | - | A data que aparece no card e no topo do artigo. Preencha sempre: um artigo sem data pode aparecer no topo da lista, antes dos mais recentes |

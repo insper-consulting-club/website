@@ -79,7 +79,7 @@ Gere uma nova `SECRET_KEY` (o comando está em [`backend/.env.example`](../backe
 
 No `/admin`, em **Usuários**, desative quem saiu (desmarque "Ativo") e crie os logins de quem entrou, um por pessoa. Veja as regras no [guia do admin](guia-admin.md#logins-para-outras-pessoas-do-icc).
 
-Quem tem **Status de superusuário** pode criar outros logins. Mantenha isso restrito a poucas pessoas.
+Quem tem **Status de superusuário** pode criar outros logins e apagar qualquer registro. Mantenha isso restrito a poucas pessoas. Para quem só cuida do conteúdo, use o grupo **Editores**, sem superusuário.
 
 ### 6. Pessoas fora da organização
 

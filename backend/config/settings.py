@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 import dj_database_url
+from django.templatetags.static import static
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -70,6 +71,9 @@ CSRF_TRUSTED_ORIGINS = [h for h in os.environ.get('CSRF_TRUSTED_ORIGINS', '').sp
 # Application definition
 
 INSTALLED_APPS = [
+    # Tema do /admin. Precisa vir antes de django.contrib.admin para que seus
+    # templates substituam os do Django.
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -104,6 +108,13 @@ MIDDLEWARE = [
 # Segundos que o navegador pode reaproveitar as respostas de leitura da API.
 # Uma edição no admin leva até esse tempo para aparecer. Use 0 para desligar.
 API_CACHE_SECONDS = int(os.environ.get('API_CACHE_SECONDS', '60'))
+
+# A sessão do admin expira depois de 12 horas sem uso (a cada requisição o prazo recomeça).
+SESSION_COOKIE_AGE = 12 * 60 * 60
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Tamanho máximo de cada imagem enviada pelo admin, em MB (protege a cota do Cloudinary).
+MAX_IMAGE_UPLOAD_MB = int(os.environ.get('MAX_IMAGE_UPLOAD_MB', '5'))
 
 ROOT_URLCONF = 'config.urls'
 
@@ -158,7 +169,10 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
+        # 12 caracteres, em vez dos 8 do padrão: é a principal defesa do login do /admin,
+        # que não limita tentativas de senha (ver docs/decisoes.md).
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 12},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -178,14 +192,65 @@ TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
+# Correções de grafia da tradução em português do Django (ver locale/). A pasta do
+# projeto vem antes da do Django, então as entradas dela valem.
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
+# Quem entra direto pela tela de login (sem vir de outra página) cai no admin; o
+# padrão do Django seria /accounts/profile/, que não existe.
+LOGIN_REDIRECT_URL = '/admin/'
+
+# Tema do /admin (django-unfold). A escala "primary" é o vermelho da marca
+# (o #b20000 do site fica perto do tom 700), no formato oklch que o Unfold usa.
+# Endereço público do site (frontend). Usado pelos botões "Ver no site" do admin.
+# Sem a variável FRONTEND_URL, vale a primeira origem de CORS_ALLOWED_ORIGINS
+# (em produção, o próprio site) ou, em desenvolvimento, o servidor do Vite.
+_origens_cors = [h for h in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if h]
+FRONTEND_URL = os.environ.get('FRONTEND_URL') or (
+    _origens_cors[0] if _origens_cors else ('http://localhost:5173' if DEBUG else '')
+)
+
+UNFOLD = {
+    'SITE_TITLE': 'Admin ICC',
+    'SITE_HEADER': 'Insper Consulting Club',
+    'SITE_SUBHEADER': 'Conteúdo do site',
+    'SITE_URL': FRONTEND_URL or None,
+    # Ajustes de layout (ver admin_static/website/admin.css)
+    'STYLES': [lambda request: static('website/admin.css')],
+    'SIDEBAR': {
+        'show_search': True,
+        'show_all_applications': False,
+        'navigation': 'config.navigation.navegacao',
+    },
+    'COLORS': {
+        'primary': {
+            '50': 'oklch(97.1% .013 17.38)',
+            '100': 'oklch(93.6% .032 17.717)',
+            '200': 'oklch(88.5% .062 18.334)',
+            '300': 'oklch(80.8% .114 19.571)',
+            '400': 'oklch(70.4% .191 22.216)',
+            '500': 'oklch(63.7% .237 25.331)',
+            '600': 'oklch(57.7% .245 27.325)',
+            '700': 'oklch(50.5% .213 27.518)',
+            '800': 'oklch(44.4% .177 26.899)',
+            '900': 'oklch(39.6% .141 25.723)',
+            '950': 'oklch(25.8% .092 26.042)',
+        },
+    },
+}
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'website' / 'static'
+
+# Arquivos estáticos do projeto que não pertencem a um app (por exemplo, o script da
+# prévia de Markdown do admin). Não pode ser a mesma pasta de STATIC_ROOT.
+STATICFILES_DIRS = [BASE_DIR / 'admin_static']
 
 # Media files (Upload) — armazenados no Cloudinary em produção/dev compartilhado
 MEDIA_URL = '/media/'

@@ -1,23 +1,25 @@
 import { Link } from "react-router-dom"
 import usePageTitle from "../../hooks/usePageTitle"
+import useTextos from "../../hooks/useTextos"
 import { ArrowRightIcon } from "../../components/Icons"
 
 export default function NaoEncontrada() {
-  usePageTitle("Página não encontrada")
+  const t = useTextos()
+  usePageTitle(t("nao_encontrada.titulo"))
 
   return (
     <section className="section">
       <div className="container container--narrow" style={{ textAlign: "center" }}>
-        <p className="eyebrow">Erro 404</p>
+        <p className="eyebrow">{t("nao_encontrada.eyebrow")}</p>
         <h1 className="page-hero__title" style={{ marginInline: "auto" }}>
-          Página não encontrada
+          {t("nao_encontrada.titulo")}
         </h1>
         <p className="lead" style={{ marginInline: "auto" }}>
-          O endereço acessado não existe ou foi alterado.
+          {t("nao_encontrada.texto")}
         </p>
         <div style={{ marginTop: 32 }}>
           <Link to="/" className="btn btn--primary">
-            Voltar para o início
+            {t("nao_encontrada.botao")}
             <ArrowRightIcon />
           </Link>
         </div>

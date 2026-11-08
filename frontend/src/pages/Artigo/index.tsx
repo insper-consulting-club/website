@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import Markdown, { type Components, type Options } from "react-markdown"
-import remarkGfm from "remark-gfm"
-import remarkMath from "remark-math"
-import rehypeKatex from "rehype-katex"
-import "katex/dist/katex.min.css"
 import { api } from "../../api"
-import type { Article, ArticleImage } from "../../types"
+import type { Article } from "../../types"
+import ArtigoMarkdown from "../../components/ArtigoMarkdown"
 import PageHero from "../../components/PageHero"
 import { ArrowLeftIcon, ExternalIcon, LinkedInIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 function formatDate(date: string) {
@@ -18,43 +15,8 @@ function formatDate(date: string) {
   return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
 }
 
-// Links externos abrem em outra aba. Imagens viram figura com legenda; a
-// figura é feita de <span> porque o Markdown coloca a imagem dentro de um <p>.
-// No admin, a imagem é chamada pelo número, como ![](imagem-1): o endereço e
-// a legenda vêm de "Imagens do artigo". A legenda escrita entre os colchetes,
-// se houver, vale mais que a do cadastro.
-// Fórmulas em LaTeX, desenhadas pelo KaTeX, sempre entre $$ (em linha ou num
-// bloco próprio). O $ sozinho fica desligado: "R$ 10 mi e R$ 20 mi" viraria
-// fórmula. Fórmula com erro aparece em vermelho, sem derrubar a página.
-const pluginsRemark: Options["remarkPlugins"] = [remarkGfm, [remarkMath, { singleDollarTextMath: false }]]
-const pluginsRehype: Options["rehypePlugins"] = [[rehypeKatex, { throwOnError: false }]]
-
-function componentesMarkdown(imagens: ArticleImage[]): Components {
-  return {
-    a: ({ href, children }) =>
-      href?.startsWith("http") ? (
-        <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
-      ) : (
-        <a href={href}>{children}</a>
-      ),
-    img: ({ src, alt }) => {
-      const numero = typeof src === "string" ? src.match(/^imagem-(\d+)$/)?.[1] : undefined
-      const cadastrada = numero ? imagens.find((img) => img.number === Number(numero)) : undefined
-      const endereco = numero ? cadastrada?.image_url : src
-      const legenda = alt || cadastrada?.caption || ""
-      // Número sem imagem cadastrada: omite o trecho em vez de mostrar imagem quebrada.
-      if (typeof endereco !== "string" || !endereco) return null
-      return (
-        <span className="artigo__figura">
-          <img src={endereco} alt={legenda} loading="lazy" />
-          {legenda && <span className="artigo__legenda">{legenda}</span>}
-        </span>
-      )
-    },
-  }
-}
-
 export default function Artigo() {
+  const t = useTextos()
   const { slugOrId } = useParams<{ slugOrId: string }>()
   const [artigo, setArtigo] = useState<Article | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
@@ -80,11 +42,11 @@ export default function Artigo() {
         <div className="container">
           <Link to="/artigos" className="back-link">
             <ArrowLeftIcon size={14} />
-            Voltar para artigos
+            {t("artigo.voltar")}
           </Link>
           <p className="state-message">
-            <strong>Artigo não encontrado</strong>
-            Não foi possível carregar esse artigo.
+            <strong>{t("artigo.nao_encontrado_titulo")}</strong>
+            {t("artigo.nao_encontrado_texto")}
           </p>
         </div>
       </section>
@@ -106,7 +68,7 @@ export default function Artigo() {
   return (
     <div className="artigo-page">
       <PageHero
-        back={{ to: "/artigos", label: "Voltar para artigos" }}
+        back={{ to: "/artigos", label: t("artigo.voltar") }}
         eyebrow={artigo.date ? formatDate(artigo.date) : undefined}
         title={artigo.title}
         lead={artigo.authors}
@@ -124,30 +86,23 @@ export default function Artigo() {
           {artigo.image_url && <img src={artigo.image_url} alt="" className="artigo__capa" />}
           {artigo.description && (
             <div className="artigo__resumo">
-              <h2>Resumo</h2>
+              <h2>{t("artigo.resumo")}</h2>
               <p>{artigo.description}</p>
             </div>
           )}
-          {/* O texto vem em Markdown. HTML digitado no admin não é
-              executado: o react-markdown o mostra como texto. */}
+          {/* O texto vem em Markdown (ver components/ArtigoMarkdown). */}
           {artigo.content && (
             <div className="artigo__texto">
-              <Markdown
-                remarkPlugins={pluginsRemark}
-                rehypePlugins={pluginsRehype}
-                components={componentesMarkdown(artigo.images ?? [])}
-              >
-                {artigo.content}
-              </Markdown>
+              <ArtigoMarkdown texto={artigo.content} imagens={artigo.images ?? []} />
             </div>
           )}
 
           <div className="artigo__rodape">
-            <h2>Como citar</h2>
+            <h2>{t("artigo.como_citar")}</h2>
             <p className="artigo__citacao">{citacao}</p>
             <div className="artigo__acoes">
               <button type="button" className="btn btn--secondary" onClick={copiarCitacao}>
-                {copiado ? "Copiado!" : "Copiar citação"}
+                {copiado ? t("artigo.copiado") : t("artigo.copiar")}
               </button>
               <a
                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
@@ -156,11 +111,11 @@ export default function Artigo() {
                 className="btn btn--secondary"
               >
                 <LinkedInIcon size={16} />
-                Compartilhar
+                {t("artigo.compartilhar")}
               </a>
               {artigo.link && (
                 <a href={artigo.link} target="_blank" rel="noopener noreferrer" className="btn btn--secondary">
-                  Ver publicação original
+                  {t("artigo.link_original")}
                   <ExternalIcon />
                 </a>
               )}

@@ -1,0 +1,39 @@
+/*
+ * Ajustes de layout do admin (django-unfold). Carregado por UNFOLD["STYLES"] em
+ * config/settings.py.
+ */
+
+/* Seletor duplo ("disponíveis / escolhidos", usado nas permissões de usuários e
+ * grupos): o Django fixa a largura das listas, e a soma passa da largura do
+ * formulário. Aqui elas se repartem o espaço disponível. */
+.selector {
+  max-width: 100%;
+}
+
+.selector select {
+  width: 100% !important;
+}
+
+.selector .selector-available,
+.selector .selector-chosen {
+  min-width: 0;
+}
+
+/* Blocos de campos nunca passam da largura da tela, o que cortava os campos à
+ * direita nos formulários no celular. */
+fieldset.module {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Itens de uma linha de formulário podem encolher. Sem isso, o conteúdo mais largo
+ * (o nome do arquivo num campo de foto, ou a lista do seletor duplo) empurra o vizinho
+ * para fora da caixa: os ícones de baixar e trocar da foto ficavam cortados no celular,
+ * e o texto de ajuda de Usuário passava da borda. */
+.form-row .grow {
+  min-width: 0;
+}
+
+.form-row .overflow-hidden > * {
+  min-width: 0;
+}

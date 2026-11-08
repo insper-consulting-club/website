@@ -1,13 +1,17 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.core.validators import RegexValidator
+from django.db import models, transaction
 from django.utils.text import slugify
+
+from .fields import LimitedImageField
 
 
 class PartnerCategory(models.Model):
     title = models.CharField(max_length=200)
 
     class Meta:
-        verbose_name_plural = 'Categorias dos Parceiros'
+        verbose_name = 'Categoria do parceiro'
+        verbose_name_plural = 'Categorias dos parceiros'
 
     def __str__(self):
         return self.title
@@ -50,7 +54,7 @@ class Position(models.Model):
 
 
 class Partner(models.Model):
-    logo_url = models.ImageField(upload_to='partners/', verbose_name='Logo')
+    logo_url = LimitedImageField(upload_to='partners/', verbose_name='Logo')
     name = models.CharField(max_length=200, verbose_name='Nome')
     description = models.TextField(verbose_name='Descrição')
     category = models.ForeignKey(
@@ -73,6 +77,7 @@ class Partner(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
+        verbose_name = 'Parceiro'
         verbose_name_plural = 'Parceiros'
         ordering = ['order', 'name']
 
@@ -111,7 +116,7 @@ class Program(models.Model):
     )
     description = models.TextField(verbose_name='Descrição')
     highlights = models.TextField(verbose_name='Tópicos', blank=True, help_text='Um tópico por linha.')
-    icon = models.ImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
+    icon = LimitedImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
     badge = models.CharField(
         max_length=50, blank=True, verbose_name='Frequência (badge)',
         help_text='Opcional. Deixe vazio quando o programa não tiver uma periodicidade definida.'
@@ -155,6 +160,7 @@ class Project(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Projeto'
         verbose_name_plural = 'Projetos'
         ordering = ['-start_date']
 
@@ -164,13 +170,13 @@ class Project(models.Model):
 
 class ProjectImage(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='images', verbose_name='Projeto')
-    image = models.ImageField(upload_to='projects/images/', verbose_name='Imagem')
+    image = LimitedImageField(upload_to='projects/images/', verbose_name='Imagem')
     caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda')
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Imagem do Projeto'
-        verbose_name_plural = 'Imagens do Projeto'
+        verbose_name = 'Imagem do projeto'
+        verbose_name_plural = 'Imagens do projeto'
         ordering = ['order']
 
     def __str__(self):
@@ -185,8 +191,8 @@ class ProjectTimelineEvent(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Evento do Cronograma'
-        verbose_name_plural = 'Eventos do Cronograma'
+        verbose_name = 'Evento do cronograma'
+        verbose_name_plural = 'Eventos do cronograma'
         ordering = ['date', 'order']
 
     def __str__(self):
@@ -197,14 +203,14 @@ class ProjectContentBlock(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Projeto')
     title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
     text = models.TextField(blank=True, verbose_name='Texto')
-    image = models.ImageField(upload_to='projects/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
+    image = LimitedImageField(upload_to='projects/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
     image_caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda da imagem')
     image_align = models.CharField(max_length=10, choices=IMAGE_ALIGN_CHOICES, default='right', verbose_name='Posição da imagem')
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Bloco de Conteúdo'
-        verbose_name_plural = 'Blocos de Conteúdo'
+        verbose_name = 'Bloco de conteúdo'
+        verbose_name_plural = 'Blocos de conteúdo'
         ordering = ['order']
 
     def __str__(self):
@@ -213,7 +219,7 @@ class ProjectContentBlock(models.Model):
 
 class Member(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome')
-    photo = models.ImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
+    photo = LimitedImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
     biography = models.TextField(max_length=200, blank=True, verbose_name='Biografia')
     position = models.ForeignKey(Position, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Cargo principal')
     course = models.CharField(max_length=200, null=True, blank=True, verbose_name='Curso')
@@ -227,10 +233,6 @@ class Member(models.Model):
     )
     email = models.EmailField(null=True, blank=True, verbose_name='Email')
     linkedin = models.URLField(null=True, blank=True, verbose_name='LinkedIn')
-    trajetoria = models.JSONField(
-        default=list, blank=True, verbose_name='Trajetória',
-        help_text='Lista de {"semestre": "2026.1", "cargo": "Trainee"}, mais recente por último.'
-    )
     projects = models.ManyToManyField(Project, blank=True, verbose_name='Projetos participados', related_name='members')
 
     class Meta:
@@ -243,6 +245,31 @@ class Member(models.Model):
     @property
     def number_of_projects(self):
         return self.projects.filter(is_active=True).count()
+
+
+class MemberTrajectory(models.Model):
+    """
+    Uma etapa da trajetória de um membro no ICC: o cargo que teve em um semestre.
+    Aparece, em ordem de semestre, no perfil público da pessoa.
+    """
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='trajectory_steps', verbose_name='Membro')
+    semester = models.CharField(
+        max_length=10, verbose_name='Semestre',
+        validators=[RegexValidator(r'^\d{4}\.[12]$', 'Use o formato AAAA.S, por exemplo 2026.1.')],
+        help_text='No formato AAAA.S, por exemplo 2026.1.'
+    )
+    role = models.CharField(max_length=200, verbose_name='Cargo nesse semestre', help_text='Por exemplo: Trainee, Membro, Diretor de Projetos.')
+
+    class Meta:
+        verbose_name = 'Etapa da trajetória'
+        verbose_name_plural = 'Trajetória'
+        ordering = ['semester', 'id']
+        constraints = [
+            models.UniqueConstraint(fields=['member', 'semester', 'role'], name='unique_trajectory_step'),
+        ]
+
+    def __str__(self):
+        return f"{self.semester} - {self.role}"
 
 
 class DirectorateMembership(models.Model):
@@ -259,8 +286,8 @@ class DirectorateMembership(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
-        verbose_name = 'Vínculo com Diretoria'
-        verbose_name_plural = 'Vínculos com Diretorias'
+        verbose_name = 'Vínculo com diretoria'
+        verbose_name_plural = 'Vínculos com diretorias'
         ordering = ['order']
         constraints = [
             models.UniqueConstraint(fields=['member', 'directorate'], name='unique_member_per_directorate'),
@@ -284,6 +311,33 @@ class ProgramComponent(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ProgramContentBlock(models.Model):
+    """
+    Bloco de texto da página de um programa. Cada programa tem uma estrutura
+    própria (Jornada, Pedagógico, Escola de Mentores...), por isso os blocos
+    são livres: quem edita escolhe os títulos e a ordem.
+    """
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='content_blocks', verbose_name='Programa')
+    title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
+    text = models.TextField(
+        blank=True, verbose_name='Texto',
+        help_text='Em Markdown: **negrito**, ## Subtítulo, - item de lista, [link](https://...). '
+                  'Separe os parágrafos com uma linha em branco.'
+    )
+    image = LimitedImageField(upload_to='programs/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
+    image_caption = models.CharField(max_length=200, blank=True, verbose_name='Legenda da imagem')
+    image_align = models.CharField(max_length=10, choices=IMAGE_ALIGN_CHOICES, default='right', verbose_name='Posição da imagem')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Bloco de conteúdo'
+        verbose_name_plural = 'Blocos de conteúdo'
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Bloco {self.order} — {self.program.label}"
 
 
 class Article(models.Model):
@@ -312,7 +366,7 @@ class Article(models.Model):
         blank=True, verbose_name='Link externo (opcional)',
         help_text='PDF, LinkedIn ou revista onde o artigo também foi publicado.'
     )
-    image = models.ImageField(upload_to='news/', null=True, blank=True, verbose_name='Imagem de capa')
+    image = LimitedImageField(upload_to='news/', null=True, blank=True, verbose_name='Imagem de capa')
     source = models.CharField(
         max_length=200, blank=True, verbose_name='Publicação',
         help_text='Opcional: revista ou evento, se o artigo também saiu fora do site.'
@@ -346,7 +400,7 @@ class ArticleImage(models.Model):
         verbose_name='Número',
         help_text='No texto, escreva ![](imagem-1) para a imagem de número 1.'
     )
-    image = models.ImageField(upload_to='articles/', verbose_name='Imagem')
+    image = LimitedImageField(upload_to='articles/', verbose_name='Imagem')
     caption = models.CharField(
         max_length=300, blank=True, verbose_name='Legenda',
         help_text='Aparece embaixo da imagem no artigo.'
@@ -370,6 +424,7 @@ class Statistic(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
+        verbose_name = 'Estatística'
         verbose_name_plural = 'Estatísticas'
         ordering = ['order']
 
@@ -399,8 +454,8 @@ class SelectionProcess(models.Model):
     )
     
     class Meta:
-        verbose_name = "Processo Seletivo"
-        verbose_name_plural = "Processos Seletivos"
+        verbose_name = "Processo seletivo"
+        verbose_name_plural = "Processos seletivos"
     
     def __str__(self):
         return self.title
@@ -408,6 +463,34 @@ class SelectionProcess(models.Model):
     def clean(self):
         if self.registrations_open and not self.registration_url:
             raise ValidationError({'registration_url': 'Informe o link para abrir as inscrições.'})
+
+    def duplicate(self):
+        """
+        Cria uma cópia deste processo para o semestre seguinte: datas, etapas, requisitos
+        e materiais de preparação. A cópia nasce inativa, com as inscrições fechadas e
+        sem o link do formulário (cada processo tem o seu). As imagens são reaproveitadas,
+        não copiadas: continuam sendo o mesmo arquivo.
+        """
+        with transaction.atomic():
+            copia = SelectionProcess.objects.create(
+                title=f'{self.title[:190]} (cópia)', is_active=False, registrations_open=False, registration_url='',
+            )
+            for etapa in self.stages.all():
+                SelectionProcessStage.objects.create(process=copia, label=etapa.label, date=etapa.date, order=etapa.order)
+            for passo in self.steps.all():
+                SelectionProcessStep.objects.create(
+                    process=copia, number=passo.number, title=passo.title, description=passo.description,
+                    image=passo.image.name or None, duration=passo.duration, tips=passo.tips, order=passo.order,
+                )
+            for requisito in self.requirements.all():
+                SelectionProcessRequirement.objects.create(
+                    process=copia, text=requisito.text, icon=requisito.icon.name or None, order=requisito.order,
+                )
+            for material in self.materials.all():
+                novo = PreparationMaterial.objects.create(process=copia, title=material.title, order=material.order)
+                for item in material.items.all():
+                    PreparationMaterialItem.objects.create(material=novo, text=item.text, order=item.order)
+        return copia
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -430,8 +513,8 @@ class SelectionProcessStage(models.Model):
     order = models.IntegerField(default=0, verbose_name="Ordem")
     
     class Meta:
-        verbose_name = "Data do Processo"
-        verbose_name_plural = "Datas do Processo"
+        verbose_name = "Data do processo"
+        verbose_name_plural = "Datas do processo"
         ordering = ['order']
         
     def __str__(self):
@@ -447,14 +530,14 @@ class SelectionProcessStep(models.Model):
     number = models.CharField(max_length=10, verbose_name='Número')
     title = models.CharField(max_length=200, verbose_name='Título')
     description = models.TextField(verbose_name='Descrição')
-    image = models.ImageField(upload_to='process/steps/', null=True, blank=True, verbose_name='Ícone do quadrado')
+    image = LimitedImageField(upload_to='process/steps/', null=True, blank=True, verbose_name='Ícone do quadrado')
     duration = models.CharField(max_length=100, blank=True, verbose_name='Duração')
     tips = models.TextField(blank=True, verbose_name='Dicas', help_text='Um tópico por linha.')
     order = models.IntegerField(default=0, verbose_name='Ordem')
     
     class Meta:
-        verbose_name = 'Etapa Detalhada'
-        verbose_name_plural = 'Etapas Detalhadas'
+        verbose_name = 'Etapa detalhada'
+        verbose_name_plural = 'Etapas detalhadas'
         ordering = ['order']
     
     def __str__(self):
@@ -467,7 +550,7 @@ class SelectionProcessStep(models.Model):
 class SelectionProcessRequirement(models.Model):
     process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE, related_name='requirements', verbose_name='Processo Seletivo')
     text = models.CharField(max_length=300, verbose_name='Texto do requisito')
-    icon = models.ImageField(upload_to='process/requirements/', null=True, blank=True, verbose_name='Ícone (imagem)')
+    icon = LimitedImageField(upload_to='process/requirements/', null=True, blank=True, verbose_name='Ícone (imagem)')
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
@@ -490,8 +573,8 @@ class PreparationMaterial(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
     
     class Meta:
-        verbose_name = 'Material de Preparação'
-        verbose_name_plural = 'Materiais de Preparação'
+        verbose_name = 'Material de preparação'
+        verbose_name_plural = 'Materiais de preparação'
         ordering = ['order']
     
     def __str__(self):
@@ -595,8 +678,8 @@ class ProgramCaseParticipant(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
-        verbose_name = 'Participante do Case'
-        verbose_name_plural = 'Participantes do Case'
+        verbose_name = 'Participante do case'
+        verbose_name_plural = 'Participantes do case'
         ordering = ['role', 'order']
         constraints = [
             models.UniqueConstraint(fields=['case', 'member'], name='unique_member_per_case'),
@@ -604,3 +687,322 @@ class ProgramCaseParticipant(models.Model):
 
     def __str__(self):
         return f"{self.member.name} ({self.get_role_display()})"
+
+
+class SiteConfig(models.Model):
+    """
+    Textos e contatos do site que ficam fora dos demais cadastros:
+    a Home, o rodapé, a abertura de cada página, os canais de contato e a
+    Política de Privacidade. Existe um único registro (pk=1), criado pela
+    migration com os textos que o site já tinha.
+    """
+    # Campos que o frontend grava no HTML durante o build (ver plugins/siteConfig.ts).
+    site_name = models.CharField(
+        max_length=100, default='Liga Insper Consulting Club', verbose_name='Nome do site',
+        help_text='Aparece na aba do navegador, no rodapé e na prévia ao compartilhar o link.'
+    )
+    site_description = models.CharField(
+        max_length=300,
+        default='A Liga Insper Consulting Club é uma organização estudantil dedicada ao '
+                'desenvolvimento de futuros consultores.',
+        verbose_name='Descrição do site',
+        help_text='Usada na prévia ao compartilhar o link e em páginas sem descrição própria.'
+    )
+    logo = LimitedImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Logo (versão clara)',
+        help_text='Opcional. Versão clara, para fundo escuro, usada no topo, no rodapé e na Home. '
+                  'Sem logo enviado, o site usa o logo original.'
+    )
+    favicon = LimitedImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Ícone da aba (favicon)',
+        help_text='Opcional. Imagem quadrada em PNG, de preferência com 256 x 256 pixels. '
+                  'Sem ícone enviado, o site usa o original.'
+    )
+    og_image = LimitedImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Imagem de compartilhamento',
+        help_text='Opcional. Aparece na prévia do link no WhatsApp e no LinkedIn. '
+                  'Use 1200 x 630 pixels. Sem imagem enviada, o site usa a original.'
+    )
+
+    # Contatos
+    email = models.EmailField(default='insperconsultingclub@gmail.com', verbose_name='E-mail')
+    instagram_url = models.URLField(
+        max_length=300, default='https://www.instagram.com/insperconsultingclub/',
+        verbose_name='Link do Instagram'
+    )
+    instagram_label = models.CharField(max_length=100, default='@insperconsultingclub', verbose_name='Nome exibido do Instagram')
+    linkedin_url = models.URLField(
+        max_length=300, default='https://br.linkedin.com/company/insperconsultingclub',
+        verbose_name='Link do LinkedIn'
+    )
+    linkedin_label = models.CharField(max_length=100, default='Insper Consulting Club', verbose_name='Nome exibido do LinkedIn')
+    github_url = models.URLField(
+        max_length=300, default='https://github.com/insper-consulting-club',
+        verbose_name='Link do GitHub'
+    )
+    github_label = models.CharField(max_length=100, default='insper-consulting-club', verbose_name='Nome exibido do GitHub')
+
+    # Home
+    home_hero_title = models.CharField(
+        max_length=200, default='O futuro consultor começa no ICC', verbose_name='Título do topo'
+    )
+    home_statement = models.CharField(
+        max_length=300,
+        default='Preparamos nossos membros para os processos seletivos mais exigentes do mercado.',
+        verbose_name='Frase de destaque'
+    )
+    home_about_title = models.CharField(
+        max_length=200, default='Mais do que um clube, somos um ambiente de formação',
+        verbose_name='Título de "Quem somos"'
+    )
+    home_about_title_highlight = models.CharField(
+        max_length=200, blank=True, default='para futuros consultores.',
+        verbose_name='Final do título, em destaque',
+        help_text='Opcional. Aparece em vermelho, logo depois do título.'
+    )
+    home_about_text = models.TextField(
+        default='A Liga Insper Consulting Club é uma organização estudantil fundada em 2020, '
+                'dedicada ao desenvolvimento de futuros consultores. Ao longo do semestre, '
+                'promovemos capacitações, resolução de cases, visitas corporativas e iniciativas '
+                'que aproximam nossos membros da realidade das principais empresas do mercado.',
+        verbose_name='Texto de "Quem somos"'
+    )
+    home_about_photo = LimitedImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Foto de "Quem somos"',
+        help_text='Opcional. Sem foto enviada, o site usa a foto da reunião inaugural.'
+    )
+    home_about_photo_alt = models.CharField(
+        max_length=200, default='Membros da Liga Insper Consulting Club na reunião inaugural',
+        verbose_name='Descrição da foto',
+        help_text='Lida por leitores de tela. Descreva o que aparece na foto.'
+    )
+    mission = models.TextField(
+        default='Conectar alunos do Insper ao mercado de consultoria, desenvolvendo as competências '
+                'técnicas e comportamentais exigidas pelas principais firmas do setor.',
+        verbose_name='Missão'
+    )
+    mission_how = models.TextField(
+        default='Treinamento para processos seletivos (GMAT, Verbal, Data e Fit Interview) e '
+                'capacitação prática na resolução de cases reais de negócio.',
+        verbose_name='Como preparamos'
+    )
+    mission_goal = models.TextField(
+        default='Consolidar o ICC como referência em consultoria entre os clubes estudantis do Brasil '
+                'e expandir a atuação para tecnologia e empreendedorismo.',
+        verbose_name='Onde queremos chegar'
+    )
+    home_cta_title = models.CharField(
+        max_length=200, default='Pronto para dar o próximo passo na sua carreira?',
+        verbose_name='Chamada final'
+    )
+
+    # Rodapé
+    footer_tagline = models.CharField(
+        max_length=300,
+        default='Mais do que um clube, somos um ambiente de formação para futuros consultores.',
+        verbose_name='Frase do rodapé'
+    )
+
+    # Abertura de cada página (o texto abaixo do título)
+    team_lead = models.CharField(
+        max_length=300, default='Conheça os membros que fazem parte da Liga Insper Consulting Club',
+        verbose_name='Página Equipe'
+    )
+    partners_lead = models.CharField(
+        max_length=300,
+        default='Conheça as empresas que apoiam o Insper Consulting Club e contribuem para a '
+                'formação dos futuros líderes em consultoria.',
+        verbose_name='Página Parceiros'
+    )
+    partners_benefits_title = models.CharField(
+        max_length=200, default='O que sua empresa ganha ao apoiar o Insper Consulting Club',
+        verbose_name='Título de "Por que ser parceiro"',
+        help_text='Os benefícios em si ficam na aba Parceiros.'
+    )
+    projects_lead = models.CharField(
+        max_length=300,
+        default='Como formamos consultores, do primeiro semestre na entidade aos cases reais '
+                'resolvidos ao longo da Jornada do Consultor.',
+        verbose_name='Página Projetos'
+    )
+    featured_program_slug = models.CharField(
+        max_length=50, blank=True, default='jornada-do-consultor',
+        verbose_name='Programa dos cases em destaque',
+        help_text='Identificador (slug) do programa para onde o botão "Ver os cases" da página Projetos leva. '
+                  'Precisa ser igual ao slug de um programa cadastrado. Deixe vazio para esconder a seção.'
+    )
+    articles_lead = models.CharField(
+        max_length=300, default='Artigos e publicações produzidos por membros do ICC',
+        verbose_name='Página Artigos'
+    )
+    contact_lead = models.CharField(
+        max_length=300, default='Entre em contato com o Insper Consulting Club',
+        verbose_name='Página Contato'
+    )
+    process_lead = models.CharField(
+        max_length=300,
+        default='Participe do processo seletivo e faça parte da Liga Insper Consulting Club',
+        verbose_name='Página Processo Seletivo'
+    )
+    process_closed_message = models.CharField(
+        max_length=300,
+        default='Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.',
+        verbose_name='Mensagem de inscrições encerradas'
+    )
+
+    # Política de Privacidade (o texto inicial é criado pela migration)
+    privacy_updated = models.CharField(
+        max_length=100, default='novembro de 2026', verbose_name='Última atualização',
+        help_text='Como deve aparecer no site. Ex.: novembro de 2026.'
+    )
+    privacy_text = models.TextField(
+        blank=True, verbose_name='Texto da política',
+        help_text='Em Markdown: ## Título, **negrito**, - item de lista, [link](https://...). '
+                  'Separe os parágrafos com uma linha em branco.'
+    )
+
+    class Meta:
+        verbose_name = 'Configuração do site'
+        verbose_name_plural = 'Configuração do site'
+
+    def __str__(self):
+        return 'Configuração do site'
+
+    def clean(self):
+        if self.featured_program_slug and not Program.objects.filter(slug=self.featured_program_slug).exists():
+            raise ValidationError({
+                'featured_program_slug': 'Não existe programa com esse slug. Confira em Programas.'
+            })
+
+    def save(self, *args, **kwargs):
+        # Registro único: qualquer salvamento atualiza sempre o mesmo.
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PartnerBenefit(models.Model):
+    """Item de "Por que ser parceiro", na página Parceiros."""
+    site_config = models.ForeignKey(
+        SiteConfig, on_delete=models.CASCADE, related_name='partner_benefits', verbose_name='Configuração'
+    )
+    title = models.CharField(max_length=200, verbose_name='Título')
+    description = models.TextField(verbose_name='Descrição')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Benefício para parceiros'
+        verbose_name_plural = 'Benefícios para parceiros'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+
+class SiteText(models.Model):
+    """
+    Texto curto do site (título de seção, rótulo, botão, mensagem de lista
+    vazia). As entradas nascem do catálogo em site_texts.py; o admin só edita
+    o valor, não cria nem exclui.
+    """
+    key = models.CharField(max_length=100, unique=True, verbose_name='Chave')
+    group = models.CharField(max_length=100, verbose_name='Página')
+    description = models.CharField(max_length=200, verbose_name='Onde aparece')
+    value = models.CharField(
+        max_length=300, verbose_name='Texto',
+        help_text='Mantenha os trechos entre chaves, como {n} ou {data}: o site os preenche.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Texto do site'
+        verbose_name_plural = 'Textos do site'
+        ordering = ['order']
+
+    def __str__(self):
+        return f'{self.group}: {self.description}'
+
+
+class NavItem(models.Model):
+    """
+    Item do menu do topo, do rodapé ou botão de destaque do topo. Aponta para
+    uma página do site (lista fixa) ou para um link livre.
+    """
+    class Area(models.TextChoices):
+        MENU = 'menu', 'Menu (topo e rodapé)'
+        TOPO = 'topo', 'Só no menu do topo'
+        RODAPE = 'rodape', 'Só no rodapé'
+        BOTAO = 'botao', 'Botão de destaque do topo'
+
+    # Páginas que existem no site. Quem edita escolhe daqui, em vez de digitar
+    # o endereço, para o link não quebrar por erro de digitação.
+    PAGINAS = {
+        'home': '/',
+        'equipe': '/equipe',
+        'parceiros': '/parceiros',
+        'projetos': '/projetos',
+        'artigos': '/artigos',
+        'processo': '/processo',
+        'contato': '/contato',
+        'politica-de-privacidade': '/politica-de-privacidade',
+    }
+    PAGE_CHOICES = [
+        ('home', 'Página inicial'),
+        ('equipe', 'Equipe'),
+        ('parceiros', 'Parceiros'),
+        ('projetos', 'Projetos'),
+        ('artigos', 'Artigos'),
+        ('processo', 'Processo seletivo'),
+        ('contato', 'Contato'),
+        ('politica-de-privacidade', 'Política de Privacidade'),
+    ]
+
+    site_config = models.ForeignKey(
+        SiteConfig, on_delete=models.CASCADE, related_name='nav_items', verbose_name='Configuração'
+    )
+    label = models.CharField(max_length=60, verbose_name='Texto exibido')
+    area = models.CharField(max_length=10, choices=Area.choices, default=Area.MENU, verbose_name='Onde aparece')
+    page = models.CharField(
+        max_length=40, choices=PAGE_CHOICES, blank=True, verbose_name='Página do site',
+        help_text='Escolha uma página do site, ou deixe vazio e preencha "Link livre". '
+                  'Em Projetos e Equipe, o menu do topo mostra também a lista de programas e de diretorias.'
+    )
+    url = models.CharField(
+        max_length=300, blank=True, verbose_name='Link livre',
+        help_text='Endereço completo (https://...) ou um caminho do site (/equipe). Use só se não houver página na lista.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+    is_active = models.BooleanField(
+        default=True, verbose_name='Exibir no site',
+        help_text='Desmarque para esconder o item sem apagar.'
+    )
+
+    class Meta:
+        verbose_name = 'Item de navegação'
+        verbose_name_plural = 'Itens de navegação'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.label
+
+    @property
+    def path(self):
+        return self.PAGINAS[self.page] if self.page else self.url
+
+    @property
+    def external(self):
+        return self.path.startswith(('http://', 'https://', 'mailto:'))
+
+    def clean(self):
+        if self.page and self.url:
+            raise ValidationError('Preencha a página do site ou o link livre, não os dois.')
+        if not self.page and not self.url:
+            raise ValidationError('Escolha uma página do site ou informe um link livre.')
+        if self.url and not self.url.startswith(('/', 'http://', 'https://', 'mailto:')):
+            raise ValidationError({
+                'url': 'O link precisa começar com https://, http://, mailto: ou / (caminho do site).'
+            })

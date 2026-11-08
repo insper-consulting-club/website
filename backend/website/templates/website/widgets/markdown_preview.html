@@ -1,0 +1,12 @@
+<div class="md-campo">
+  {% include "unfold/widgets/textarea.html" %}
+  {% if widget.previa_url %}
+  <div class="md-previa" data-url="{{ widget.previa_url }}" data-modo="{{ widget.modo }}" data-imagens="{{ widget.imagens_json }}">
+    <button type="button" class="md-previa__botao" aria-expanded="false">Mostrar prévia</button>
+    <div class="md-previa__caixa" hidden>
+      <iframe class="md-previa__quadro" title="Prévia do texto"></iframe>
+      <p class="md-previa__nota">Desenhada pelo próprio site, com o texto que está no campo. Nada é publicado até salvar.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>

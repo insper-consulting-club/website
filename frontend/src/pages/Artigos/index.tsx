@@ -5,6 +5,8 @@ import type { ArticleSummary } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useSiteConfig from "../../hooks/useSiteConfig"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 function formatDate(date: string) {
@@ -16,7 +18,9 @@ function formatDate(date: string) {
 }
 
 export default function Artigos() {
-  usePageTitle("Artigos")
+  const t = useTextos()
+  const config = useSiteConfig()
+  usePageTitle(t("artigos.titulo"))
   const [artigos, setArtigos] = useState<ArticleSummary[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -31,8 +35,8 @@ export default function Artigos() {
   return (
     <div className="artigos-page">
       <PageHero
-        title="Artigos"
-        lead="Artigos e publicações produzidos por membros do ICC"
+        title={t("artigos.titulo")}
+        lead={config.articles_lead}
       />
 
       <section className="section">
@@ -40,7 +44,7 @@ export default function Artigos() {
           {loading ? (
             <p className="loading">Carregando...</p>
           ) : artigos.length === 0 ? (
-            <p className="state-message">Nenhum artigo cadastrado no momento.</p>
+            <p className="state-message">{t("artigos.vazio")}</p>
           ) : (
             <div className="grid grid--3">
               {artigos.map((item) => (
@@ -60,7 +64,7 @@ export default function Artigos() {
                     {item.authors && <p className="artigos-card__authors">{item.authors}</p>}
                     {item.description && <p className="artigos-card__desc">{item.description}</p>}
                     <span className="link-arrow artigos-card__cta">
-                      Ler artigo
+                      {t("artigos.card_link")}
                       <ArrowRightIcon />
                     </span>
                   </div>

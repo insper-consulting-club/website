@@ -5,6 +5,7 @@ import type { ProjectDetail } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowLeftIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
+import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
 function formatDate(date: string) {
@@ -20,6 +21,7 @@ function paragrafos(texto: string) {
 }
 
 export default function Projeto() {
+  const t = useTextos()
   const { id } = useParams<{ id: string }>()
   const [projeto, setProjeto] = useState<ProjectDetail | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
@@ -43,11 +45,11 @@ export default function Projeto() {
         <div className="container">
           <Link to="/projetos" className="back-link">
             <ArrowLeftIcon size={14} />
-            Todos os projetos
+            {t("projeto.voltar")}
           </Link>
           <p className="state-message">
-            <strong>Projeto não encontrado</strong>
-            Não foi possível carregar esse projeto.
+            <strong>{t("projeto.nao_encontrado_titulo")}</strong>
+            {t("projeto.nao_encontrado_texto")}
           </p>
         </div>
       </section>
@@ -56,14 +58,14 @@ export default function Projeto() {
 
   const voltar = projeto.program
     ? { to: `/projetos/${projeto.program.slug}`, label: projeto.program.label }
-    : { to: "/projetos", label: "Todos os projetos" }
+    : { to: "/projetos", label: t("projeto.voltar") }
   // Evento de um dia só (visita, competição): mostra a data uma vez.
   const umDia = projeto.end_date === projeto.start_date
   const periodo = umDia
     ? formatDate(projeto.start_date)
     : projeto.end_date
-      ? `${formatDate(projeto.start_date)} a ${formatDate(projeto.end_date)}`
-      : `Desde ${formatDate(projeto.start_date)}`
+      ? t("projeto.periodo_intervalo", { inicio: formatDate(projeto.start_date), fim: formatDate(projeto.end_date) })
+      : t("projeto.periodo_desde", { inicio: formatDate(projeto.start_date) })
 
   return (
     <div className="projeto-detalhe">
@@ -73,16 +75,16 @@ export default function Projeto() {
         <div className="container projeto-detalhe__corpo">
           <dl className="projeto-detalhe__dados">
             <div>
-              <dt>{umDia ? "Data" : "Período"}</dt>
+              <dt>{umDia ? t("projeto.rotulo_data") : t("projeto.rotulo_periodo")}</dt>
               <dd>{periodo}</dd>
             </div>
             <div>
-              <dt>Situação</dt>
-              <dd>{projeto.end_date ? "Concluído" : "Em andamento"}</dd>
+              <dt>{t("projeto.rotulo_situacao")}</dt>
+              <dd>{projeto.end_date ? t("projeto.concluido") : t("projeto.em_andamento")}</dd>
             </div>
             {projeto.partners.length > 0 && (
               <div>
-                <dt>{projeto.partners.length > 1 ? "Parceiros" : "Parceiro"}</dt>
+                <dt>{projeto.partners.length > 1 ? t("projeto.rotulo_parceiros") : t("projeto.rotulo_parceiro")}</dt>
                 <dd>
                   {projeto.partners.map((parceiro, i) => (
                     <span key={parceiro.id}>
@@ -112,7 +114,7 @@ export default function Projeto() {
 
           {projeto.timeline_events.length > 0 && (
             <div className="projeto-detalhe__bloco">
-              <h2>Linha do tempo</h2>
+              <h2>{t("projeto.linha_do_tempo")}</h2>
               <ol className="projeto-detalhe__timeline">
                 {projeto.timeline_events.map((evento) => (
                   <li key={evento.id}>
@@ -127,7 +129,7 @@ export default function Projeto() {
 
           {projeto.images.length > 0 && (
             <div className="projeto-detalhe__bloco">
-              <h2>Imagens</h2>
+              <h2>{t("projeto.imagens")}</h2>
               <div className="projeto-detalhe__galeria">
                 {projeto.images.map((imagem) => (
                   <figure key={imagem.id}>
@@ -141,7 +143,7 @@ export default function Projeto() {
 
           {projeto.members.length > 0 && (
             <div className="projeto-detalhe__bloco">
-              <h2>Equipe</h2>
+              <h2>{t("projeto.equipe")}</h2>
               <ul className="projeto-detalhe__membros">
                 {projeto.members.map((membro) => (
                   <li key={membro.id}>

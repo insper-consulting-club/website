@@ -160,3 +160,98 @@
 .projeto-outro:hover {
   border-color: var(--vermelho-icc);
 }
+
+/* ---------- Blocos de texto do programa ---------- */
+
+.programa-blocos {
+  display: grid;
+  gap: clamp(40px, 6vw, 72px);
+}
+
+.programa-bloco {
+  display: grid;
+  gap: 24px 48px;
+  align-items: center;
+}
+
+.programa-bloco__texto > * + * {
+  margin-top: 16px;
+}
+
+.programa-bloco__texto h2 {
+  margin-bottom: 4px;
+}
+
+.programa-bloco__texto h3 {
+  margin-top: 28px;
+  font-size: var(--fs-h3);
+}
+
+.programa-bloco__texto p,
+.programa-bloco__texto li {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--cinza-700);
+}
+
+.programa-bloco__texto ul,
+.programa-bloco__texto ol {
+  padding-left: 1.25rem;
+}
+
+.programa-bloco__texto ul {
+  list-style: disc;
+}
+
+.programa-bloco__texto ol {
+  list-style: decimal;
+}
+
+.programa-bloco__texto li + li {
+  margin-top: 6px;
+}
+
+.programa-bloco__texto a {
+  font-weight: 700;
+  color: var(--vermelho-icc);
+}
+
+.programa-bloco__figura img {
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+.programa-bloco__figura figcaption {
+  margin-top: 8px;
+  font-size: var(--fs-small);
+  color: var(--cinza-600);
+}
+
+/* Imagem ao lado do texto (a coluna da imagem é a menor) ou abaixo dele. */
+.programa-bloco--right {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
+.programa-bloco--left {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}
+
+.programa-bloco--left .programa-bloco__figura {
+  order: -1;
+}
+
+.programa-bloco--center {
+  max-width: var(--container-narrow);
+  margin-inline: auto;
+}
+
+@media (max-width: 860px) {
+  .programa-bloco--right,
+  .programa-bloco--left {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .programa-bloco--left .programa-bloco__figura {
+    order: 0;
+  }
+}

@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 import MemberCard from "../../components/MemberCard";
 import PageHero from "../../components/PageHero";
 import usePageTitle from "../../hooks/usePageTitle";
+import useTextos from "../../hooks/useTextos";
+import useSiteConfig from "../../hooks/useSiteConfig";
 import { api } from "../../api";
 import type { Member } from "../../types";
 import "./index.css";
@@ -10,7 +12,9 @@ import "./index.css";
 type Group = { directorate: string; slug: string; members: { member: Member; cargo: string; order: number }[] };
 
 export default function Equipe() {
-  usePageTitle("Nossa Equipe", "Conheça os membros que fazem parte da Liga Insper Consulting Club");
+  const t = useTextos();
+  const config = useSiteConfig();
+  usePageTitle(t("equipe.titulo"), config.team_lead);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
@@ -37,7 +41,7 @@ export default function Equipe() {
   for (const member of members) {
     const memberships = member.directorate_memberships.length > 0
       ? member.directorate_memberships
-      : [{ directorate: "Outros", directorate_slug: "outros", cargo: member.position, order: 0 }];
+      : [{ directorate: t("equipe.outros"), directorate_slug: "outros", cargo: member.position, order: 0 }];
 
     for (const { directorate, directorate_slug, cargo, order } of memberships) {
       let group = groups.find((g) => g.directorate === directorate);
@@ -58,9 +62,9 @@ export default function Equipe() {
   return (
     <div className="equipe-page">
       <PageHero
-        eyebrow="Membros"
-        title="Nossa Equipe"
-        lead="Conheça os membros que fazem parte da Liga Insper Consulting Club"
+        eyebrow={t("equipe.eyebrow")}
+        title={t("equipe.titulo")}
+        lead={config.team_lead}
       />
 
       {!loading && groups.length > 0 && (
@@ -79,14 +83,14 @@ export default function Equipe() {
         {loading ? (
           <p className="loading">Carregando equipe...</p>
         ) : groups.length === 0 ? (
-          <p className="state-message">Nenhum membro cadastrado no momento.</p>
+          <p className="state-message">{t("equipe.vazio")}</p>
         ) : (
           groups.map((group) => (
             <section className="equipe-group" id={group.slug} key={group.directorate}>
               <div className="equipe-group__head">
                 <h2 className="equipe-group__title">{group.directorate}</h2>
                 <span className="equipe-group__count">
-                  {group.members.length} {group.members.length === 1 ? "membro" : "membros"}
+                  {t(group.members.length === 1 ? "equipe.contagem_um" : "equipe.contagem_varios", { n: group.members.length })}
                 </span>
               </div>
               <div className="grid grid--4 equipe-group__grid">
