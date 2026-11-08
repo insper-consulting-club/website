@@ -2,6 +2,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, StackedInline, TabularInline
 
 from .models import (
     PartnerCategory, ProgramComponent,
@@ -14,9 +15,8 @@ from .models import (
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
 )
 
-# Títulos do topo e da página inicial do /admin
-admin.site.site_header = 'Administração · Insper Consulting Club'
-admin.site.site_title = 'Admin ICC'
+# Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
+# no settings.
 admin.site.index_title = 'Conteúdo do site'
 
 
@@ -35,13 +35,13 @@ def miniatura(imagem, altura=40):
 # ---------------------------------------------------------------------------
 
 @admin.register(PartnerCategory)
-class PartnerCategoryAdmin(admin.ModelAdmin):
+class PartnerCategoryAdmin(ModelAdmin):
     list_display = ('title',)
     search_fields = ('title',)
 
 
 @admin.register(Partner)
-class PartnerAdmin(admin.ModelAdmin):
+class PartnerAdmin(ModelAdmin):
     list_display = ('logo', 'name', 'category', 'is_active', 'order')
     list_display_links = ('logo', 'name')
     list_editable = ('is_active', 'order')
@@ -65,7 +65,7 @@ class PartnerAdmin(admin.ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(Position)
-class PositionAdmin(admin.ModelAdmin):
+class PositionAdmin(ModelAdmin):
     list_display = ('title', 'power')
     list_editable = ('power',)
     search_fields = ('title',)
@@ -73,7 +73,7 @@ class PositionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Directorate)
-class DirectorateAdmin(admin.ModelAdmin):
+class DirectorateAdmin(ModelAdmin):
     list_display = ('name', 'order')
     list_editable = ('order',)
     search_fields = ('name',)
@@ -87,7 +87,7 @@ class DirectorateMembershipForm(forms.ModelForm):
         labels = {'directorate': 'Diretoria'}
 
 
-class DirectorateMembershipInline(admin.TabularInline):
+class DirectorateMembershipInline(TabularInline):
     model = DirectorateMembership
     form = DirectorateMembershipForm
     extra = 1
@@ -133,7 +133,7 @@ class MemberForm(forms.ModelForm):
 
 
 @admin.register(Member)
-class MemberAdmin(admin.ModelAdmin):
+class MemberAdmin(ModelAdmin):
     form = MemberForm
     inlines = [DirectorateMembershipInline]
     list_display = ('foto', 'name', 'get_directorates', 'position', 'course', 'year', 'atual')
@@ -189,21 +189,21 @@ class MemberAdmin(admin.ModelAdmin):
 # Projetos
 # ---------------------------------------------------------------------------
 
-class ProjectImageInline(admin.TabularInline):
+class ProjectImageInline(TabularInline):
     model = ProjectImage
     extra = 1
     fields = ('image', 'caption', 'order')
     ordering = ('order',)
 
 
-class ProjectTimelineEventInline(admin.TabularInline):
+class ProjectTimelineEventInline(TabularInline):
     model = ProjectTimelineEvent
     extra = 1
     fields = ('date', 'title', 'description', 'order')
     ordering = ('order',)
 
 
-class ProjectContentBlockInline(admin.StackedInline):
+class ProjectContentBlockInline(StackedInline):
     model = ProjectContentBlock
     extra = 1
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
@@ -211,7 +211,7 @@ class ProjectContentBlockInline(admin.StackedInline):
 
 
 @admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
+class ProjectAdmin(ModelAdmin):
     list_display = ('title', 'program', 'start_date', 'end_date', 'is_active')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'start_date')
@@ -238,7 +238,7 @@ class ProjectAdmin(admin.ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(ProgramComponent)
-class ProgramComponentAdmin(admin.ModelAdmin):
+class ProgramComponentAdmin(ModelAdmin):
     list_display = ('title', 'program')
     list_filter = ('program',)
     search_fields = ('title', 'description')
@@ -246,7 +246,7 @@ class ProgramComponentAdmin(admin.ModelAdmin):
 
 
 @admin.register(Program)
-class ProgramAdmin(admin.ModelAdmin):
+class ProgramAdmin(ModelAdmin):
     list_display = ('label', 'slug', 'badge', 'is_active', 'order')
     list_editable = ('is_active', 'order')
     list_filter = ('is_active',)
@@ -260,14 +260,14 @@ class ProgramAdmin(admin.ModelAdmin):
 # ---------------------------------------------------------------------------
 
 @admin.register(Statistic)
-class StatisticAdmin(admin.ModelAdmin):
+class StatisticAdmin(ModelAdmin):
     list_display = ('value', 'description', 'order')
     list_editable = ('order',)
     search_fields = ('value', 'description')
     ordering = ('order',)
 
 
-class ArticleImageInline(admin.TabularInline):
+class ArticleImageInline(TabularInline):
     model = ArticleImage
     extra = 1
     fields = ('number', 'image', 'caption', 'previa')
@@ -280,7 +280,7 @@ class ArticleImageInline(admin.TabularInline):
 
 
 @admin.register(Article)
-class ArticleAdmin(admin.ModelAdmin):
+class ArticleAdmin(ModelAdmin):
     list_display = ('title', 'slug', 'authors', 'published', 'date', 'order')
     search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
     list_editable = ('published', 'order')
@@ -294,7 +294,7 @@ class ArticleAdmin(admin.ModelAdmin):
 # Cases dos programas
 # ---------------------------------------------------------------------------
 
-class ProgramCaseParticipantInline(admin.TabularInline):
+class ProgramCaseParticipantInline(TabularInline):
     model = ProgramCaseParticipant
     extra = 1
     fields = ('member', 'role', 'order')
@@ -303,7 +303,7 @@ class ProgramCaseParticipantInline(admin.TabularInline):
 
 
 @admin.register(ProgramCase)
-class ProgramCaseAdmin(admin.ModelAdmin):
+class ProgramCaseAdmin(ModelAdmin):
     inlines = [ProgramCaseParticipantInline]
     list_display = ('semester', 'title', 'area', 'program', 'is_active')
     list_editable = ('is_active',)
@@ -316,21 +316,21 @@ class ProgramCaseAdmin(admin.ModelAdmin):
 # Processo seletivo (página /processo)
 # ---------------------------------------------------------------------------
 
-class SelectionProcessStageInline(admin.TabularInline):
+class SelectionProcessStageInline(TabularInline):
     model = SelectionProcessStage
     extra = 1
     fields = ('label', 'date', 'order')
     ordering = ('order',)
 
 
-class SelectionProcessStepInline(admin.StackedInline):
+class SelectionProcessStepInline(StackedInline):
     model = SelectionProcessStep
     extra = 0
     fields = ('number', 'title', 'description', 'image', 'duration', 'tips', 'order')
     ordering = ('order',)
 
 
-class SelectionProcessRequirementInline(admin.TabularInline):
+class SelectionProcessRequirementInline(TabularInline):
     model = SelectionProcessRequirement
     extra = 1
     fields = ('text', 'icon', 'order')
@@ -338,7 +338,7 @@ class SelectionProcessRequirementInline(admin.TabularInline):
 
 
 @admin.register(SelectionProcess)
-class SelectionProcessAdmin(admin.ModelAdmin):
+class SelectionProcessAdmin(ModelAdmin):
     list_display = ('title', 'is_active', 'registrations_open')
     list_editable = ('is_active', 'registrations_open')
     list_filter = ('is_active',)
@@ -347,7 +347,7 @@ class SelectionProcessAdmin(admin.ModelAdmin):
                SelectionProcessRequirementInline]
 
 
-class PreparationMaterialItemInline(admin.TabularInline):
+class PreparationMaterialItemInline(TabularInline):
     model = PreparationMaterialItem
     extra = 1
     fields = ('text', 'order')
@@ -355,7 +355,7 @@ class PreparationMaterialItemInline(admin.TabularInline):
 
 
 @admin.register(PreparationMaterial)
-class PreparationMaterialAdmin(admin.ModelAdmin):
+class PreparationMaterialAdmin(ModelAdmin):
     list_display = ('title', 'process', 'order')
     list_editable = ('order',)
     list_filter = ('process',)
