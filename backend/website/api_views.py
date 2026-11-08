@@ -12,7 +12,7 @@ from .serializers import (
     ProjectListSerializer, ProjectDetailSerializer,
     ProgramComponentSerializer, ProgramSerializer,
     DirectorateSerializer, ProgramCaseSerializer,
-    SelectionProcessSerializer, ArticleSerializer
+    SelectionProcessSerializer, ArticleSerializer, ArticleListSerializer
 )
 
 
@@ -146,9 +146,10 @@ class StatisticListView(generics.ListAPIView):
 
 
 class ArticleListView(generics.ListAPIView):
-    serializer_class = ArticleSerializer
+    # A lista não leva o texto nem as imagens do corpo; o artigo completo vem do detalhe.
+    serializer_class = ArticleListSerializer
     # Rascunhos (Publicado desmarcado) não aparecem no site.
-    queryset = Article.objects.filter(published=True).prefetch_related("images")
+    queryset = Article.objects.filter(published=True).defer("content")
 
 
 class ArticleDetailView(generics.RetrieveAPIView):

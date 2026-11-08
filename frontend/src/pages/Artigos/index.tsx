@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { api } from "../../api"
-import type { Article } from "../../types"
+import type { ArticleSummary } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
@@ -17,7 +17,7 @@ function formatDate(date: string) {
 
 export default function Artigos() {
   usePageTitle("Artigos")
-  const [artigos, setArtigos] = useState<Article[]>([])
+  const [artigos, setArtigos] = useState<ArticleSummary[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

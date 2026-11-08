@@ -267,6 +267,21 @@ class ArticleSerializer(serializers.ModelSerializer):
         return None
 
 
+class ArticleListSerializer(serializers.ModelSerializer):
+    """Versão enxuta para a lista de artigos: sem o texto completo e sem as imagens do corpo."""
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = ["id", "slug", "title", "authors", "topics", "description", "link", "image_url", "source", "date", "order"]
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+
 class SelectionProcessStageSerializer(serializers.ModelSerializer):
     class Meta:
         model = SelectionProcessStage

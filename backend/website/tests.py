@@ -62,6 +62,15 @@ class ArticleDetailSlugTests(TestCase):
 
         self.assertEqual([a["title"] for a in response.data], ["Artigo de teste"])
 
+    def test_list_omits_full_text_and_body_images_but_detail_keeps_them(self):
+        listing = self.client.get("/api/articles/").data[0]
+        detail = self.client.get(f"/api/articles/{self.article.id}/").data
+
+        self.assertNotIn("content", listing)
+        self.assertNotIn("images", listing)
+        self.assertIn("content", detail)
+        self.assertIn("images", detail)
+
 
 class MemberTests(TestCase):
     def setUp(self):
