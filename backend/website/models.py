@@ -3,7 +3,6 @@ from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils.text import slugify
 
-from .deploy_hook import dispara_deploy_do_frontend
 from .fields import LimitedImageField
 
 
@@ -697,7 +696,7 @@ class SiteConfig(models.Model):
     Política de Privacidade. Existe um único registro (pk=1), criado pela
     migration com os textos que o site já tinha.
     """
-    # Campos que o frontend grava no HTML durante o build (ver CAMPOS_DO_HTML).
+    # Campos que o frontend grava no HTML durante o build (ver plugins/siteConfig.ts).
     site_name = models.CharField(
         max_length=100, default='Liga Insper Consulting Club', verbose_name='Nome do site',
         help_text='Aparece na aba do navegador, no rodapé e na prévia ao compartilhar o link.'
@@ -875,21 +874,10 @@ class SiteConfig(models.Model):
                 'featured_program_slug': 'Não existe programa com esse slug. Confira em Programas.'
             })
 
-    # Campos que entram no HTML do site durante o build do frontend. Mudar um
-    # deles pede um novo deploy do frontend.
-    CAMPOS_DO_HTML = ('site_name', 'site_description', 'logo', 'favicon', 'og_image')
-
     def save(self, *args, **kwargs):
         # Registro único: qualquer salvamento atualiza sempre o mesmo.
         self.pk = 1
-        anterior = SiteConfig.objects.filter(pk=1).values(*self.CAMPOS_DO_HTML).first()
         super().save(*args, **kwargs)
-        # Só reconstrói o frontend quando um campo do HTML mudou. O primeiro
-        # registro (anterior vazio) não conta: é a criação inicial.
-        if anterior is not None and any(
-            (anterior[campo] or '') != str(getattr(self, campo) or '') for campo in self.CAMPOS_DO_HTML
-        ):
-            transaction.on_commit(dispara_deploy_do_frontend)
 
     @classmethod
     def get_solo(cls):

@@ -52,15 +52,11 @@ Para o caso de o serviço precisar ser recriado:
 
 O `VITE_API_URL` entra no código no momento do build. Se ele mudar, o frontend precisa de um novo deploy. O link "Área administrativa" do rodapé é derivado dele.
 
-### Deploy automático do frontend (deploy hook)
+### Marca do site e novo deploy do frontend
 
-O frontend é um site estático: o nome, a descrição, a imagem de compartilhamento, o ícone da aba e o logo de **Configuração do site > Marca e compartilhamento** são gravados no `index.html` **durante o build**, lendo a API. Por isso, mudar um desses campos no admin só aparece depois de um novo deploy do frontend. Para isso acontecer sozinho:
+O frontend é um site estático: o nome, a descrição, a imagem de compartilhamento, o ícone da aba e o logo de **Configuração do site > Marca e compartilhamento** são gravados no `index.html` **durante o build**, lendo a API. Por isso, mudar um desses campos no admin só aparece depois de um novo deploy do frontend. Só administradores (superusuários) veem essa aba, e quem as altera tem acesso ao Render. Depois de salvar, no Render abra o serviço do frontend (`insperconsultingclub`) e use **Manual Deploy**. O admin lembra disso ao salvar.
 
-1. No Render, serviço do frontend (`insperconsultingclub`): **Settings > Deploy Hook**. Copie a URL. Ela contém uma chave secreta: não a coloque no repositório, em chats nem em issues.
-2. No Render, serviço do backend (`icc-backend`): **Environment**, nova variável `RENDER_FRONTEND_DEPLOY_HOOK` com essa URL. Salve (o backend reinicia).
-3. Para conferir: em **Configuração do site**, mude o **Nome do site** e salve. O admin avisa que o site será reconstruído, e o serviço do frontend mostra um deploy novo na aba **Events**.
-
-Só os campos que entram no HTML pedem deploy (nome, descrição, logo, ícone e imagem de compartilhamento). Textos, contatos, menu e as demais imagens são lidos pela API a cada visita e aparecem em até um minuto, sem deploy. Sem a variável, tudo funciona, mas o deploy do frontend precisa ser disparado à mão (**Manual Deploy**).
+Textos, contatos, menu e as demais imagens são lidos pela API a cada visita e aparecem em até um minuto, sem deploy.
 
 Se a API estiver fora do ar durante o build, ele não falha: usa os valores originais do `index.html` e avisa no log (`[site-config]`). O backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera por isso. Para pular a consulta à API (por exemplo, num build local sem backend), use `SKIP_SITE_CONFIG=1`.
 

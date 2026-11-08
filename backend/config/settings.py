@@ -116,18 +116,12 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Tamanho máximo de cada imagem enviada pelo admin, em MB (protege a cota do Cloudinary).
 MAX_IMAGE_UPLOAD_MB = int(os.environ.get('MAX_IMAGE_UPLOAD_MB', '5'))
 
-# Endereço secreto que o Render dá para reconstruir o frontend (Settings > Deploy
-# Hook). Opcional: sem ele, mudar a marca ou a descrição do site exige disparar
-# o deploy do frontend à mão.
-RENDER_FRONTEND_DEPLOY_HOOK = os.environ.get('RENDER_FRONTEND_DEPLOY_HOOK', '')
-
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Templates do projeto que substituem os do Unfold (ex.: a página inicial do admin)
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -227,7 +221,6 @@ UNFOLD = {
     'SITE_HEADER': 'Insper Consulting Club',
     'SITE_SUBHEADER': 'Conteúdo do site',
     'SITE_URL': FRONTEND_URL or None,
-    'DASHBOARD_CALLBACK': 'config.dashboard.painel',
     # Ajustes de layout (ver admin_static/website/admin.css)
     'STYLES': [lambda request: static('website/admin.css')],
     'SIDEBAR': {

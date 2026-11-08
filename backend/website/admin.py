@@ -11,7 +11,6 @@ import re
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.text import capfirst
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
@@ -45,38 +44,15 @@ admin.site.unregister(User)
 admin.site.unregister(Group)
 
 
-ACOES_DE_PERMISSAO = {'add': 'adicionar', 'change': 'alterar', 'delete': 'remover', 'view': 'ver'}
-
-
-def rotulo_da_permissao(permissao):
-    """
-    Nome da permissão em português para as listas de permissões de usuários e grupos. O
-    Django guarda os nomes em inglês ("Can add group") no momento em que cria a permissão.
-    """
-    acao = permissao.codename.split('_', 1)[0]
-    modelo = permissao.content_type.model_class()
-    if acao not in ACOES_DE_PERMISSAO or modelo is None:
-        return permissao.name
-    return f'{modelo._meta.app_config.verbose_name} · {capfirst(modelo._meta.verbose_name)} · pode {ACOES_DE_PERMISSAO[acao]}'
-
-
-class PermissoesEmPortuguesMixin:
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        campo = super().formfield_for_manytomany(db_field, request, **kwargs)
-        if campo is not None and db_field.name in ('user_permissions', 'permissions'):
-            campo.label_from_instance = rotulo_da_permissao
-        return campo
-
-
 @admin.register(User)
-class UserAdmin(PermissoesEmPortuguesMixin, BaseUserAdmin, ModelAdmin):
+class UserAdmin(BaseUserAdmin, ModelAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
 
 
 @admin.register(Group)
-class GroupAdmin(PermissoesEmPortuguesMixin, BaseGroupAdmin, ModelAdmin):
+class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     pass
 
 
@@ -348,13 +324,24 @@ class ProjectContentBlockInline(TextoCompactoMixin, StackedInline):
 
 @admin.register(Project)
 class ProjectAdmin(AdminDoSite):
-    list_display = ('title', 'program', 'start_date', 'end_date', 'is_active')
+    list_display = ('imagem', 'title', 'program', 'start_date', 'end_date', 'is_active')
+    list_display_links = ('imagem', 'title')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'start_date')
     search_fields = ('title', 'description')
+    list_select_related = ('program',)
     # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
     autocomplete_fields = ('partners',)
     linhas_dos_campos = {'description': 4}
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('images')
+
+    @admin.display(description='Imagem')
+    def imagem(self, obj):
+        # Usa a lista já carregada (prefetch) para não consultar o banco linha a linha.
+        primeira = next(iter(obj.images.all()), None)
+        return miniatura(primeira.image if primeira else None)
     fieldsets = (
         (None, {'fields': ('title', 'description', 'program', 'partners', 'start_date', 'end_date', 'is_active')}),
     )
@@ -412,7 +399,8 @@ class ProgramAdmin(AdminDoSite):
         (None, {'fields': ('label', 'slug', 'subtitle', 'description', 'highlights', 'icon')}),
         ('Exibição no site', {'fields': ('badge', 'badge_class', 'signup_url', 'is_active', 'order')}),
     )
-    list_display = ('label', 'slug', 'badge', 'is_active')
+    list_display = ('icone', 'label', 'slug', 'badge', 'is_active')
+    list_display_links = ('icone', 'label')
     list_editable = ('is_active',)
     ordering_field = 'order'
     hide_ordering_field = True
@@ -420,6 +408,10 @@ class ProgramAdmin(AdminDoSite):
     search_fields = ('label', 'slug', 'description')
     ordering = ('order',)
     prepopulated_fields = {'slug': ('label',)}
+
+    @admin.display(description='Ícone')
+    def icone(self, obj):
+        return miniatura(obj.icon)
 
     def view_on_site(self, obj):
         return url_do_site(f'/projetos/{obj.slug}') if obj.is_active else None
@@ -455,13 +447,18 @@ class ArticleAdmin(AdminDoSite):
         ('Publicação', {'fields': ('published', 'date', 'order', 'source', 'link', 'image')}),
     )
     actions = ['publicar', 'despublicar']
-    list_display = ('title', 'slug', 'authors', 'published', 'date', 'order')
+    list_display = ('capa', 'title', 'slug', 'authors', 'published', 'date', 'order')
+    list_display_links = ('capa', 'title')
     search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
     list_editable = ('published', 'order')
     list_filter = ('published', 'source', 'date')
     date_hierarchy = 'date'
     ordering = ('-date', 'order')
     inlines = [ArticleImageInline]
+
+    @admin.display(description='Capa')
+    def capa(self, obj):
+        return miniatura(obj.image)
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'content':
@@ -573,6 +570,10 @@ class SelectionProcessAdmin(AdminDoSite):
     inlines = [SelectionProcessStageInline, SelectionProcessStepInline,
                SelectionProcessRequirementInline]
 
+    def has_duplicar_permission(self, request, object_id=None):
+        # Usada pelo botão da página de edição (o Unfold a chama com o id do processo).
+        return request.user.has_perm('website.add_selectionprocess')
+
     @admin.action(description='Duplicar selecionados (cópia inativa, para o próximo semestre)', permissions=['add'])
     def duplicar(self, request, queryset):
         copias = [processo.duplicate() for processo in queryset]
@@ -583,7 +584,7 @@ class SelectionProcessAdmin(AdminDoSite):
             messages.SUCCESS,
         )
 
-    @acao_unfold(description='Duplicar este processo', icon='content_copy', permissions=['website.add_selectionprocess'])
+    @acao_unfold(description='Duplicar este processo', icon='content_copy', permissions=['duplicar'])
     def duplicar_este(self, request, object_id):
         copia = SelectionProcess.objects.get(pk=object_id).duplicate()
         self.message_user(
@@ -695,6 +696,11 @@ class NavItemInline(TabularInline):
 @admin.register(SiteConfig)
 class SiteConfigAdmin(AdminDoSite):
     form = SiteConfigForm
+    # Estrutura do site: só administradores (superusuários) veem e editam estas abas. As
+    # demais ficam com quem tem permissão de alterar a configuração (o grupo Editores).
+    SO_ADMINISTRADORES = ('Marca e compartilhamento', 'Política de Privacidade')
+    # Campos que entram no HTML do site durante o build do frontend.
+    CAMPOS_DA_MARCA = ('site_name', 'site_description', 'logo', 'favicon', 'og_image')
     linhas_dos_campos = {'home_about_text': 4, 'mission': 3, 'mission_how': 3, 'mission_goal': 3}
     inlines = [NavItemInline, PartnerBenefitInline]
 
@@ -705,9 +711,9 @@ class SiteConfigAdmin(AdminDoSite):
     fieldsets = (
         ('Marca e compartilhamento', {
             'classes': ['tab'],
-            'description': 'Nome, descrição e imagens do site. Mudanças aqui só aparecem na prévia dos links '
-                           '(WhatsApp, LinkedIn) e no ícone da aba depois que o site é reconstruído, o que o '
-                           'sistema pede sozinho ao salvar.',
+            'description': 'Nome, descrição e imagens do site. Só administradores veem esta aba. Mudanças aqui só '
+                           'aparecem na prévia dos links (WhatsApp, LinkedIn) e no ícone da aba depois que o '
+                           'frontend é publicado de novo no Render (Manual Deploy).',
             'fields': (
                 'site_name', 'site_description',
                 'logo', 'favicon', 'og_image',
@@ -756,16 +762,22 @@ class SiteConfigAdmin(AdminDoSite):
         }),
     )
 
+    def get_fieldsets(self, request, obj=None):
+        conjuntos = super().get_fieldsets(request, obj)
+        if request.user.is_superuser:
+            return conjuntos
+        # Os campos das abas escondidas saem do formulário, então também não são gravados.
+        return [conjunto for conjunto in conjuntos if conjunto[0] not in self.SO_ADMINISTRADORES]
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        if set(form.changed_data) & set(SiteConfig.CAMPOS_DO_HTML):
-            if settings.RENDER_FRONTEND_DEPLOY_HOOK:
-                aviso = 'O site será reconstruído para aplicar a mudança na marca ou na prévia dos links. ' \
-                        'Leva alguns minutos.'
-            else:
-                aviso = 'Para aplicar a mudança na marca ou na prévia dos links, é preciso publicar o ' \
-                        'frontend de novo (o deploy automático não está configurado).'
-            self.message_user(request, aviso, messages.WARNING)
+        if set(form.changed_data) & set(self.CAMPOS_DA_MARCA):
+            self.message_user(
+                request,
+                'Para a mudança na marca aparecer na prévia dos links e no ícone da aba, publique o frontend '
+                'de novo: no Render, serviço do frontend, Manual Deploy.',
+                messages.WARNING,
+            )
 
     # Registro único: não há lista, nem adicionar, nem excluir. Abrir o item
     # no menu leva direto para a edição.

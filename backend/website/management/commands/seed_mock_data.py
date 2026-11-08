@@ -1,577 +1,409 @@
-from datetime import date
+import io
+import textwrap
+import unicodedata
+import zlib
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import FileSystemStorage, default_storage
+from django.core.management.base import BaseCommand, CommandError
+from django.utils.text import slugify
+from PIL import Image, ImageDraw, ImageFont
 
 from website.models import (
-    ProgramComponent,
-    Program,
-    Article,
-    Position,
-    Partner,
-    PartnerCategory,
-    PreparationMaterial,
-    PreparationMaterialItem,
-    Project,
-    ProjectContentBlock,
-    ProjectTimelineEvent,
-    SelectionProcess,
-    SelectionProcessRequirement,
-    SelectionProcessStage,
-    SelectionProcessStep,
-    Statistic,
-    Member,
+    Article, ArticleImage, Directorate, DirectorateMembership, Member, MemberTrajectory, NavItem,
+    Partner, PartnerCategory, Position, PreparationMaterial, PreparationMaterialItem, Program,
+    ProgramCase, ProgramCaseParticipant, ProgramComponent, ProgramContentBlock, Project,
+    ProjectContentBlock, ProjectImage, ProjectTimelineEvent, SelectionProcess,
+    SelectionProcessRequirement, SelectionProcessStage, SelectionProcessStep, SiteConfig, Statistic,
 )
 
+from ._dados_de_exemplo import (
+    ARTIGOS, CASES, CATEGORIAS_DE_PARCEIROS, DIRETORIAS, ESTATISTICAS, ITENS_DE_MENU, MEMBROS,
+    PARCEIROS, POSICOES, PROCESSOS, PROGRAMAS, PROJETOS,
+)
 
-POSITIONS = [
-    ("Presidente", 0),
-    ("Vice-presidente", 1),
-    ("Diretor de Projetos", 2),
-    ("Diretor de Capacitação", 2),
-    ("Diretor de Relacionamento", 2),
-    ("Mentor", 3),
-    ("Membro", 4),
-    ("Trainee", 5),
-]
+# Tons da marca e variações, para os placeholders não ficarem todos da mesma cor.
+PALETA = [(120, 18, 28), (30, 64, 110), (30, 110, 82), (96, 30, 110), (110, 94, 30), (60, 60, 70), (150, 60, 30)]
 
-MEMBERS = [
-    {
-        "name": "Ana Silva",
-        "position": "Presidente",
-        "biography": "Membro mock para ambiente local. Atua na liderança e organização do ICC.",
-        "course": "Administração",
-        "year": "5o semestre",
-        "hours": 420,
-        "entry_date": date(2024, 2, 1),
-        "email": "ana.silva@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-    {
-        "name": "Bruno Costa",
-        "position": "Diretor de Projetos",
-        "biography": "Membro mock para ambiente local. Apoia a gestão de projetos e entregas.",
-        "course": "Economia",
-        "year": "6o semestre",
-        "hours": 360,
-        "entry_date": date(2024, 3, 15),
-        "email": "bruno.costa@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-    {
-        "name": "Carla Mendes",
-        "position": "Mentor",
-        "biography": "Membro mock para ambiente local. Contribui com orientação e acompanhamento.",
-        "course": "Administração",
-        "year": "Alumni",
-        "hours": 520,
-        "entry_date": date(2023, 8, 10),
-        "email": "carla.mendes@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-    {
-        "name": "Daniel Pereira",
-        "position": "Membro",
-        "biography": "Membro mock para ambiente local. Participa das atividades e projetos do ICC.",
-        "course": "Engenharia",
-        "year": "4o semestre",
-        "hours": 180,
-        "entry_date": date(2025, 2, 20),
-        "email": "daniel.pereira@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-    {
-        "name": "Eduarda Lima",
-        "position": "Trainee",
-        "biography": "Membro mock para ambiente local. Participa do ciclo de formação do ICC.",
-        "course": "Administração",
-        "year": "2o semestre",
-        "hours": 80,
-        "entry_date": date(2025, 8, 5),
-        "email": "eduarda.lima@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-    {
-        "name": "Felipe Rocha",
-        "position": "Diretor de Capacitação",
-        "biography": "Membro mock para ambiente local. Conduz treinamentos de case, mercado e storytelling.",
-        "course": "Economia",
-        "year": "5o semestre",
-        "hours": 310,
-        "entry_date": date(2024, 8, 12),
-        "email": "felipe.rocha@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-    {
-        "name": "Marina Torres",
-        "position": "Diretor de Relacionamento",
-        "biography": "Membro mock para ambiente local. Coordena contato com parceiros e eventos institucionais.",
-        "course": "Administração",
-        "year": "6o semestre",
-        "hours": 340,
-        "entry_date": date(2024, 2, 19),
-        "email": "marina.torres@al.insper.edu.br",
-        "linkedin": "https://www.linkedin.com/",
-    },
-]
 
-PARTNER_CATEGORIES = [
-    "Consultoria",
-    "Educação e carreira",
-    "Tecnologia e dados",
-]
-
-PARTNERS = [
-    {
-        "name": "Atlas Strategy",
-        "category": "Consultoria",
-        "description": "Parceiro mock para mentorias, simulados de case e conversas sobre carreira em estratégia.",
-        "site": "https://example.com/atlas-strategy",
-    },
-    {
-        "name": "Norte Advisors",
-        "category": "Consultoria",
-        "description": "Parceiro mock focado em desafios de crescimento, go-to-market e diagnóstico competitivo.",
-        "site": "https://example.com/norte-advisors",
-    },
-    {
-        "name": "Prisma Analytics",
-        "category": "Tecnologia e dados",
-        "description": "Parceiro mock para trilhas de dados, pesquisa de mercado e suporte analítico aos projetos.",
-        "site": "https://example.com/prisma-analytics",
-    },
-    {
-        "name": "Vetor Carreiras",
-        "category": "Educação e carreira",
-        "description": "Parceiro mock para workshops de entrevista, CV, fit interview e preparação profissional.",
-        "site": "https://example.com/vetor-carreiras",
-    },
-]
-
-CATEGORIES = [
-    {
-        "slug": "projetos",
-        "label": "Projetos de consultoria",
-        "description": "Frente dedicada a diagnóstico, estruturação de problemas e recomendações práticas.",
-        "highlights": "Diagnóstico de negócio\nBenchmarking\nAnálise de mercado\nStorytelling executivo",
-        "badge": "Continuo",
-        "badge_class": "badge--continuo",
-        "order": 1,
-    },
-    {
-        "slug": "capacitacao",
-        "label": "Capacitação",
-        "description": "Trilha de treinamento para cases, entrevistas, pensamento estruturado e comunicação.",
-        "highlights": "Case interview\nFit interview\nExcel e dados\nApresentações",
-        "badge": "Semanal",
-        "badge_class": "badge--semanal",
-        "order": 2,
-    },
-    {
-        "slug": "eventos",
-        "label": "Eventos",
-        "description": "Palestras, painéis e encontros com consultorias, alumni e lideranças de mercado.",
-        "highlights": "Painéis de carreira\nWorkshops com parceiros\nEventos abertos\nBate-papos com alumni",
-        "badge": "Mensal",
-        "badge_class": "badge--mensal",
-        "order": 3,
-    },
-    {
-        "slug": "networking",
-        "label": "Networking",
-        "description": "Conexões entre membros, ex-membros, empresas parceiras e comunidade Insper.",
-        "highlights": "Comunidade de membros\nMentorias\nAlumni\nParceiros",
-        "badge": "Semestral",
-        "badge_class": "badge--semestral",
-        "order": 4,
-    },
-]
-
-STATISTICS = [
-    ("40+", "membros ativos", 1),
-    ("15+", "projetos e iniciativas", 2),
-    ("8+", "parceiros e conexões", 3),
-    ("5+", "anos de atuação", 4),
-]
-
-PROJECTS = [
-    {
-        "title": "Diagnóstico de crescimento para marketplace B2B",
-        "description": "Projeto mock com análise de funil, entrevistas com usuários e recomendações de priorização comercial.",
-        "category": "projetos",
-        "partners": ["Atlas Strategy", "Prisma Analytics"],
-        "start_date": date(2025, 3, 1),
-        "end_date": date(2025, 5, 30),
-        "events": [
-            (date(2025, 3, 1), "Kickoff", "Alinhamento de escopo, objetivos e hipóteses iniciais.", 1),
-            (date(2025, 4, 10), "Análise intermediária", "Validação de dados, benchmark e entrevistas.", 2),
-            (date(2025, 5, 30), "Entrega final", "Apresentação executiva com recomendações priorizadas.", 3),
-        ],
-        "content": [
-            (
-                "Contexto",
-                "O time estruturou um diagnóstico de crescimento para identificar gargalos de conversão e oportunidades comerciais.",
-                1,
-            ),
-            (
-                "Resultado",
-                "A entrega final consolidou hipóteses, critérios de priorização e próximos passos para execução.",
-                2,
-            ),
-        ],
-    },
-    {
-        "title": "Benchmarks para estratégia de entrada em mercado",
-        "description": "Projeto mock focado em dimensionamento de mercado, análise competitiva e recomendação de rota de entrada.",
-        "category": "projetos",
-        "partners": ["Norte Advisors"],
-        "start_date": date(2025, 8, 15),
-        "end_date": None,
-        "events": [
-            (date(2025, 8, 15), "Kickoff", "Definição de perguntas-chave e plano de análise.", 1),
-            (date(2025, 9, 20), "Sprint de pesquisa", "Mapeamento de concorrentes, preços e canais.", 2),
-        ],
-        "content": [
-            (
-                "Abordagem",
-                "A equipe combinou pesquisa secundária, benchmarks e entrevistas exploratórias para orientar a recomendação.",
-                1,
-            ),
-        ],
-    },
-]
-
-ACTIVITIES = [
-    {
-        "title": "Workshop de Case Interview",
-        "description": "Atividade mock com prática de cases, comunicação estruturada e feedback individual.",
-        "category": "capacitacao",
-    },
-    {
-        "title": "Painel de carreiras em consultoria",
-        "description": "Atividade mock com convidados de mercado e alumni discutindo trajetórias em estratégia.",
-        "category": "eventos",
-    },
-    {
-        "title": "Treinamento de storytelling executivo",
-        "description": "Atividade mock para melhorar apresentações, pirâmide lógica e narrativa de recomendações.",
-        "category": "capacitacao",
-    },
-]
-
-NEWS = [
-    {
-        "title": "[Exemplo] Precificação dinâmica no varejo brasileiro: um estudo de caso",
-        "authors": "Autor Exemplo, Autora Exemplo",
-        "topics": "Varejo, Precificação",
-        "description": "Resumo mock: análise de estratégias de precificação em redes varejistas e impacto na margem.",
-        "content": (
-            "Parágrafo mock 1: contexto do varejo brasileiro e por que a precificação dinâmica ganhou espaço.\n\n"
-            "Parágrafo mock 2: metodologia, com entrevistas e dados públicos de três redes varejistas.\n\n"
-            "Parágrafo mock 3: resultados e recomendações para empresas que querem adotar o modelo."
-        ),
-        "link": "https://example.com/artigo-exemplo-1",
-        "source": "Revista Exemplo de Administração",
-        "date": date(2026, 3, 12),
-        "order": 1,
-    },
-    {
-        "title": "[Exemplo] Transformação digital em PMEs: barreiras e alavancas",
-        "authors": "Autora Exemplo",
-        "topics": "Tecnologia, PMEs",
-        "description": "Resumo mock: levantamento com pequenas e médias empresas sobre adoção de tecnologia.",
-        "content": (
-            "Parágrafo mock 1: o que trava a adoção de tecnologia em pequenas e médias empresas.\n\n"
-            "Parágrafo mock 2: alavancas que funcionaram nos casos analisados."
-        ),
-        "link": "",
-        "source": "",
-        "date": date(2026, 4, 8),
-        "order": 2,
-    },
-    {
-        "title": "[Exemplo] Modelos de priorização de portfolio em consultoria",
-        "authors": "Autor Exemplo, Autor Exemplo 2",
-        "topics": "Estratégia",
-        "description": "Resumo mock: comparação de matrizes de priorização usadas em projetos de estratégia.",
-        "content": (
-            "Parágrafo mock 1: as matrizes de priorização mais usadas em projetos de estratégia.\n\n"
-            "Parágrafo mock 2: quando cada uma funciona melhor.\n\n"
-            "Parágrafo mock 3: um exemplo aplicado a um portfolio fictício."
-        ),
-        "link": "",
-        "source": "",
-        "date": date(2026, 5, 20),
-        "order": 3,
-    },
-]
+def placeholder(texto, tamanho, cor, iniciais=False):
+    """Imagem PNG de exemplo: fundo colorido com o texto no centro (ou as iniciais, nas fotos)."""
+    # A fonte embutida do Pillow não tem os glifos acentuados (apareceriam como quadrados).
+    texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
+    largura, altura = tamanho
+    imagem = Image.new("RGB", tamanho, cor)
+    desenho = ImageDraw.Draw(imagem)
+    claro = tuple(min(255, c + 45) for c in cor)
+    desenho.rectangle([0, altura * 2 // 3, largura, altura], fill=claro)
+    if iniciais:
+        partes = [p for p in texto.split() if p[0].isalpha()]
+        texto = "".join(p[0] for p in (partes[:1] + partes[-1:])).upper()
+        fonte = ImageFont.load_default(size=max(24, largura // 3))
+    else:
+        texto = "\n".join(textwrap.wrap(texto, width=max(10, largura // 22)))
+        fonte = ImageFont.load_default(size=max(14, largura // 20))
+    desenho.multiline_text((largura / 2, altura / 2), texto, fill="white", font=fonte, anchor="mm", align="center")
+    buffer = io.BytesIO()
+    imagem.save(buffer, format="PNG")
+    return ContentFile(buffer.getvalue())
 
 
 class Command(BaseCommand):
-    help = "Popula o banco local com dados mock completos para o site do ICC."
+    help = (
+        "Popula o banco local com dados de exemplo fictícios que cobrem todas as telas do site e do admin, "
+        "inclusive rascunhos, itens ocultos, campos vazios e textos longos. Pode ser repetido: atualiza os "
+        "registros de exemplo sem duplicá-los. Para recomeçar do zero, use `docker compose down -v`."
+    )
 
     def handle(self, *args, **options):
-        positions = self._seed_positions()
-        members = self._seed_members(positions)
-        partner_categories = self._seed_partner_categories()
-        partners = self._seed_partners(partner_categories)
-        categories = self._seed_categories()
-        self._seed_statistics()
-        projects = self._seed_projects(categories, partners, members)
-        self._seed_activities(categories)
-        self._seed_news()
-        self._seed_selection_process()
+        # Dados fictícios e imagens geradas: nunca em produção.
+        if not settings.DEBUG:
+            raise CommandError("seed_mock_data só roda em ambiente local (DEBUG=True).")
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                "Mock concluído: "
-                f"{len(members)} membros, {len(partners)} parceiros, "
-                f"{len(categories)} programas e {len(projects)} projetos prontos."
-            )
-        )
+        # Com Cloudinary configurado, as imagens de exemplo iriam para o ambiente compartilhado.
+        self.com_imagens = isinstance(default_storage, FileSystemStorage)
+        if not self.com_imagens:
+            self.stdout.write(self.style.WARNING("Armazenamento remoto detectado: as imagens de exemplo foram ignoradas."))
 
-    def _seed_positions(self):
-        positions = {}
-        for title, power in POSITIONS:
-            position, _ = Position.objects.update_or_create(
-                title=title,
-                defaults={"power": power},
-            )
-            positions[title] = position
-        return positions
+        posicoes = self._posicoes()
+        diretorias = self._diretorias()
+        membros = self._membros(posicoes, diretorias)
+        parceiros = self._parceiros()
+        programas = self._programas()
+        self._estatisticas()
+        projetos = self._projetos(programas, parceiros, membros)
+        self._cases(programas, membros)
+        artigos = self._artigos()
+        self._processos()
+        self._itens_de_menu()
 
-    def _seed_members(self, positions):
-        members = {}
-        for item in MEMBERS:
-            member, _ = Member.objects.update_or_create(
-                name=item["name"],
+        self.stdout.write(self.style.SUCCESS(
+            f"Dados de exemplo prontos: {len(membros)} membros, {len(parceiros)} parceiros, {len(programas)} programas, "
+            f"{len(projetos)} projetos, {len(artigos)} artigos e {len(PROCESSOS)} processos seletivos."
+        ))
+
+    # ------------------------------------------------------------------ ajudantes
+
+    def _anexar(self, instancia, campo, rotulo, tamanho, iniciais=False, texto=None):
+        """
+        Gera e anexa a imagem de exemplo. O nome do arquivo é sempre o mesmo para o mesmo
+        rótulo, e o arquivo anterior é substituído, então repetir o comando não acumula
+        arquivos em disco. O rótulo identifica o arquivo (por isso inclui o dono); o texto
+        escrito na imagem é só o que interessa ver, e por padrão é o próprio rótulo.
+        """
+        if not self.com_imagens:
+            return
+        cor = PALETA[zlib.crc32(rotulo.encode()) % len(PALETA)]
+        nome = f"mock-{slugify(rotulo)[:70]}.png"
+        arquivo = getattr(instancia, campo)
+        caminho = arquivo.field.generate_filename(instancia, nome)
+        if arquivo.storage.exists(caminho):
+            arquivo.storage.delete(caminho)
+        arquivo.save(nome, placeholder(texto or rotulo, tamanho, cor, iniciais), save=False)
+        instancia.save(update_fields=[campo])
+
+    def _sem_imagem(self, instancia, campo, vazio=None):
+        """Deixa o campo de imagem vazio (caso de borda "sem foto")."""
+        if getattr(instancia, campo):
+            setattr(instancia, campo, vazio)
+            instancia.save(update_fields=[campo])
+
+    @staticmethod
+    def _manter(queryset, ids):
+        """Apaga os filhos que o seed não descreve mais, para o resultado bater com os dados."""
+        queryset.exclude(pk__in=ids).delete()
+
+    # ------------------------------------------------------------------ equipe
+
+    def _posicoes(self):
+        return {
+            titulo: Position.objects.update_or_create(title=titulo, defaults={"power": poder})[0]
+            for titulo, poder in POSICOES
+        }
+
+    def _diretorias(self):
+        return {
+            nome: Directorate.objects.update_or_create(name=nome, defaults={"order": ordem})[0]
+            for nome, ordem in DIRETORIAS
+        }
+
+    def _membros(self, posicoes, diretorias):
+        membros = {}
+        for item in MEMBROS:
+            slug = slugify(item["nome"])
+            membro, _ = Member.objects.update_or_create(
+                name=item["nome"],
                 defaults={
-                    "biography": item["biography"],
-                    "position": positions[item["position"]],
-                    "course": item["course"],
-                    "year": item["year"],
-                    "hours": item["hours"],
-                    "entry_date": item["entry_date"],
-                    "exit_date": None,
-                    "email": item["email"],
-                    "linkedin": item["linkedin"],
+                    "biography": item["bio"],
+                    "position": posicoes[item["cargo"]],
+                    "course": item["curso"],
+                    "year": item["periodo"],
+                    "hours": item["horas"],
+                    "entry_date": item["entrada"],
+                    "exit_date": item.get("saida"),
+                    "email": f"{slug}@example.com" if item["contato"] else None,
+                    "linkedin": f"https://example.com/linkedin/{slug}" if item["contato"] else None,
                 },
             )
-            members[item["name"]] = member
-        return members
+            if item["foto"]:
+                self._anexar(membro, "photo", item["nome"], (600, 600), iniciais=True)
+            else:
+                self._sem_imagem(membro, "photo")
 
-    def _seed_partner_categories(self):
-        categories = {}
-        for title in PARTNER_CATEGORIES:
-            category, _ = PartnerCategory.objects.get_or_create(title=title)
-            categories[title] = category
-        return categories
+            ids = [
+                DirectorateMembership.objects.update_or_create(
+                    member=membro, directorate=diretorias[diretoria], defaults={"cargo": cargo, "order": ordem},
+                )[0].pk
+                for ordem, (diretoria, cargo) in enumerate(item["vinculos"], start=1)
+            ]
+            self._manter(membro.directorate_memberships, ids)
 
-    def _seed_partners(self, partner_categories):
-        partners = {}
-        for item in PARTNERS:
-            partner, _ = Partner.objects.update_or_create(
-                name=item["name"],
+            ids = [
+                MemberTrajectory.objects.get_or_create(member=membro, semester=semestre, role=cargo)[0].pk
+                for semestre, cargo in item["trajetoria"]
+            ]
+            self._manter(membro.trajectory_steps, ids)
+
+            membros[item["nome"]] = membro
+        return membros
+
+    # ------------------------------------------------------------------ parceiros
+
+    def _parceiros(self):
+        categorias = {titulo: PartnerCategory.objects.get_or_create(title=titulo)[0] for titulo in CATEGORIAS_DE_PARCEIROS}
+        parceiros = {}
+        for item in PARCEIROS:
+            parceiro, _ = Partner.objects.update_or_create(
+                name=item["nome"],
                 defaults={
-                    "description": item["description"],
-                    "category": partner_categories[item["category"]],
-                    "site": item["site"],
-                    "logo_url": "",
+                    "description": item["descricao"],
+                    "category": categorias[item["categoria"]],
+                    "site": item["site"] or None,
+                    "is_active": item.get("ativo", True),
+                    "order": item["ordem"],
                 },
             )
-            partners[item["name"]] = partner
-        return partners
+            if item["logo"]:
+                self._anexar(parceiro, "logo_url", item["nome"], (400, 240))
+            else:
+                self._sem_imagem(parceiro, "logo_url", vazio="")
+            parceiros[item["nome"]] = parceiro
+        return parceiros
 
-    def _seed_categories(self):
-        categories = {}
-        for item in CATEGORIES:
-            category, _ = Program.objects.update_or_create(
+    # ------------------------------------------------------------------ programas
+
+    def _programas(self):
+        programas = {}
+        for item in PROGRAMAS:
+            programa, _ = Program.objects.update_or_create(
                 slug=item["slug"],
                 defaults={
-                    "label": item["label"],
-                    "description": item["description"],
-                    "highlights": item["highlights"],
-                    "badge": item["badge"],
-                    "badge_class": item["badge_class"],
-                    "order": item["order"],
+                    "label": item["nome"],
+                    "subtitle": item["subtitulo"],
+                    "description": item["descricao"],
+                    "highlights": item["topicos"],
+                    "badge": item["selo"],
+                    "badge_class": item["estilo"],
+                    "signup_url": item["inscricao"],
+                    "is_active": item.get("ativo", True),
+                    "order": item["ordem"],
                 },
             )
-            categories[item["slug"]] = category
-        return categories
+            if item.get("icone"):
+                self._anexar(programa, "icon", item["nome"], (256, 256))
+            else:
+                self._sem_imagem(programa, "icon")
 
-    def _seed_statistics(self):
-        for value, description, order in STATISTICS:
-            Statistic.objects.update_or_create(
-                description=description,
-                defaults={"value": value, "order": order},
-            )
+            ids = [
+                ProgramComponent.objects.update_or_create(program=programa, title=titulo, defaults={"description": descricao})[0].pk
+                for titulo, descricao in item["componentes"]
+            ]
+            self._manter(programa.components, ids)
 
-    def _seed_projects(self, categories, partners, members):
-        seeded_projects = {}
-        project_members = list(members.values())[:4]
-        for item in PROJECTS:
-            project, _ = Project.objects.update_or_create(
-                title=item["title"],
+            ids = []
+            for ordem, (titulo, texto, posicao, legenda) in enumerate(item["blocos"], start=1):
+                bloco, _ = ProgramContentBlock.objects.update_or_create(
+                    program=programa, order=ordem,
+                    defaults={"title": titulo, "text": texto, "image_align": posicao, "image_caption": legenda or ""},
+                )
+                if legenda:
+                    self._anexar(bloco, "image", f"{item['nome']} {legenda}", (900, 560), texto=legenda)
+                else:
+                    self._sem_imagem(bloco, "image")
+                ids.append(bloco.pk)
+            self._manter(programa.content_blocks, ids)
+
+            programas[item["slug"]] = programa
+        return programas
+
+    def _estatisticas(self):
+        for valor, descricao, ordem in ESTATISTICAS:
+            Statistic.objects.update_or_create(description=descricao, defaults={"value": valor, "order": ordem})
+
+    # ------------------------------------------------------------------ projetos e cases
+
+    def _projetos(self, programas, parceiros, membros):
+        projetos = {}
+        for item in PROJETOS:
+            projeto, _ = Project.objects.update_or_create(
+                title=item["titulo"],
                 defaults={
-                    "description": item["description"],
-                    "program": categories[item["category"]],
-                    "start_date": item["start_date"],
-                    "end_date": item["end_date"],
+                    "description": item["descricao"],
+                    "program": programas[item["programa"]] if item["programa"] else None,
+                    "start_date": item["inicio"],
+                    "end_date": item["fim"],
+                    "is_active": item.get("ativo", True),
                 },
             )
-            project.partners.set([partners[name] for name in item["partners"]])
-            project.members.set(project_members)
+            projeto.partners.set([parceiros[nome] for nome in item["parceiros"]])
+            projeto.members.set([membros[nome] for nome in item["membros"]])
 
-            for event_date, title, description, order in item["events"]:
+            # A imagem da galeria é obrigatória: sem armazenamento local, a galeria fica vazia.
+            ids = []
+            if self.com_imagens:
+                for ordem, legenda in enumerate(item["imagens"], start=1):
+                    foto, _ = ProjectImage.objects.update_or_create(project=projeto, order=ordem, defaults={"caption": legenda})
+                    self._anexar(foto, "image", f"{item['titulo']} {legenda}", (1000, 600), texto=legenda)
+                    ids.append(foto.pk)
+            self._manter(projeto.images, ids)
+
+            ids = [
                 ProjectTimelineEvent.objects.update_or_create(
-                    project=project,
-                    title=title,
-                    defaults={
-                        "date": event_date,
-                        "description": description,
-                        "order": order,
-                    },
+                    project=projeto, title=titulo, defaults={"date": data, "description": descricao, "order": ordem},
+                )[0].pk
+                for data, titulo, descricao, ordem in item["eventos"]
+            ]
+            self._manter(projeto.timeline_events, ids)
+
+            ids = []
+            for ordem, (titulo, texto, posicao, legenda) in enumerate(item["blocos"], start=1):
+                bloco, _ = ProjectContentBlock.objects.update_or_create(
+                    project=projeto, order=ordem,
+                    defaults={"title": titulo, "text": texto, "image_align": posicao, "image_caption": legenda or ""},
                 )
+                if legenda:
+                    self._anexar(bloco, "image", f"{item['titulo']} {legenda}", (900, 560), texto=legenda)
+                else:
+                    self._sem_imagem(bloco, "image")
+                ids.append(bloco.pk)
+            self._manter(projeto.content_blocks, ids)
 
-            for title, text, order in item["content"]:
-                ProjectContentBlock.objects.update_or_create(
-                    project=project,
-                    title=title,
-                    defaults={
-                        "text": text,
-                        "image": None,
-                        "image_caption": "",
-                        "image_align": "right",
-                        "order": order,
-                    },
-                )
+            projetos[item["titulo"]] = projeto
+        return projetos
 
-            seeded_projects[item["title"]] = project
-
-        return seeded_projects
-
-    def _seed_activities(self, categories):
-        for item in ACTIVITIES:
-            ProgramComponent.objects.update_or_create(
-                title=item["title"],
+    def _cases(self, programas, membros):
+        for item in CASES:
+            caso, _ = ProgramCase.objects.update_or_create(
+                program=programas[item["programa"]], semester=item["semestre"], title=item["titulo"],
                 defaults={
-                    "description": item["description"],
-                    "program": categories[item["category"]],
+                    "area": item["area"], "theme": item["tema"], "panel": item["banca"], "award": item["premiacao"],
+                    "publication_url": item["link"], "is_active": item.get("ativo", True), "order": item["ordem"],
                 },
             )
+            ids = [
+                ProgramCaseParticipant.objects.update_or_create(
+                    case=caso, member=membros[nome], defaults={"role": papel, "order": ordem},
+                )[0].pk
+                for nome, papel, ordem in item["participantes"]
+            ]
+            self._manter(caso.participants, ids)
 
-    def _seed_news(self):
-        for item in NEWS:
-            Article.objects.update_or_create(
-                title=item["title"],
+    # ------------------------------------------------------------------ artigos
+
+    def _artigos(self):
+        artigos = []
+        for item in ARTIGOS:
+            artigo, _ = Article.objects.update_or_create(
+                title=item["titulo"],
                 defaults={
-                    "description": item["description"],
+                    "slug": item["slug"] or None,
+                    "authors": item["autores"],
+                    "topics": item["temas"],
+                    "description": item["resumo"],
+                    "content": item["conteudo"],
                     "link": item["link"],
-                    "image": None,
-                    "source": item["source"],
-                    "date": item["date"],
-                    "order": item["order"],
-                    "authors": item["authors"],
-                    "topics": item["topics"],
-                    "content": item["content"],
+                    "source": item["fonte"],
+                    "date": item["data"],
+                    "order": item["ordem"],
+                    "published": item["publicado"],
                 },
             )
+            if item["capa"]:
+                self._anexar(artigo, "image", item["titulo"], (1200, 630))
+            else:
+                self._sem_imagem(artigo, "image")
 
-    def _seed_selection_process(self):
-        has_active = SelectionProcess.objects.filter(is_active=True).exists()
-        process, created = SelectionProcess.objects.get_or_create(
-            title="Processo Seletivo ICC Mock 2026.2",
-            defaults={"is_active": not has_active},
-        )
-        active_process_exists = SelectionProcess.objects.filter(is_active=True).exclude(pk=process.pk).exists()
-        if not active_process_exists and not process.is_active:
-            process.is_active = True
-            process.save(update_fields=["is_active"])
+            # A imagem do texto é obrigatória: sem armazenamento local, o ![](imagem-N) é omitido pelo site.
+            ids = []
+            if self.com_imagens:
+                for numero, legenda in enumerate(item["imagens"], start=1):
+                    figura, _ = ArticleImage.objects.update_or_create(article=artigo, number=numero, defaults={"caption": legenda})
+                    self._anexar(figura, "image", f"{item['titulo']} {legenda}", (1000, 600), texto=legenda)
+                    ids.append(figura.pk)
+            self._manter(artigo.images, ids)
+            artigos.append(artigo)
+        return artigos
 
-        steps = [
-            ("Inscrição", "18 a 29 de agosto", 1),
-            ("Dinâmica em grupo", "Primeira semana de setembro", 2),
-            ("Entrevista individual", "Segunda semana de setembro", 3),
-            ("Resultado", "Até 20 de setembro", 4),
-        ]
-        for label, stage_date, order in steps:
-            SelectionProcessStage.objects.update_or_create(
-                process=process,
-                label=label,
-                defaults={"date": stage_date, "order": order},
+    # ------------------------------------------------------------------ processo seletivo
+
+    def _processos(self):
+        # O antigo vem primeiro: ativar o seguinte desativa os demais.
+        for item in PROCESSOS:
+            processo, _ = SelectionProcess.objects.update_or_create(
+                title=item["titulo"],
+                defaults={"is_active": item["ativo"], "registrations_open": item["abertas"], "registration_url": item["link"]},
             )
+            ids = [
+                SelectionProcessStage.objects.update_or_create(process=processo, label=nome, defaults={"date": data, "order": ordem})[0].pk
+                for nome, data, ordem in item["datas"]
+            ]
+            self._manter(processo.stages, ids)
 
-        detailed_steps = [
-            (
-                "01",
-                "Inscrição",
-                "Envio de dados, motivação e perguntas iniciais sobre interesse em consultoria.",
-                "15 minutos",
-                "Revise sua motivação\nMostre clareza sobre o ICC\nExplique aprendizados relevantes",
-                1,
-            ),
-            (
-                "02",
-                "Dinâmica",
-                "Resolução em grupo para avaliar comunicação, colaboração e pensamento estruturado.",
-                "60 minutos",
-                "Escute o grupo\nEstruture hipóteses\nComunique síntese",
-                2,
-            ),
-            (
-                "03",
-                "Entrevista",
-                "Conversa individual com perguntas de fit, experiências e motivação para a rotina do clube.",
-                "30 minutos",
-                "Prepare exemplos concretos\nMostre consistência\nSeja objetivo",
-                3,
-            ),
-            (
-                "04",
-                "Resultado",
-                "Retorno final e próximos passos para onboarding e trilha de formação.",
-                "Até 1 semana",
-                "Acompanhe o e-mail\nConfirme disponibilidade\nPrepare-se para o onboarding",
-                4,
-            ),
-        ]
-        for number, title, description, duration, tips, order in detailed_steps:
-            SelectionProcessStep.objects.update_or_create(
-                process=process,
-                number=number,
-                defaults={
-                    "title": title,
-                    "description": description,
-                    "duration": duration,
-                    "tips": tips,
-                    "order": order,
-                },
-            )
-
-        requirements = [
-            ("Ser aluno de graduação do Insper.", 1),
-            ("Ter disponibilidade para reuniões, treinamentos e projetos semanais.", 2),
-            ("Demonstrar interesse por consultoria, estratégia e resolução de problemas.", 3),
-        ]
-        for text, order in requirements:
-            SelectionProcessRequirement.objects.update_or_create(
-                process=process,
-                text=text,
-                defaults={"order": order},
-            )
-
-        materials = [
-            ("Materiais para case interview", ["Victor Cheng - Case Interview Secrets", "Case in Point", "Simulados internos do ICC"], 1),
-            ("Preparação para fit interview", ["Mapeie experiências relevantes", "Prepare motivação para consultoria", "Treine respostas objetivas"], 2),
-        ]
-        for title, items, order in materials:
-            material, _ = PreparationMaterial.objects.update_or_create(
-                process=process,
-                title=title,
-                defaults={"order": order},
-            )
-            for item_order, text in enumerate(items, start=1):
-                PreparationMaterialItem.objects.update_or_create(
-                    material=material,
-                    text=text,
-                    defaults={"order": item_order},
+            ids = []
+            for numero, titulo, descricao, duracao, dicas, ordem, icone in item["etapas"]:
+                etapa, _ = SelectionProcessStep.objects.update_or_create(
+                    process=processo, number=numero,
+                    defaults={"title": titulo, "description": descricao, "duration": duracao, "tips": dicas, "order": ordem},
                 )
+                if icone:
+                    self._anexar(etapa, "image", f"{item['titulo']} {titulo}", (256, 256), texto=titulo)
+                else:
+                    self._sem_imagem(etapa, "image")
+                ids.append(etapa.pk)
+            self._manter(processo.steps, ids)
+
+            ids = []
+            for texto, ordem, icone in item["requisitos"]:
+                requisito, _ = SelectionProcessRequirement.objects.update_or_create(
+                    process=processo, text=texto, defaults={"order": ordem},
+                )
+                if icone:
+                    self._anexar(requisito, "icon", f"{item['titulo']} requisito {ordem}", (128, 128), texto=f"Req. {ordem}")
+                else:
+                    self._sem_imagem(requisito, "icon")
+                ids.append(requisito.pk)
+            self._manter(processo.requirements, ids)
+
+            ids = []
+            for titulo, itens, ordem in item["materiais"]:
+                material, _ = PreparationMaterial.objects.update_or_create(process=processo, title=titulo, defaults={"order": ordem})
+                itens_ids = [
+                    PreparationMaterialItem.objects.update_or_create(material=material, text=texto, defaults={"order": posicao})[0].pk
+                    for posicao, texto in enumerate(itens, start=1)
+                ]
+                self._manter(material.items, itens_ids)
+                ids.append(material.pk)
+            self._manter(processo.materials, ids)
+
+    # ------------------------------------------------------------------ menu
+
+    def _itens_de_menu(self):
+        # Os itens padrão do menu vêm da migration e não são tocados: só se acrescentam
+        # exemplos (um link externo só no rodapé e um item inativo).
+        configuracao = SiteConfig.get_solo()
+        for item in ITENS_DE_MENU:
+            NavItem.objects.update_or_create(
+                site_config=configuracao, label=item["texto"], area=item["area"],
+                defaults={"page": "", "url": item["url"], "order": item["ordem"], "is_active": item["ativo"]},
+            )

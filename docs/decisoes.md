@@ -83,7 +83,7 @@ O `/admin` é a única parte do site com escrita, mas o que ele protege é o con
 
 - **Senhas longas:** mínimo de **12 caracteres**, e o Django recusa as comuns e as só numéricas.
 - **HTTPS**, cookies seguros e **sessão de 12 horas sem uso**, em vez dos 14 dias do padrão.
-- **Grupo Editores:** quem só edita conteúdo não é superusuário, então uma conta invadida não cria logins nem apaga cadastros.
+- **Dois níveis de acesso:** **Administrador** (superusuário, duas pessoas) e **Editor** (grupo Editores). O editor não cria logins, não apaga cadastros e não mexe na estrutura do site (marca, menu, benefícios, Política de Privacidade), então uma conta de editor invadida não derruba nem desfigura o site. Como só administradores mudam a marca, e eles têm acesso ao Render, o novo deploy do frontend é feito à mão (Manual Deploy), sem deploy hook.
 - **Sem a conta `admin/admin` em produção:** ela só existe no ambiente local (`setup_dev` recusa rodar com banco externo ou `DEBUG=False`). Em produção, cada pessoa tem o próprio login.
 - **Desativar quem sai** da gestão (veja o [guia do admin](guia-admin.md)).
 
