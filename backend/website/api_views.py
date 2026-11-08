@@ -31,7 +31,7 @@ class MemberListView(generics.ListAPIView):
     def get_queryset(self):
         # Uma pessoa pode estar em mais de uma diretoria (ex: diretora de
         # Pedagógico e também mentora), então a ordem é dada pela primeira
-        # (menor order) delas; membros sem nenhuma vão para o fim.
+        # (menor order) delas; membros fora de qualquer diretoria vão para o fim.
         qs = Member.objects.select_related("position").prefetch_related(
             "directorate_memberships__directorate"
         ).annotate(
