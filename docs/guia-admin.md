@@ -4,7 +4,7 @@ Este guia é para quem cuida do conteúdo do site no ICC. Nada aqui exige mexer 
 
 **Endereço:** https://api.insperconsultingclub.com.br/admin/ (ou o link **"Área administrativa"** no rodapé de qualquer página do site)
 
-Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site ao recarregar a página. Se o admin demorar cerca de 30 segundos para abrir, o site continua funcionando, mas avise o responsável técnico: provavelmente o monitor do servidor parou.
+Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site ao recarregar a página, em até 1 minuto. Se o admin demorar cerca de 30 segundos para abrir, o site continua funcionando, mas avise o responsável técnico: provavelmente o monitor do servidor parou.
 
 **Testar antes de salvar no site:** como tudo aparece no site assim que é salvo, qualquer cadastro, de um artigo a um novo programa, pode ser ensaiado antes em uma cópia do site no seu computador, que não afeta o site no ar. O [guia do ambiente local](guia-ambiente-local.md) explica como montá-la.
 

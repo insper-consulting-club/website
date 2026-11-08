@@ -77,15 +77,29 @@ class PartnerSerializer(serializers.ModelSerializer):
             "projects",
         ]
 
+    def _active_projects(self, obj):
+        # As views trazem os projetos ativos já carregados em `active_projects`
+        # (ver `ACTIVE_PROJECTS_PREFETCH`). A consulta abaixo é só um reserva
+        # para quem serializa um parceiro sem esse prefetch.
+        projects = getattr(obj, "active_projects", None)
+        if projects is None:
+            projects = list(obj.projects.filter(is_active=True).select_related("program"))
+        return projects
+
     def get_projects_count(self, obj):
-        return obj.projects.filter(is_active=True).count()
+        return len(self._active_projects(obj))
 
     def get_completed_projects_count(self, obj):
-        return obj.projects.filter(is_active=True, end_date__isnull=False).count()
+        return len(self._completed_projects(obj))
+
+    def _completed_projects(self, obj):
+        done = [p for p in self._active_projects(obj) if p.end_date is not None]
+        return sorted(done, key=lambda p: p.end_date, reverse=True)
 
     def get_projects(self, obj):
-        qs = obj.projects.filter(is_active=True, end_date__isnull=False).order_by("-end_date")
-        return PartnerProjectSerializer(qs, many=True, context=self.context).data
+        return PartnerProjectSerializer(
+            self._completed_projects(obj), many=True, context=self.context
+        ).data
 
     def get_logo_url(self, obj):
         request = self.context.get("request")
@@ -245,6 +259,21 @@ class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = ["id", "slug", "title", "authors", "topics", "description", "content", "images", "link", "image_url", "source", "date", "order"]
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+
+class ArticleListSerializer(serializers.ModelSerializer):
+    """Versão enxuta para a lista de artigos: sem o texto completo e sem as imagens do corpo."""
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = ["id", "slug", "title", "authors", "topics", "description", "link", "image_url", "source", "date", "order"]
 
     def get_image_url(self, obj):
         request = self.context.get("request")

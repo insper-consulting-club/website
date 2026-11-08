@@ -163,6 +163,9 @@ export interface Article {
   images: ArticleImage[]
 }
 
+// Item da lista de artigos: o texto e as imagens do corpo só vêm no artigo completo.
+export type ArticleSummary = Omit<Article, "content" | "images">
+
 // Imagem chamada no texto do artigo como ![](imagem-<number>).
 export interface ArticleImage {
   number: number

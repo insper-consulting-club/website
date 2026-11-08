@@ -98,7 +98,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'website.middleware.PublicApiCacheMiddleware',
 ]
+
+# Segundos que o navegador pode reaproveitar as respostas de leitura da API.
+# Uma edição no admin leva até esse tempo para aparecer. Use 0 para desligar.
+API_CACHE_SECONDS = int(os.environ.get('API_CACHE_SECONDS', '60'))
 
 ROOT_URLCONF = 'config.urls'
 
