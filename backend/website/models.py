@@ -9,7 +9,7 @@ class PartnerCategory(models.Model):
     title = models.CharField(max_length=200)
 
     class Meta:
-        verbose_name_plural = 'Categorias dos Parceiros'
+        verbose_name_plural = 'Categorias dos parceiros'
 
     def __str__(self):
         return self.title
@@ -171,8 +171,8 @@ class ProjectImage(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Imagem do Projeto'
-        verbose_name_plural = 'Imagens do Projeto'
+        verbose_name = 'Imagem do projeto'
+        verbose_name_plural = 'Imagens do projeto'
         ordering = ['order']
 
     def __str__(self):
@@ -187,8 +187,8 @@ class ProjectTimelineEvent(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Evento do Cronograma'
-        verbose_name_plural = 'Eventos do Cronograma'
+        verbose_name = 'Evento do cronograma'
+        verbose_name_plural = 'Eventos do cronograma'
         ordering = ['date', 'order']
 
     def __str__(self):
@@ -205,8 +205,8 @@ class ProjectContentBlock(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Bloco de Conteúdo'
-        verbose_name_plural = 'Blocos de Conteúdo'
+        verbose_name = 'Bloco de conteúdo'
+        verbose_name_plural = 'Blocos de conteúdo'
         ordering = ['order']
 
     def __str__(self):
@@ -261,8 +261,8 @@ class DirectorateMembership(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
-        verbose_name = 'Vínculo com Diretoria'
-        verbose_name_plural = 'Vínculos com Diretorias'
+        verbose_name = 'Vínculo com diretoria'
+        verbose_name_plural = 'Vínculos com diretorias'
         ordering = ['order']
         constraints = [
             models.UniqueConstraint(fields=['member', 'directorate'], name='unique_member_per_directorate'),
@@ -428,8 +428,8 @@ class SelectionProcess(models.Model):
     )
     
     class Meta:
-        verbose_name = "Processo Seletivo"
-        verbose_name_plural = "Processos Seletivos"
+        verbose_name = "Processo seletivo"
+        verbose_name_plural = "Processos seletivos"
     
     def __str__(self):
         return self.title
@@ -459,8 +459,8 @@ class SelectionProcessStage(models.Model):
     order = models.IntegerField(default=0, verbose_name="Ordem")
     
     class Meta:
-        verbose_name = "Data do Processo"
-        verbose_name_plural = "Datas do Processo"
+        verbose_name = "Data do processo"
+        verbose_name_plural = "Datas do processo"
         ordering = ['order']
         
     def __str__(self):
@@ -482,8 +482,8 @@ class SelectionProcessStep(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
     
     class Meta:
-        verbose_name = 'Etapa Detalhada'
-        verbose_name_plural = 'Etapas Detalhadas'
+        verbose_name = 'Etapa detalhada'
+        verbose_name_plural = 'Etapas detalhadas'
         ordering = ['order']
     
     def __str__(self):
@@ -519,8 +519,8 @@ class PreparationMaterial(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
     
     class Meta:
-        verbose_name = 'Material de Preparação'
-        verbose_name_plural = 'Materiais de Preparação'
+        verbose_name = 'Material de preparação'
+        verbose_name_plural = 'Materiais de preparação'
         ordering = ['order']
     
     def __str__(self):
@@ -624,8 +624,8 @@ class ProgramCaseParticipant(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
     class Meta:
-        verbose_name = 'Participante do Case'
-        verbose_name_plural = 'Participantes do Case'
+        verbose_name = 'Participante do case'
+        verbose_name_plural = 'Participantes do case'
         ordering = ['role', 'order']
         constraints = [
             models.UniqueConstraint(fields=['case', 'member'], name='unique_member_per_case'),

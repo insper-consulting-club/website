@@ -52,6 +52,12 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     pass
 
 
+def url_do_site(caminho):
+    """Endereço público de uma página do site, ou None se FRONTEND_URL não estiver definido."""
+    base = settings.FRONTEND_URL.rstrip('/')
+    return f'{base}{caminho}' if base else None
+
+
 def miniatura(imagem, altura=40):
     """Mostra a imagem pequena nas listas e no formulário do admin."""
     if not imagem:
@@ -74,9 +80,11 @@ class PartnerCategoryAdmin(ModelAdmin):
 
 @admin.register(Partner)
 class PartnerAdmin(ModelAdmin):
-    list_display = ('logo', 'name', 'category', 'is_active', 'order')
+    list_display = ('logo', 'name', 'category', 'is_active')
     list_display_links = ('logo', 'name')
-    list_editable = ('is_active', 'order')
+    list_editable = ('is_active',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     list_filter = ('is_active', 'category')
     search_fields = ('name', 'description')
     ordering = ('order', 'name')
@@ -91,6 +99,8 @@ class PartnerAdmin(ModelAdmin):
     def logo_atual(self, obj):
         return miniatura(obj.logo_url, 80)
 
+    def view_on_site(self, obj):
+        return url_do_site(f'/parceiros/{obj.pk}') if obj.is_active else None
 
 # ---------------------------------------------------------------------------
 # Equipe
@@ -106,8 +116,9 @@ class PositionAdmin(ModelAdmin):
 
 @admin.register(Directorate)
 class DirectorateAdmin(ModelAdmin):
-    list_display = ('name', 'order')
-    list_editable = ('order',)
+    list_display = ('name',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     search_fields = ('name',)
     ordering = ('order',)
 
@@ -125,6 +136,8 @@ class DirectorateMembershipInline(TabularInline):
     extra = 1
     fields = ('directorate', 'cargo', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 class SituacaoFilter(admin.SimpleListFilter):
@@ -216,6 +229,9 @@ class MemberAdmin(ModelAdmin):
         n = queryset.exclude(exit_date__isnull=True).update(exit_date=None)
         self.message_user(request, f'{n} membro(s) reativado(s).', messages.SUCCESS)
 
+    def view_on_site(self, obj):
+        # O perfil de quem saiu continua acessível por link, então o botão vale para todos.
+        return url_do_site(f'/equipe/{obj.pk}')
 
 # ---------------------------------------------------------------------------
 # Projetos
@@ -226,6 +242,8 @@ class ProjectImageInline(TabularInline):
     extra = 1
     fields = ('image', 'caption', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 class ProjectTimelineEventInline(TabularInline):
@@ -240,6 +258,8 @@ class ProjectContentBlockInline(StackedInline):
     extra = 1
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 @admin.register(Project)
@@ -264,6 +284,8 @@ class ProjectAdmin(ModelAdmin):
         n = queryset.filter(is_active=False).update(is_active=True)
         self.message_user(request, f'{n} projeto(s) reativado(s).', messages.SUCCESS)
 
+    def view_on_site(self, obj):
+        return url_do_site(f'/projetos/projeto/{obj.pk}') if obj.is_active else None
 
 # ---------------------------------------------------------------------------
 # Programas e componentes
@@ -282,18 +304,24 @@ class ProgramContentBlockInline(StackedInline):
     extra = 0
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 @admin.register(Program)
 class ProgramAdmin(ModelAdmin):
     inlines = [ProgramContentBlockInline]
-    list_display = ('label', 'slug', 'badge', 'is_active', 'order')
-    list_editable = ('is_active', 'order')
+    list_display = ('label', 'slug', 'badge', 'is_active')
+    list_editable = ('is_active',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     list_filter = ('is_active',)
     search_fields = ('label', 'slug', 'description')
     ordering = ('order',)
     prepopulated_fields = {'slug': ('label',)}
 
+    def view_on_site(self, obj):
+        return url_do_site(f'/projetos/{obj.slug}') if obj.is_active else None
 
 # ---------------------------------------------------------------------------
 # Home e notícias
@@ -301,8 +329,9 @@ class ProgramAdmin(ModelAdmin):
 
 @admin.register(Statistic)
 class StatisticAdmin(ModelAdmin):
-    list_display = ('value', 'description', 'order')
-    list_editable = ('order',)
+    list_display = ('value', 'description')
+    ordering_field = 'order'
+    hide_ordering_field = True
     search_fields = ('value', 'description')
     ordering = ('order',)
 
@@ -329,6 +358,9 @@ class ArticleAdmin(ModelAdmin):
     ordering = ('-date', 'order')
     inlines = [ArticleImageInline]
 
+    def view_on_site(self, obj):
+        # Rascunho responde 404 no site.
+        return url_do_site(f'/artigos/{obj.slug or obj.pk}') if obj.published else None
 
 # ---------------------------------------------------------------------------
 # Cases dos programas
@@ -361,6 +393,8 @@ class SelectionProcessStageInline(TabularInline):
     extra = 1
     fields = ('label', 'date', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 class SelectionProcessStepInline(StackedInline):
@@ -368,6 +402,8 @@ class SelectionProcessStepInline(StackedInline):
     extra = 0
     fields = ('number', 'title', 'description', 'image', 'duration', 'tips', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 class SelectionProcessRequirementInline(TabularInline):
@@ -375,6 +411,8 @@ class SelectionProcessRequirementInline(TabularInline):
     extra = 1
     fields = ('text', 'icon', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 @admin.register(SelectionProcess)
@@ -386,18 +424,23 @@ class SelectionProcessAdmin(ModelAdmin):
     inlines = [SelectionProcessStageInline, SelectionProcessStepInline,
                SelectionProcessRequirementInline]
 
+    def view_on_site(self, obj):
+        return url_do_site('/processo') if obj.is_active else None
 
 class PreparationMaterialItemInline(TabularInline):
     model = PreparationMaterialItem
     extra = 1
     fields = ('text', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
 
 
 @admin.register(PreparationMaterial)
 class PreparationMaterialAdmin(ModelAdmin):
-    list_display = ('title', 'process', 'order')
-    list_editable = ('order',)
+    list_display = ('title', 'process')
+    ordering_field = 'order'
+    hide_ordering_field = True
     list_filter = ('process',)
     search_fields = ('title',)
     inlines = [PreparationMaterialItemInline]
@@ -412,6 +455,8 @@ class PartnerBenefitInline(TabularInline):
     extra = 0
     fields = ('title', 'description', 'order')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     tab = True
 
 
@@ -420,6 +465,8 @@ class NavItemInline(TabularInline):
     extra = 0
     fields = ('label', 'area', 'page', 'url', 'order', 'is_active')
     ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     tab = True
 
 
@@ -519,6 +566,8 @@ class SiteConfigAdmin(ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def view_on_site(self, obj):
+        return url_do_site('/')
 
 # ---------------------------------------------------------------------------
 # Textos do site (títulos de seção, rótulos, botões e mensagens)

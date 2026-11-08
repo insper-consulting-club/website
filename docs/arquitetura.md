@@ -121,6 +121,7 @@ O `/health/` não acessa o banco de propósito: o monitor de uptime o chama a ca
 
 - `SECRET_KEY` é obrigatória. O projeto não sobe sem ela. No ambiente local, o `docker-compose.yml` define uma chave de desenvolvimento, então o `.env` é opcional. Como essa chave é pública, o backend se recusa a subir com ela quando `DEBUG=False`.
 - Com `DEBUG=False`, o backend exige HTTPS, define cookies seguros e ativa o HSTS.
+- **Menu e navegação do admin:** o menu lateral vem de `config/navigation.py` (`UNFOLD['SIDEBAR']`), que agrupa os modelos por assunto e esconde o que o usuário não tem permissão de ver. Um modelo novo só aparece no menu depois de ser incluído em `GRUPOS`. Os campos `order` são reordenados arrastando (`ordering_field` e `hide_ordering_field` nos admins e inlines do Unfold), exceto onde a ordem vem de outro campo (data do cronograma, data do artigo). Os botões "Ver no site" usam `view_on_site` em cada admin e `FRONTEND_URL`.
 - **Tradução do admin:** a tradução em português do Django traz erros de grafia (por exemplo, "ordenção"), e o tema django-unfold não traz português. A pasta `backend/locale/` tem um catálogo do projeto, ativado por `LOCALE_PATHS` em `settings.py`, que corrige as grafias e traduz os textos do Unfold; ele vale antes do catálogo do Django, e testes conferem as correções e os trechos como `%(nome)s`. Ao atualizar o `django-unfold`, textos novos dele aparecem em inglês até serem acrescentados ao catálogo. O `django.mo` compilado é versionado (exceção no `.gitignore`), porque o deploy não compila mensagens. Para corrigir outro texto, acrescente a entrada em `django.po` e rode `msgfmt -o locale/pt_BR/LC_MESSAGES/django.mo locale/pt_BR/LC_MESSAGES/django.po` dentro de `backend/`.
 - `BEHIND_PROXY=True` faz o Django confiar no cabeçalho `X-Forwarded-Proto`. É necessário no Render, que termina o HTTPS na frente do Django. Sem isso, o site entra em loop de redirecionamento.
 - O banco vem de `DATABASE_URL`. Sem ela, usa as variáveis `DB_*` do Compose.
@@ -141,6 +142,7 @@ Modelo comentado em [`backend/.env.example`](../backend/.env.example). Nunca reg
 | `CSRF_TRUSTED_ORIGINS` | Sim | Domínio do backend com `https://`, necessário para o login do admin. Em produção: `https://api.insperconsultingclub.com.br` |
 | `BEHIND_PROXY` | Sim | `True` atrás do proxy do Render |
 | `RENDER_FRONTEND_DEPLOY_HOOK` | Não | Endereço secreto (Render, Settings > Deploy Hook) que reconstrói o frontend quando muda um campo de Marca e compartilhamento. Sem ele, o deploy do frontend é manual. Ver [`operacao.md`](operacao.md) |
+| `FRONTEND_URL` | Não | Endereço público do site, usado pelos botões "Ver no site" e pelo link "Voltar ao site" do admin. Sem ela, vale a primeira origem de `CORS_ALLOWED_ORIGINS` e, em desenvolvimento, `http://localhost:5173` |
 | `API_CACHE_SECONDS` | Não | Segundos que o navegador reaproveita as respostas de leitura da API (`Cache-Control`). Padrão: `60`. `0` desliga |
 | `DATABASE_URL` | Sim | Conexão com o Postgres do Neon |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Sim | Armazenamento de imagens. Sem elas, as imagens enviadas se perdem a cada deploy |

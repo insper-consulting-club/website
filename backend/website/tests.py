@@ -15,7 +15,7 @@ from rest_framework.test import APIClient
 
 from website.models import (
     Article, Member, Partner, PartnerCategory, Program, ProgramCase,
-    NavItem, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
+    Directorate, NavItem, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
 )
 
 
@@ -754,3 +754,124 @@ class TranslationFixesTests(TestCase):
         pagina = self.client.get("/admin/website/program/").content.decode()
 
         self.assertNotIn("ordenção", pagina)
+
+
+class AdminNavigationTests(TestCase):
+    def test_superuser_sees_every_group_in_order(self):
+        from config.navigation import navegacao
+
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        requisicao = mock.Mock(user=usuario)
+
+        grupos = navegacao(requisicao)
+
+        self.assertEqual(
+            [g["title"] for g in grupos],
+            ["Site", "Equipe", "Parceiros", "Programas e projetos", "Artigos", "Processo seletivo", "Acesso"],
+        )
+        itens = [i["title"] for g in grupos for i in g["items"]]
+        self.assertEqual(len(itens), 17)  # 15 modelos do site, mais Usuários e Grupos
+        self.assertIn("Configuração do site", itens)
+
+    def test_limited_user_only_sees_what_they_can_open(self):
+        from django.contrib.auth.models import Permission
+        from config.navigation import navegacao
+
+        usuario = get_user_model().objects.create_user("editor", "ed@example.com", "senha-de-teste", is_staff=True)
+        usuario.user_permissions.add(Permission.objects.get(codename="change_article"))
+        usuario = get_user_model().objects.get(pk=usuario.pk)
+
+        grupos = navegacao(mock.Mock(user=usuario))
+
+        self.assertEqual([g["title"] for g in grupos], ["Artigos"])
+        self.assertEqual([i["title"] for i in grupos[0]["items"]], ["Artigos"])
+
+    def test_sidebar_is_rendered_in_the_admin(self):
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(usuario)
+
+        pagina = self.client.get("/admin/").content.decode()
+
+        for titulo in ("Programas e projetos", "Processo seletivo", "Configuração do site"):
+            self.assertIn(titulo, pagina)
+
+
+class AdminViewOnSiteTests(TestCase):
+    @override_settings(FRONTEND_URL="https://exemplo.com.br/")
+    def test_buttons_point_to_the_public_pages(self):
+        from django.contrib import admin
+
+        def url(modelo, objeto):
+            return admin.site._registry[modelo].view_on_site(objeto)
+
+        programa = Program.objects.create(slug="pedagogico", label="Pedagógico", description="d")
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
+        artigo = Article.objects.create(title="A", description="d", slug="meu-artigo", published=True)
+        sem_slug = Article.objects.create(title="B", description="d", published=True)
+        parceiro = Partner.objects.create(name="X", description="d")
+        membro = Member.objects.create(name="M", entry_date=date(2025, 1, 1))
+
+        self.assertEqual(url(Program, programa), "https://exemplo.com.br/projetos/pedagogico")
+        self.assertEqual(url(Project, projeto), f"https://exemplo.com.br/projetos/projeto/{projeto.pk}")
+        self.assertEqual(url(Article, artigo), "https://exemplo.com.br/artigos/meu-artigo")
+        self.assertEqual(url(Article, sem_slug), f"https://exemplo.com.br/artigos/{sem_slug.pk}")
+        self.assertEqual(url(Partner, parceiro), f"https://exemplo.com.br/parceiros/{parceiro.pk}")
+        self.assertEqual(url(Member, membro), f"https://exemplo.com.br/equipe/{membro.pk}")
+        self.assertEqual(url(SiteConfig, SiteConfig.get_solo()), "https://exemplo.com.br/")
+
+    @override_settings(FRONTEND_URL="https://exemplo.com.br")
+    def test_hidden_records_have_no_button(self):
+        from django.contrib import admin
+
+        rascunho = Article.objects.create(title="A", description="d", published=False)
+        arquivado = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1), is_active=False)
+        oculto = Program.objects.create(slug="oculto", label="O", description="d", is_active=False)
+
+        self.assertIsNone(admin.site._registry[Article].view_on_site(rascunho))
+        self.assertIsNone(admin.site._registry[Project].view_on_site(arquivado))
+        self.assertIsNone(admin.site._registry[Program].view_on_site(oculto))
+
+    @override_settings(FRONTEND_URL="")
+    def test_without_the_site_address_there_is_no_button(self):
+        from django.contrib import admin
+
+        programa = Program.objects.create(slug="pedagogico", label="Pedagógico", description="d")
+
+        self.assertIsNone(admin.site._registry[Program].view_on_site(programa))
+
+
+class AdminReorderTests(TestCase):
+    def test_saving_the_list_stores_the_new_order(self):
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(usuario)
+        Directorate.objects.all().delete()
+        alfa, beta, gama = (Directorate.objects.create(name=n, order=i) for i, n in enumerate(["Alfa", "Beta", "Gama"], 1))
+
+        # O Unfold reescreve os números de ordem no navegador ao arrastar; aqui vão prontos.
+        dados = {"form-TOTAL_FORMS": "3", "form-INITIAL_FORMS": "3", "form-MIN_NUM_FORMS": "0",
+                 "form-MAX_NUM_FORMS": "1000", "_save": "Salvar"}
+        for i, (diretoria, ordem) in enumerate(((alfa, 2), (beta, 3), (gama, 1))):
+            dados[f"form-{i}-id"] = str(diretoria.pk)
+            dados[f"form-{i}-order"] = str(ordem)
+
+        resposta = self.client.post("/admin/website/directorate/", dados)
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual([d.name for d in Directorate.objects.order_by("order")], ["Gama", "Alfa", "Beta"])
+
+    def test_every_ordered_inline_is_sortable(self):
+        from django.contrib import admin
+
+        classes = {
+            inline
+            for modelo_admin in admin.site._registry.values()
+            for inline in getattr(modelo_admin, "inlines", [])
+            if any(campo.name == "order" for campo in inline.model._meta.get_fields())
+        }
+        # O cronograma do projeto é ordenado por data, e os participantes do case, por papel.
+        fora = {"ProjectTimelineEventInline", "ProgramCaseParticipantInline"}
+        for inline in classes:
+            if inline.__name__ in fora:
+                continue
+            self.assertEqual(inline.ordering_field, "order", inline.__name__)
+            self.assertTrue(inline.hide_ordering_field, inline.__name__)

@@ -198,11 +198,24 @@ USE_TZ = True
 
 # Tema do /admin (django-unfold). A escala "primary" é o vermelho da marca
 # (o #b20000 do site fica perto do tom 700), no formato oklch que o Unfold usa.
+# Endereço público do site (frontend). Usado pelos botões "Ver no site" do admin.
+# Sem a variável FRONTEND_URL, vale a primeira origem de CORS_ALLOWED_ORIGINS
+# (em produção, o próprio site) ou, em desenvolvimento, o servidor do Vite.
+_origens_cors = [h for h in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if h]
+FRONTEND_URL = os.environ.get('FRONTEND_URL') or (
+    _origens_cors[0] if _origens_cors else ('http://localhost:5173' if DEBUG else '')
+)
+
 UNFOLD = {
     'SITE_TITLE': 'Admin ICC',
     'SITE_HEADER': 'Insper Consulting Club',
     'SITE_SUBHEADER': 'Conteúdo do site',
-    'SITE_URL': None,
+    'SITE_URL': FRONTEND_URL or None,
+    'SIDEBAR': {
+        'show_search': True,
+        'show_all_applications': False,
+        'navigation': 'config.navigation.navegacao',
+    },
     'COLORS': {
         'primary': {
             '50': 'oklch(97.1% .013 17.38)',

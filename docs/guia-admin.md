@@ -14,22 +14,24 @@ Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site a
 
 ## Como a tela está organizada
 
-Na página inicial do admin, o conteúdo fica no quadro **"Website"**. Cada linha é um tipo de conteúdo. Em todas as telas o padrão é o mesmo:
+O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários e grupos). Quem tem um login limitado vê só os grupos que pode usar. A busca no topo do menu acha qualquer tela pelo nome. Na página inicial, o conteúdo também aparece no quadro **"Conteúdo do site"**. Em todas as telas o padrão é o mesmo:
 
 - **Adicionar** (botão no canto superior direito da lista) cria um registro novo.
 - Clicar no nome de um registro abre a edição.
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
+- **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
+- **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
 | Quero cadastrar ou editar | Linha do admin |
 |---|---|
 | Pessoas da equipe | Membros, Cargos, Diretorias |
-| Empresas parceiras | Parceiros, Categorias dos Parceiros |
+| Empresas parceiras | Parceiros, Categorias dos parceiros |
 | Programas do ICC e o que os compõe | Programas, Componentes dos programas |
 | Trabalhos feitos com parceiros | Projetos |
 | Cases dos programas | Cases dos programas |
 | Textos publicados pelos membros | Artigos |
-| Próximo processo seletivo | Processos Seletivos, Materiais de Preparação |
+| Próximo processo seletivo | Processos seletivos, Materiais de preparação |
 | Números da Home | Estatísticas |
 
 ### Esconder ou apagar
@@ -87,7 +89,7 @@ A pessoa some da página Equipe, mas o histórico (cases, trajetória) continua 
 
 ### Diretorias
 
-Em **Diretorias** você cria, renomeia e reordena as diretorias. A **Ordem de exibição** define a ordem das seções na página Equipe e no menu "Nossa Equipe".
+Em **Diretorias** você cria, renomeia e reordena as diretorias. A ordem das linhas (arraste para mudar) define a ordem das seções na página Equipe e no menu "Nossa Equipe".
 
 ---
 
@@ -95,11 +97,11 @@ Em **Diretorias** você cria, renomeia e reordena as diretorias. A **Ordem de ex
 
 **Parceiros > Adicionar parceiro** (ou clique em um existente para editar)
 
-1. **Nome**, **Categoria**, **Site do parceiro** e **Descrição**. As categorias ficam em **Categorias dos Parceiros**.
+1. **Nome**, **Categoria**, **Site do parceiro** e **Descrição**. As categorias ficam em **Categorias dos parceiros**.
 2. **Logo:**
    - use **PNG com fundo transparente**, de preferência recortado rente ao logo, sem margem vazia em volta. Assim ele fica do tamanho certo no carrossel da Home e na página de parceiros;
    - **SVG é recusado** pelo admin.
-3. **Ordem de exibição:** o menor número aparece primeiro.
+3. **Ordem de exibição:** na lista de parceiros, arraste a linha para mudar a posição.
 4. Salvar. A miniatura na lista mostra o logo atual.
 
 Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá para fazer isso direto na lista.
@@ -152,8 +154,8 @@ A página **Projetos** do site mostra os programas, e a página de cada programa
 2. **Data de conclusão**, quando o projeto terminar.
 3. **Parceiros envolvidos:** escolha na caixa da esquerda e passe para a direita.
 4. Embaixo, se quiser, o conteúdo da página do projeto:
-   - **Blocos de Conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). A **Ordem** define a sequência. Para separar parágrafos, quebre a linha.
-   - **Imagens do Projeto:** a galeria, com uma **Legenda** e uma **Ordem** para cada imagem.
+   - **Blocos de Conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). Arraste para mudar a sequência. Para separar parágrafos, quebre a linha.
+   - **Imagens do Projeto:** a galeria, com uma **Legenda** para cada imagem. Arraste para reordenar.
    - **Eventos do Cronograma:** data, título e descrição de cada etapa.
 5. Salvar.
 
@@ -197,7 +199,7 @@ O site mostra **um processo seletivo por vez**: o que estiver marcado como **Ati
 
 ### Cadastrar um processo
 
-**Processos Seletivos > Adicionar**
+**Processos seletivos > Adicionar**
 
 1. **Título** (por exemplo, `Processo Seletivo 2027.1`) e **Ativo** marcado.
 2. **Datas do Processo:** uma linha por fase, com nome, data ou período e ordem.
@@ -205,7 +207,7 @@ O site mostra **um processo seletivo por vez**: o que estiver marcado como **Ati
 4. **Requisitos:** uma linha por requisito.
 5. Salvar.
 
-Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação > Adicionar**: escolha o processo, dê um título e liste os itens.
+Os **materiais de preparação** (opcional) ficam em **Materiais de preparação > Adicionar**: escolha o processo, dê um título e liste os itens.
 
 ### Abrir e fechar as inscrições
 
@@ -233,7 +235,7 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação
 - **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** recebe o slug de um programa existente (por exemplo, `jornada-do-consultor`) e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
 - **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
 - **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
-  - **Texto exibido** e **Ordem**.
+  - **Texto exibido**. A ordem é a das linhas (arraste para mudar).
   - **Onde aparece:** menu (topo e rodapé), só no topo, só no rodapé ou botão de destaque do topo.
   - **Página do site**, escolhida numa lista (Equipe, Parceiros, Projetos, Artigos, Processo seletivo, Contato, Política de Privacidade, Página inicial). Prefira esta opção: o link não quebra.
   - **Link livre**, só quando não houver página na lista: um endereço completo (`https://...`) ou um caminho do site (`/equipe`). Preencha a página **ou** o link livre, nunca os dois. Links externos abrem em outra aba.
@@ -270,9 +272,9 @@ Pouca coisa fica fora do admin:
 
 | Quando | O quê | Onde |
 |---|---|---|
-| Antes do processo seletivo | Cadastrar o novo processo (datas, etapas, requisitos) e deixar **Ativo** | Processos Seletivos |
-| Abertura do processo | Marcar **Inscrições abertas** e colar o link do formulário | Processos Seletivos |
-| Fim das inscrições | Desmarcar **Inscrições abertas** (o processo continua ativo, com as datas visíveis) | Processos Seletivos |
+| Antes do processo seletivo | Cadastrar o novo processo (datas, etapas, requisitos) e deixar **Ativo** | Processos seletivos |
+| Abertura do processo | Marcar **Inscrições abertas** e colar o link do formulário | Processos seletivos |
+| Fim das inscrições | Desmarcar **Inscrições abertas** (o processo continua ativo, com as datas visíveis) | Processos seletivos |
 | Entrada dos aprovados | Cadastrar os novos membros, com foto e diretoria | Membros |
 | Troca de gestão | Arquivar quem saiu; atualizar cargos e diretorias | Membros, Cargos, Diretorias |
 | Fim do semestre | Cadastrar os cases e projetos do semestre e atualizar os números da Home | Cases dos programas, Projetos, Estatísticas |

@@ -16,6 +16,8 @@ def sincroniza_textos_do_site(sender, apps, **kwargs):
 class WebsiteConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'website'
+    # Nome do grupo de modelos na página inicial do /admin.
+    verbose_name = 'Conteúdo do site'
 
     def ready(self):
         post_migrate.connect(sincroniza_textos_do_site, sender=self)
