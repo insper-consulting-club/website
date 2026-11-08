@@ -9,6 +9,7 @@ Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL perm
 | Pacote | Versão | Licença | Para quê |
 |---|---|---|---|
 | Django | 6.0.8 | BSD-3-Clause | Framework web, ORM e área administrativa |
+| django-unfold | 0.110.1 | MIT | Tema do `/admin`, com abas e formulários mais claros |
 | djangorestframework | 3.17.2 | BSD-3-Clause | API REST |
 | django-cors-headers | 4.7.0 | MIT | Liberar a API só para o domínio do site |
 | psycopg2-binary | 2.9.10 | LGPL (com exceções) | Driver do PostgreSQL |

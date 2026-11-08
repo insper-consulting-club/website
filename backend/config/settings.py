@@ -70,6 +70,9 @@ CSRF_TRUSTED_ORIGINS = [h for h in os.environ.get('CSRF_TRUSTED_ORIGINS', '').sp
 # Application definition
 
 INSTALLED_APPS = [
+    # Tema do /admin. Precisa vir antes de django.contrib.admin para que seus
+    # templates substituam os do Django.
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -183,6 +186,30 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
+
+# Tema do /admin (django-unfold). A escala "primary" é o vermelho da marca
+# (o #b20000 do site fica perto do tom 700), no formato oklch que o Unfold usa.
+UNFOLD = {
+    'SITE_TITLE': 'Admin ICC',
+    'SITE_HEADER': 'Insper Consulting Club',
+    'SITE_SUBHEADER': 'Conteúdo do site',
+    'SITE_URL': None,
+    'COLORS': {
+        'primary': {
+            '50': 'oklch(97.1% .013 17.38)',
+            '100': 'oklch(93.6% .032 17.717)',
+            '200': 'oklch(88.5% .062 18.334)',
+            '300': 'oklch(80.8% .114 19.571)',
+            '400': 'oklch(70.4% .191 22.216)',
+            '500': 'oklch(63.7% .237 25.331)',
+            '600': 'oklch(57.7% .245 27.325)',
+            '700': 'oklch(50.5% .213 27.518)',
+            '800': 'oklch(44.4% .177 26.899)',
+            '900': 'oklch(39.6% .141 25.723)',
+            '950': 'oklch(25.8% .092 26.042)',
+        },
+    },
+}
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'website' / 'static'
