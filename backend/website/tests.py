@@ -1,7 +1,9 @@
 from datetime import date
 
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from website.models import (
@@ -133,6 +135,42 @@ class PartnerTests(TestCase):
 
         self.assertEqual(response.data["projects_count"], 2)
         self.assertEqual(response.data["completed_projects_count"], 1)
+
+    def test_list_query_count_does_not_grow_with_partners(self):
+        def make_partner(i):
+            partner = Partner.objects.create(
+                name=f"P{i}", description="d", logo_url="logo.png", category=self.tech,
+            )
+            project = Project.objects.create(
+                title=f"Proj{i}", description="d",
+                start_date=date(2025, 1, 1), end_date=date(2025, 6, 1),
+            )
+            project.partners.add(partner)
+
+        make_partner(1)
+        with CaptureQueriesContext(connection) as few:
+            self.client.get("/api/partners/")
+
+        for i in range(2, 8):
+            make_partner(i)
+        with CaptureQueriesContext(connection) as many:
+            response = self.client.get("/api/partners/")
+
+        self.assertEqual(len(many), len(few))
+        by_name = {p["name"]: p for p in response.data}
+        self.assertEqual(by_name["P7"]["completed_projects_count"], 1)
+        self.assertEqual(by_name["P7"]["projects"][0]["title"], "Proj7")
+
+    def test_completed_projects_are_listed_newest_first(self):
+        for title, end in (("Antigo", date(2024, 6, 1)), ("Recente", date(2025, 6, 1))):
+            project = Project.objects.create(
+                title=title, description="d", start_date=date(2024, 1, 1), end_date=end,
+            )
+            project.partners.add(self.visible)
+
+        response = self.client.get(f"/api/partners/{self.visible.id}/")
+
+        self.assertEqual([p["title"] for p in response.data["projects"]], ["Recente", "Antigo"])
 
 
 class ProjectTests(TestCase):

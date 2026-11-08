@@ -1,4 +1,4 @@
-from django.db.models import Min, F
+from django.db.models import F, Min, Prefetch
 from django.http import Http404, JsonResponse
 from rest_framework import generics
 from .models import (
@@ -13,6 +13,15 @@ from .serializers import (
     ProgramComponentSerializer, ProgramSerializer,
     DirectorateSerializer, ProgramCaseSerializer,
     SelectionProcessSerializer, ArticleSerializer
+)
+
+
+# Projetos ativos de cada parceiro, carregados de uma vez para o
+# PartnerSerializer calcular contagens e lista sem uma consulta por parceiro.
+ACTIVE_PROJECTS_PREFETCH = Prefetch(
+    "projects",
+    queryset=Project.objects.filter(is_active=True).select_related("program"),
+    to_attr="active_projects",
 )
 
 
@@ -54,7 +63,12 @@ class PartnerListView(generics.ListAPIView):
     serializer_class = PartnerSerializer
 
     def get_queryset(self):
-        qs = Partner.objects.select_related("category").filter(is_active=True).order_by("order", "name")
+        qs = (
+            Partner.objects.select_related("category")
+            .prefetch_related(ACTIVE_PROJECTS_PREFETCH)
+            .filter(is_active=True)
+            .order_by("order", "name")
+        )
         category_id = self.request.query_params.get("category")
         if category_id:
             qs = qs.filter(category__id=category_id)
@@ -63,7 +77,11 @@ class PartnerListView(generics.ListAPIView):
 
 class PartnerDetailView(generics.RetrieveAPIView):
     serializer_class = PartnerSerializer
-    queryset = Partner.objects.select_related("category").filter(is_active=True)
+    queryset = (
+        Partner.objects.select_related("category")
+        .prefetch_related(ACTIVE_PROJECTS_PREFETCH)
+        .filter(is_active=True)
+    )
 
 
 class ProgramListView(generics.ListAPIView):
@@ -88,7 +106,11 @@ class ProjectDetailView(generics.RetrieveAPIView):
     serializer_class = ProjectDetailSerializer
     # Projeto arquivado responde 404, como se não existisse.
     queryset = Project.objects.filter(is_active=True).prefetch_related(
-        "partners", "members", "images", "timeline_events", "content_blocks"
+        Prefetch(
+            "partners",
+            queryset=Partner.objects.select_related("category").prefetch_related(ACTIVE_PROJECTS_PREFETCH),
+        ),
+        "members", "images", "timeline_events", "content_blocks",
     ).select_related("program")
 
 
