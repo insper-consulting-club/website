@@ -47,8 +47,8 @@ export default function Home() {
       <section className="home-hero">
         <div className="home-hero__inner">
           <img
-            src={logoBranca}
-            alt="Liga Insper Consulting Club"
+            src={config.logo_url ?? logoBranca}
+            alt={config.site_name}
             className="home-hero__logo"
             width={733}
             height={410}

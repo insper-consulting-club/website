@@ -418,14 +418,17 @@ class NavItemSerializer(serializers.ModelSerializer):
 
 class SiteConfigSerializer(serializers.ModelSerializer):
     home_about_photo_url = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
+    favicon_url = serializers.SerializerMethodField()
+    og_image_url = serializers.SerializerMethodField()
     partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
     texts = serializers.SerializerMethodField()
     nav_items = serializers.SerializerMethodField()
 
     class Meta:
         model = SiteConfig
-        # A foto não sai como campo de arquivo: o site recebe só o endereço.
-        exclude = ["id", "home_about_photo"]
+        # As imagens não saem como campo de arquivo: o site recebe só o endereço.
+        exclude = ["id", "home_about_photo", "logo", "favicon", "og_image"]
 
     def get_nav_items(self, obj):
         # Item escondido no admin não chega ao site.
@@ -437,8 +440,20 @@ class SiteConfigSerializer(serializers.ModelSerializer):
         # valor original, em vez de faltar na resposta.
         return {**PADRAO_TEXTOS, **dict(SiteText.objects.values_list("key", "value"))}
 
-    def get_home_about_photo_url(self, obj):
+    def _url(self, imagem):
         request = self.context.get("request")
-        if obj.home_about_photo and request:
-            return request.build_absolute_uri(obj.home_about_photo.url)
+        if imagem and request:
+            return request.build_absolute_uri(imagem.url)
         return None
+
+    def get_home_about_photo_url(self, obj):
+        return self._url(obj.home_about_photo)
+
+    def get_logo_url(self, obj):
+        return self._url(obj.logo)
+
+    def get_favicon_url(self, obj):
+        return self._url(obj.favicon)
+
+    def get_og_image_url(self, obj):
+        return self._url(obj.og_image)

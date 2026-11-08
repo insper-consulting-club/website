@@ -7,6 +7,12 @@ import type { SiteConfig } from "./types"
 // vale, depois, é o que estiver no admin. O texto da Política de Privacidade
 // fica de fora de propósito: é longo, e a página avisa quando não o recebe.
 export const SITE_CONFIG_PADRAO: SiteConfig = {
+  site_name: "Liga Insper Consulting Club",
+  site_description:
+    "A Liga Insper Consulting Club é uma organização estudantil dedicada ao desenvolvimento de futuros consultores.",
+  logo_url: null,
+  favicon_url: null,
+  og_image_url: null,
   email: "insperconsultingclub@gmail.com",
   instagram_url: "https://www.instagram.com/insperconsultingclub/",
   instagram_label: "@insperconsultingclub",

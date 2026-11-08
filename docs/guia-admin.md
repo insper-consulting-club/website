@@ -226,6 +226,7 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de Preparação
 
 **Configuração do site** abre direto na edição, porque existe um único registro. Não há botão de adicionar nem de excluir. A tela tem abas:
 
+- **Marca e compartilhamento:** o **Nome do site** (aba do navegador, rodapé e prévia dos links), a **Descrição do site** e três imagens opcionais: o **Logo** em versão clara (usado no topo, no rodapé e na Home), o **Ícone da aba** (PNG quadrado, de preferência 256 x 256) e a **Imagem de compartilhamento** (1200 x 630, a que aparece no WhatsApp e no LinkedIn). Sem imagem enviada, o site usa a original. Como o site é estático, essas mudanças só aparecem depois que o site é reconstruído, o que o sistema pede sozinho ao salvar (leva alguns minutos). Se o deploy automático não estiver configurado, o admin avisa que é preciso publicar o frontend de novo.
 - **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
 - **Home:** título do topo, frase de destaque, o bloco "Quem somos" (com a foto, que é opcional), a missão, "como preparamos", "onde queremos chegar" e a chamada final.
 - **Rodapé:** a frase de apresentação.
@@ -259,9 +260,9 @@ Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem
 
 ## O que fica fora do admin
 
-Alguns itens fixos são alterados no código pelo responsável técnico:
+Pouca coisa fica fora do admin:
 
-- a descrição e a imagem usadas na prévia ao compartilhar um link (WhatsApp, LinkedIn), que ficam no `index.html`, porque esses aplicativos não executam o site.
+- o conteúdo da prévia ao compartilhar **um artigo ou página específica**: o WhatsApp e o LinkedIn sempre mostram a prévia geral do site, porque só leem o HTML estático, e ele é o mesmo para todas as páginas.
 
 ---
 

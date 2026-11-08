@@ -27,6 +27,8 @@ Antes de abrir um PR, rode `npm run lint` e `npm run build`: os dois precisam pa
 |---|---|
 | `VITE_API_URL` | Endereço da API, terminando em `/api`. Local: `http://localhost:8000/api` (o `docker-compose.yml` já define). Produção: `https://api.insperconsultingclub.com.br/api` |
 
+`SKIP_SITE_CONFIG=1` faz o build ignorar a consulta à Configuração do site na API (o `index.html` fica com os valores originais). Sem acesso à API, o build também segue assim, com um aviso no log.
+
 As variáveis `VITE_*` entram no código **na hora do build**. Mudar o valor no Render exige um novo deploy do frontend. O link "Área administrativa" do rodapé é derivado dessa variável.
 
 ## Estrutura
@@ -35,6 +37,8 @@ As variáveis `VITE_*` entram no código **na hora do build**. Mudar o valor no 
 frontend/
 ├── index.html           # Metadados estáticos (título, Open Graph) e carregamento da fonte
 ├── public/              # Favicon, ícone de iOS e imagem de compartilhamento
+├── plugins/
+│   └── siteConfig.ts    # No build, lê a Configuração do site na API e grava nome, descrição, imagens e ícone no index.html
 ├── vite.config.ts
 └── src/
     ├── main.tsx         # Rotas (cada página carrega sob demanda, exceto a Home)

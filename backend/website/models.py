@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
+
+from .deploy_hook import dispara_deploy_do_frontend
 
 
 class PartnerCategory(models.Model):
@@ -640,6 +642,34 @@ class SiteConfig(models.Model):
     Política de Privacidade. Existe um único registro (pk=1), criado pela
     migration com os textos que o site já tinha.
     """
+    # Campos que o frontend grava no HTML durante o build (ver CAMPOS_DO_HTML).
+    site_name = models.CharField(
+        max_length=100, default='Liga Insper Consulting Club', verbose_name='Nome do site',
+        help_text='Aparece na aba do navegador, no rodapé e na prévia ao compartilhar o link.'
+    )
+    site_description = models.CharField(
+        max_length=300,
+        default='A Liga Insper Consulting Club é uma organização estudantil dedicada ao '
+                'desenvolvimento de futuros consultores.',
+        verbose_name='Descrição do site',
+        help_text='Usada na prévia ao compartilhar o link e em páginas sem descrição própria.'
+    )
+    logo = models.ImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Logo (versão clara)',
+        help_text='Opcional. Versão clara, para fundo escuro, usada no topo, no rodapé e na Home. '
+                  'Sem logo enviado, o site usa o logo original.'
+    )
+    favicon = models.ImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Ícone da aba (favicon)',
+        help_text='Opcional. Imagem quadrada em PNG, de preferência com 256 x 256 pixels. '
+                  'Sem ícone enviado, o site usa o original.'
+    )
+    og_image = models.ImageField(
+        upload_to='site/', null=True, blank=True, verbose_name='Imagem de compartilhamento',
+        help_text='Opcional. Aparece na prévia do link no WhatsApp e no LinkedIn. '
+                  'Use 1200 x 630 pixels. Sem imagem enviada, o site usa a original.'
+    )
+
     # Contatos
     email = models.EmailField(default='insperconsultingclub@gmail.com', verbose_name='E-mail')
     instagram_url = models.URLField(
@@ -790,10 +820,21 @@ class SiteConfig(models.Model):
                 'featured_program_slug': 'Não existe programa com esse slug. Confira em Programas.'
             })
 
+    # Campos que entram no HTML do site durante o build do frontend. Mudar um
+    # deles pede um novo deploy do frontend.
+    CAMPOS_DO_HTML = ('site_name', 'site_description', 'logo', 'favicon', 'og_image')
+
     def save(self, *args, **kwargs):
         # Registro único: qualquer salvamento atualiza sempre o mesmo.
         self.pk = 1
+        anterior = SiteConfig.objects.filter(pk=1).values(*self.CAMPOS_DO_HTML).first()
         super().save(*args, **kwargs)
+        # Só reconstrói o frontend quando um campo do HTML mudou. O primeiro
+        # registro (anterior vazio) não conta: é a criação inicial.
+        if anterior is not None and any(
+            (anterior[campo] or '') != str(getattr(self, campo) or '') for campo in self.CAMPOS_DO_HTML
+        ):
+            transaction.on_commit(dispara_deploy_do_frontend)
 
     @classmethod
     def get_solo(cls):

@@ -4,6 +4,10 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.db import connection
 from pathlib import Path
+from unittest import mock
+
+import requests
+from django.test import override_settings
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
@@ -601,3 +605,88 @@ class NavItemTests(TestCase):
         with self.assertRaises(ValidationError):
             NavItem(site_config=config, label="x", url="equipe").clean()
         NavItem(site_config=config, label="x", url="mailto:a@example.com").clean()
+
+
+class SiteBrandTests(TestCase):
+    def test_endpoint_returns_name_description_and_no_images_by_default(self):
+        dados = APIClient().get("/api/site-config/").data
+
+        self.assertEqual(dados["site_name"], "Liga Insper Consulting Club")
+        self.assertIn("organização estudantil", dados["site_description"])
+        self.assertIsNone(dados["logo_url"])
+        self.assertIsNone(dados["favicon_url"])
+        self.assertIsNone(dados["og_image_url"])
+        for campo in ("logo", "favicon", "og_image"):
+            self.assertNotIn(campo, dados)
+
+
+class FrontendDeployTests(TestCase):
+    def test_changing_a_field_that_goes_into_the_html_asks_for_a_deploy(self):
+        config = SiteConfig.get_solo()
+        config.site_name = "Outro nome"
+
+        with mock.patch("website.models.dispara_deploy_do_frontend") as dispara:
+            with self.captureOnCommitCallbacks(execute=True):
+                config.save()
+
+        dispara.assert_called_once_with()
+
+    def test_changing_any_other_field_does_not_ask_for_a_deploy(self):
+        config = SiteConfig.get_solo()
+        config.email = "novo@example.com"
+
+        with mock.patch("website.models.dispara_deploy_do_frontend") as dispara:
+            with self.captureOnCommitCallbacks(execute=True):
+                config.save()
+
+        dispara.assert_not_called()
+
+    def test_saving_without_changes_does_not_ask_for_a_deploy(self):
+        config = SiteConfig.get_solo()
+
+        with mock.patch("website.models.dispara_deploy_do_frontend") as dispara:
+            with self.captureOnCommitCallbacks(execute=True):
+                config.save()
+
+        dispara.assert_not_called()
+
+    def test_creating_the_first_record_does_not_ask_for_a_deploy(self):
+        SiteConfig.objects.all().delete()
+
+        with mock.patch("website.models.dispara_deploy_do_frontend") as dispara:
+            with self.captureOnCommitCallbacks(execute=True):
+                SiteConfig.get_solo()
+
+        dispara.assert_not_called()
+
+    @override_settings(RENDER_FRONTEND_DEPLOY_HOOK="")
+    def test_without_the_hook_nothing_is_called(self):
+        from website.deploy_hook import dispara_deploy_do_frontend
+
+        with mock.patch("website.deploy_hook.requests.post") as post:
+            self.assertFalse(dispara_deploy_do_frontend(sincrono=True))
+
+        post.assert_not_called()
+
+    @override_settings(RENDER_FRONTEND_DEPLOY_HOOK="https://api.render.com/deploy/srv-x?key=segredo")
+    def test_with_the_hook_it_posts_to_the_address(self):
+        from website.deploy_hook import dispara_deploy_do_frontend
+
+        with mock.patch("website.deploy_hook.requests.post") as post:
+            post.return_value.status_code = 200
+            self.assertTrue(dispara_deploy_do_frontend(sincrono=True))
+
+        post.assert_called_once_with("https://api.render.com/deploy/srv-x?key=segredo", timeout=10)
+
+    @override_settings(RENDER_FRONTEND_DEPLOY_HOOK="https://api.render.com/deploy/srv-x?key=segredo")
+    def test_a_failure_is_logged_without_the_secret_and_never_raised(self):
+        from website.deploy_hook import dispara_deploy_do_frontend
+
+        erro = requests.ConnectionError("falha em https://api.render.com/deploy/srv-x?key=segredo")
+        with mock.patch("website.deploy_hook.requests.post", side_effect=erro):
+            with self.assertLogs("website.deploy_hook", level="WARNING") as log:
+                dispara_deploy_do_frontend(sincrono=True)
+
+        texto = "\n".join(log.output)
+        self.assertIn("ConnectionError", texto)
+        self.assertNotIn("segredo", texto)

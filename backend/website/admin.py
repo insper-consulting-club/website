@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -425,8 +426,18 @@ class NavItemInline(TabularInline):
 @admin.register(SiteConfig)
 class SiteConfigAdmin(ModelAdmin):
     inlines = [NavItemInline, PartnerBenefitInline]
-    readonly_fields = ('foto_atual',)
+    readonly_fields = ('foto_atual', 'logo_atual', 'favicon_atual', 'og_image_atual')
     fieldsets = (
+        ('Marca e compartilhamento', {
+            'classes': ['tab'],
+            'description': 'Nome, descrição e imagens do site. Mudanças aqui só aparecem na prévia dos links '
+                           '(WhatsApp, LinkedIn) e no ícone da aba depois que o site é reconstruído, o que o '
+                           'sistema pede sozinho ao salvar.',
+            'fields': (
+                'site_name', 'site_description',
+                'logo', 'logo_atual', 'favicon', 'favicon_atual', 'og_image', 'og_image_atual',
+            ),
+        }),
         ('Contatos', {
             'classes': ['tab'],
             'description': 'Aparecem no topo, no rodapé, na página Contato, na Política de Privacidade e '
@@ -473,6 +484,29 @@ class SiteConfigAdmin(ModelAdmin):
     @admin.display(description='Foto atual')
     def foto_atual(self, obj):
         return miniatura(obj.home_about_photo, 120)
+
+    @admin.display(description='Logo atual')
+    def logo_atual(self, obj):
+        return miniatura(obj.logo, 60)
+
+    @admin.display(description='Ícone atual')
+    def favicon_atual(self, obj):
+        return miniatura(obj.favicon, 48)
+
+    @admin.display(description='Imagem atual')
+    def og_image_atual(self, obj):
+        return miniatura(obj.og_image, 90)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if set(form.changed_data) & set(SiteConfig.CAMPOS_DO_HTML):
+            if settings.RENDER_FRONTEND_DEPLOY_HOOK:
+                aviso = 'O site será reconstruído para aplicar a mudança na marca ou na prévia dos links. ' \
+                        'Leva alguns minutos.'
+            else:
+                aviso = 'Para aplicar a mudança na marca ou na prévia dos links, é preciso publicar o ' \
+                        'frontend de novo (o deploy automático não está configurado).'
+            self.message_user(request, aviso, messages.WARNING)
 
     # Registro único: não há lista, nem adicionar, nem excluir. Abrir o item
     # no menu leva direto para a edição.

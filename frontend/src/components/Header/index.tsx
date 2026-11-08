@@ -115,8 +115,8 @@ export default function Header() {
   return (
     <header className={classes} ref={headerRef}>
       <div className="header__bar" ref={barRef}>
-        <Link to="/" className="header__logo" aria-label="Liga Insper Consulting Club, página inicial">
-          <img src={logoBranca} alt="" />
+        <Link to="/" className="header__logo" aria-label={`${config.site_name}, página inicial`}>
+          <img src={config.logo_url ?? logoBranca} alt="" />
         </Link>
 
         <nav className="header__nav" aria-label="Navegação principal">

@@ -21,8 +21,8 @@ export default function Footer() {
     <footer className="footer">
       <div className="container footer__grid">
         <div className="footer__brand">
-          <Link to="/" aria-label="Liga Insper Consulting Club, página inicial">
-            <img src={logoBranca} alt="" className="footer__logo" />
+          <Link to="/" aria-label={`${config.site_name}, página inicial`}>
+            <img src={config.logo_url ?? logoBranca} alt="" className="footer__logo" />
           </Link>
           <p className="footer__tagline">{config.footer_tagline}</p>
         </div>
@@ -83,7 +83,7 @@ export default function Footer() {
       </div>
 
       <div className="container footer__bottom">
-        <span>© {new Date().getFullYear()} Liga Insper Consulting Club</span>
+        <span>© {new Date().getFullYear()} {config.site_name}</span>
         <div className="footer__bottom-links">
           <Link to="/politica-de-privacidade">{t("rodape.privacidade")}</Link>
           <a href={ADMIN_URL}>{t("rodape.admin")}</a>

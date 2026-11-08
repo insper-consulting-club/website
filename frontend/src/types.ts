@@ -258,6 +258,11 @@ export interface NavItem {
 
 // Textos e contatos editáveis no admin (Configuração do site).
 export interface SiteConfig {
+  site_name: string
+  site_description: string
+  logo_url: string | null
+  favicon_url: string | null
+  og_image_url: string | null
   email: string
   instagram_url: string
   instagram_label: string
