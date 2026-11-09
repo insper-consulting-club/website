@@ -45,7 +45,7 @@ frontend/
     ├── App.tsx          # Layout: Header, conteúdo da rota e Footer
     ├── api.ts           # Todas as chamadas à API
     ├── types.ts         # Tipos dos dados que a API devolve
-    ├── siteConfigPadrao.ts # Textos e contatos de reserva, caso a Configuração do site não chegue
+    ├── siteConfigPadrao.ts # Textos e contatos de reserva (gerado, não edite à mão), caso a Configuração do site não chegue
     ├── index.css        # Design tokens e estilos globais
     ├── components/      # Header, Footer, PageHero, MemberCard, ProjetoCard, Icons, CargaInicial
     ├── hooks/           # usePageTitle, useProgramas, useDiretorias, useSiteConfig

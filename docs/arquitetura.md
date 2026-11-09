@@ -64,6 +64,7 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 | `urls.py` | Rotas da API |
 | `editors_group.py` | Permissões padrão do grupo Editores |
 | `site_texts.py` | Catálogo dos textos do site editáveis no admin |
+| `conteudo_padrao.py` | Itens de navegação e benefícios padrão de um banco novo (fonte do `siteConfigPadrao.ts` do frontend) |
 | `widgets.py` e `fields.py` | Campo de Markdown com prévia e campo de imagem com limite de tamanho, usados no admin |
 
 ### Modelos de dados
@@ -171,7 +172,7 @@ Resumo; os detalhes (rotas, tokens, componentes e como adicionar uma página) es
 - **Chamadas à API** concentradas em `src/api.ts`, com os tipos em `src/types.ts`. O endereço vem de `VITE_API_URL`.
 - **`VITE_API_URL`** entra no código no momento do build. Mudar o valor exige novo build e novo deploy. O link "Área administrativa" do rodapé é derivado dele, trocando o `/api` final por `/admin/`.
 - **Build lê a API.** O plugin `plugins/siteConfig.ts` consulta `/api/site-config/` durante o `vite build` e grava no `index.html` o nome, a descrição, a imagem de compartilhamento (`og:image`), o ícone e o logo (preload), porque quem compartilha o link só lê o HTML estático. Ele também embute uma cópia da configuração em `window.__SITE_CONFIG__` (sem a Política de Privacidade), que `useSiteConfig` usa como estado inicial até a API responder, sem piscar. Se a API não responder, o build continua com os valores originais. Por isso, mudar um desses campos exige publicar o frontend de novo (Manual Deploy no Render), e o admin lembra disso ao salvar. Ver [`operacao.md`](operacao.md).
-- **Textos e contatos** (e-mail, redes sociais, Home, rodapé, abertura das páginas, Política de Privacidade) vêm de `GET /api/site-config/`, pelo hook `useSiteConfig`; os títulos, rótulos e botões vêm do campo `texts` da mesma resposta, pelo hook `useTextos`. Os valores de reserva, usados enquanto a resposta não chega ou se ela falhar, ficam em `src/siteConfigPadrao.ts` e em `src/textosPadrao.ts` (este gerado do catálogo do backend).
+- **Textos e contatos** (e-mail, redes sociais, Home, rodapé, abertura das páginas, Política de Privacidade) vêm de `GET /api/site-config/`, pelo hook `useSiteConfig`; os títulos, rótulos e botões vêm do campo `texts` da mesma resposta, pelo hook `useTextos`. Os valores de reserva, usados enquanto a resposta não chega ou se ela falhar, ficam em `src/siteConfigPadrao.ts` e em `src/textosPadrao.ts`, **os dois gerados** (`manage.py export_site_config_padrao` e `export_site_texts`) a partir dos valores padrão dos campos de `SiteConfig`, de `website/conteudo_padrao.py` (itens de navegação e benefícios) e do catálogo `site_texts.py`; um teste confere que não estão desatualizados.
 - **Artigos** são exibidos com `react-markdown`, `remark-gfm` e KaTeX. A biblioteca não executa HTML, então marcação digitada no admin aparece como texto. O CSS e as fontes do KaTeX só carregam na página de artigo.
 - **Aplicação de página única:** o serviço de hospedagem precisa de uma regra que reescreva `/*` para `/index.html`. Sem ela, recarregar uma página interna dá 404.
 
