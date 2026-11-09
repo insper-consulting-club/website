@@ -10,7 +10,6 @@ import re
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
@@ -44,15 +43,40 @@ admin.site.unregister(User)
 admin.site.unregister(Group)
 
 
+ACOES_DE_PERMISSAO = {
+    'add': 'Pode adicionar',
+    'change': 'Pode alterar',
+    'delete': 'Pode excluir',
+    'view': 'Pode ver',
+}
+
+
+def rotulo_da_permissao(permissao):
+    """O Django guarda o nome das permissões em inglês ("Can add Artigo"); aqui elas aparecem em português."""
+    acao = permissao.codename.split('_', 1)[0]
+    return f'{permissao.content_type} | {ACOES_DE_PERMISSAO.get(acao, permissao.name)}'
+
+
+class RotulosDePermissaoMixin:
+    """Mostra as permissões em português nas listas de escolha de Usuários e Grupos."""
+
+    def formfield_for_manytomany(self, db_field, request=None, **kwargs):
+        campo = super().formfield_for_manytomany(db_field, request, **kwargs)
+        if db_field.name in ('permissions', 'user_permissions'):
+            campo.queryset = campo.queryset.select_related('content_type')
+            campo.label_from_instance = rotulo_da_permissao
+        return campo
+
+
 @admin.register(User)
-class UserAdmin(BaseUserAdmin, ModelAdmin):
+class UserAdmin(RotulosDePermissaoMixin, BaseUserAdmin, ModelAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
 
 
 @admin.register(Group)
-class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+class GroupAdmin(RotulosDePermissaoMixin, BaseGroupAdmin, ModelAdmin):
     pass
 
 
@@ -115,6 +139,18 @@ class AvisoDeAtrasoMixin:
         )
 
 
+def secao_avancada(*campos):
+    """
+    Seção recolhida no fim do formulário, para o que quase nunca precisa de ajuste (endereço,
+    ordem, estilo). Se algum campo dela der erro, o Django a abre sozinho.
+    """
+    return ('Avançado', {
+        'classes': ['collapse'],
+        'description': 'Normalmente não é preciso mexer aqui.',
+        'fields': campos,
+    })
+
+
 class AdminDoSite(AvisoDeAtrasoMixin, TextoCompactoMixin, ModelAdmin):
     """Base dos admins de conteúdo do site (não vale para Usuários e Grupos)."""
 
@@ -139,7 +175,10 @@ class PartnerAdmin(AdminDoSite):
     list_filter = ('is_active', 'category')
     search_fields = ('name', 'description')
     ordering = ('order', 'name')
-    fields = ('name', 'logo_url', 'category', 'site', 'description', 'is_active', 'order')
+    fieldsets = (
+        (None, {'fields': ('name', 'logo_url', 'category', 'site', 'description', 'is_active')}),
+        secao_avancada('order'),
+    )
     linhas_dos_campos = {'description': 4}
 
     @admin.display(description='Logo')
@@ -198,7 +237,7 @@ class MemberTrajectoryInline(TabularInline):
 
 
 class SituacaoFilter(admin.SimpleListFilter):
-    """Separa membros atuais de ex-membros (quem tem data de saída)."""
+    """Separa membros atuais de ex-membros (quem foi arquivado em "Exibir na equipe")."""
     title = 'situação'
     parameter_name = 'situacao'
 
@@ -207,9 +246,9 @@ class SituacaoFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == 'atual':
-            return queryset.filter(exit_date__isnull=True)
+            return queryset.filter(is_active=True)
         if self.value() == 'ex':
-            return queryset.filter(exit_date__isnull=False)
+            return queryset.filter(is_active=False)
         return queryset
 
 
@@ -220,17 +259,12 @@ class MemberForm(forms.ModelForm):
         labels = {
             'name': 'Nome',
             'photo': 'Foto',
-            'biography': 'Biografia',
             'position': 'Cargo principal',
-            'course': 'Curso',
-            'year': 'Período',
-            'hours': 'Horas dedicadas',
-            'entry_date': 'Data de entrada',
-            'exit_date': 'Data de saída (preencha para arquivar o membro)',
+            'is_active': 'Exibir na equipe',
         }
         help_texts = {
-            'exit_date': 'Quem tem data de saída deixa de aparecer na página Equipe, '
-                         'mas o histórico continua guardado. Apague a data para reativar.',
+            'is_active': 'Desmarque quando a pessoa sair do clube: ela some da página Equipe, '
+                         'mas o histórico continua guardado. Marque de novo para reativar.',
         }
 
 
@@ -238,23 +272,21 @@ class MemberForm(forms.ModelForm):
 class MemberAdmin(AdminDoSite):
     form = MemberForm
     inlines = [MemberTrajectoryInline, DirectorateMembershipInline]
-    list_display = ('foto', 'name', 'get_directorates', 'position', 'course', 'year', 'atual')
+    list_display = ('foto', 'name', 'get_directorates', 'position', 'is_active')
     list_display_links = ('foto', 'name')
-    list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position', 'year')
+    list_editable = ('is_active',)
+    list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position')
     # Exigido pelo autocomplete de participantes dos cases, e útil por si só
     # quando a lista acumula alumni além dos membros ativos.
-    search_fields = ('name', 'email', 'course', 'linkedin')
+    search_fields = ('name', 'linkedin')
     list_select_related = ('position',)
     # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
     autocomplete_fields = ('projects',)
-    date_hierarchy = 'entry_date'
     list_per_page = 50
     actions = ['arquivar', 'reativar']
-    linhas_dos_campos = {'biography': 3}
     fieldsets = (
-        (None, {'fields': ('name', 'photo', 'position', 'linkedin', 'email')}),
-        ('Formação', {'fields': ('course', 'year')}),
-        ('No ICC', {'fields': ('entry_date', 'exit_date', 'biography', 'hours', 'projects')}),
+        (None, {'fields': ('name', 'photo', 'position', 'linkedin')}),
+        ('No ICC', {'fields': ('is_active', 'projects')}),
     )
 
     def get_queryset(self, request):
@@ -269,18 +301,14 @@ class MemberAdmin(AdminDoSite):
     def foto(self, obj):
         return miniatura(obj.photo)
 
-    @admin.display(description='Atual', boolean=True)
-    def atual(self, obj):
-        return obj.exit_date is None
-
     @admin.action(description='Arquivar selecionados (sai da página Equipe)', permissions=['change'])
     def arquivar(self, request, queryset):
-        n = queryset.filter(exit_date__isnull=True).update(exit_date=timezone.localdate())
+        n = queryset.filter(is_active=True).update(is_active=False)
         self.message_user(request, f'{n} membro(s) arquivado(s). O histórico continua guardado.', messages.SUCCESS)
 
     @admin.action(description='Reativar selecionados (volta para a página Equipe)', permissions=['change'])
     def reativar(self, request, queryset):
-        n = queryset.exclude(exit_date__isnull=True).update(exit_date=None)
+        n = queryset.filter(is_active=False).update(is_active=True)
         self.message_user(request, f'{n} membro(s) reativado(s).', messages.SUCCESS)
 
     def view_on_site(self, obj):
@@ -397,9 +425,10 @@ class ProgramAdmin(AdminDoSite):
     linhas_dos_campos = {'description': 4, 'highlights': 4}
     fieldsets = (
         (None, {'fields': ('label', 'slug', 'subtitle', 'description', 'highlights', 'icon')}),
-        ('Exibição no site', {'fields': ('badge', 'badge_class', 'signup_url', 'is_active', 'order')}),
+        ('Exibição no site', {'fields': ('signup_url', 'is_active')}),
+        secao_avancada('order'),
     )
-    list_display = ('icone', 'label', 'slug', 'badge', 'is_active')
+    list_display = ('icone', 'label', 'slug', 'is_active')
     list_display_links = ('icone', 'label')
     list_editable = ('is_active',)
     ordering_field = 'order'
@@ -444,7 +473,8 @@ class ArticleAdmin(AdminDoSite):
     prepopulated_fields = {'slug': ('title',)}
     fieldsets = (
         (None, {'fields': ('title', 'slug', 'authors', 'topics', 'description', 'content')}),
-        ('Publicação', {'fields': ('published', 'date', 'order', 'source', 'link', 'image')}),
+        ('Publicação', {'fields': ('published', 'date', 'image')}),
+        secao_avancada('order', 'source', 'link'),
     )
     actions = ['publicar', 'despublicar']
     list_display = ('capa', 'title', 'slug', 'authors', 'published', 'date', 'order')
@@ -514,6 +544,12 @@ class ProgramCaseParticipantInline(TabularInline):
 class ProgramCaseAdmin(AdminDoSite):
     inlines = [ProgramCaseParticipantInline]
     linhas_dos_campos = {'theme': 3, 'panel': 3}
+    fieldsets = (
+        (None, {'fields': (
+            'program', 'semester', 'title', 'area', 'theme', 'panel', 'award', 'publication_url', 'is_active',
+        )}),
+        secao_avancada('order'),
+    )
     list_display = ('semester', 'title', 'area', 'program', 'is_active')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'program', 'semester')
@@ -673,7 +709,7 @@ class SiteConfigForm(forms.ModelForm):
             if largura < 600:
                 raise forms.ValidationError(
                     f'A imagem de compartilhamento está pequena demais ({largura} x {altura} pixels). '
-                    'Use pelo menos 600 de largura; o ideal é 1200 x 630.'
+                    'Use pelo menos 600 pixels de largura; o ideal é 1200 x 630.'
                 )
             if not 1.6 <= proporcao <= 2.2:
                 raise forms.ValidationError(

@@ -6,8 +6,6 @@ export interface Program {
   description: string
   highlights: string[]
   icon_url: string | null
-  badge: string
-  badge_class: string
   signup_url: string
   order: number
 }
@@ -135,13 +133,6 @@ export interface TrajetoriaEtapa {
 }
 
 export interface MemberDetail extends Member {
-  biography: string
-  number_of_projects: number
-  hours: number
-  entry_date: string
-  exit_date: string | null
-  linkedin: string | null
-  projects: Project[]
   trajetoria: TrajetoriaEtapa[]
 }
 

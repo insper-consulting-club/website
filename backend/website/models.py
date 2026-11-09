@@ -5,9 +5,8 @@ from django.utils.text import slugify
 
 from .fields import LimitedImageField
 
-
 class PartnerCategory(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, verbose_name='Título')
 
     class Meta:
         verbose_name = 'Categoria do parceiro'
@@ -42,7 +41,7 @@ class Position(models.Model):
     power = models.IntegerField(
         verbose_name='Prioridade para exibição',
         help_text='0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, '
-                  '4 = Membro/Mentor, 5 = Trainee. Até 2 aparece na Home como liderança.'
+                  '4 = Membro/Mentor, 5 = Trainee. Cargos com valor até 2 aparecem na Home como liderança.'
     )
 
     class Meta:
@@ -84,21 +83,6 @@ class Partner(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def projects_count(self):
-        return self.projects.filter(is_active=True).count()
-
-    @property
-    def completed_projects_count(self):
-        return self.projects.filter(is_active=True, end_date__isnull=False).count()
-
-
-BADGE_CHOICES = [
-    ('badge--continuo', 'Contínuo'),
-    ('badge--semanal', 'Semanal'),
-    ('badge--mensal', 'Mensal'),
-    ('badge--semestral', 'Semestral'),
-]
 
 IMAGE_ALIGN_CHOICES = [
     ('right', 'Imagem à direita'),
@@ -108,7 +92,11 @@ IMAGE_ALIGN_CHOICES = [
 
 
 class Program(models.Model):
-    slug = models.SlugField(max_length=50, unique=True, verbose_name='Slug (identificador na URL)')
+    slug = models.SlugField(
+        max_length=50, unique=True, verbose_name='Slug da URL',
+        help_text='Identificador do programa no endereço do site, por exemplo jornada-do-consultor. '
+                  'Se mudar depois de publicado, o link antigo deixa de funcionar.'
+    )
     label = models.CharField(max_length=200, verbose_name='Nome')
     subtitle = models.CharField(
         max_length=200, blank=True, verbose_name='Subtítulo',
@@ -117,11 +105,6 @@ class Program(models.Model):
     description = models.TextField(verbose_name='Descrição')
     highlights = models.TextField(verbose_name='Tópicos', blank=True, help_text='Um tópico por linha.')
     icon = LimitedImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
-    badge = models.CharField(
-        max_length=50, blank=True, verbose_name='Frequência (badge)',
-        help_text='Opcional. Deixe vazio quando o programa não tiver uma periodicidade definida.'
-    )
-    badge_class = models.CharField(max_length=50, choices=BADGE_CHOICES, verbose_name='Estilo do badge', default='badge--semanal')
     signup_url = models.URLField(
         max_length=300, blank=True, verbose_name='Link de inscrição',
         help_text='Preenchido apenas nos programas que têm formulário próprio de inscrição.'
@@ -149,7 +132,9 @@ class Project(models.Model):
     description = models.TextField(verbose_name='Descrição')
     program = models.ForeignKey(
         Program, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name='Programa', related_name='projects'
+        null=True, blank=True, verbose_name='Programa', related_name='projects',
+        help_text='Escolha o programa a que este projeto pertence. Deixe vazio para ele aparecer em '
+                  '"Outros projetos" no site.'
     )
     partners = models.ManyToManyField(Partner, blank=True, verbose_name='Parceiros envolvidos', related_name='projects')
     start_date = models.DateField(verbose_name='Data de início')
@@ -209,8 +194,8 @@ class ProjectContentBlock(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Bloco de conteúdo'
-        verbose_name_plural = 'Blocos de conteúdo'
+        verbose_name = 'Bloco de conteúdo do projeto'
+        verbose_name_plural = 'Blocos de conteúdo do projeto'
         ordering = ['order']
 
     def __str__(self):
@@ -220,18 +205,12 @@ class ProjectContentBlock(models.Model):
 class Member(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome')
     photo = LimitedImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
-    biography = models.TextField(max_length=200, blank=True, verbose_name='Biografia')
     position = models.ForeignKey(Position, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Cargo principal')
-    course = models.CharField(max_length=200, null=True, blank=True, verbose_name='Curso')
-    year = models.CharField(max_length=50, null=True, blank=True, verbose_name='Período')
-    hours = models.IntegerField(null=True, blank=True, verbose_name='Horas dedicadas')
-    entry_date = models.DateField(verbose_name='Data de entrada')
-    exit_date = models.DateField(
-        null=True, blank=True, verbose_name='Data de saída',
-        help_text='Preencha quando a pessoa sair do clube: ela some da página Equipe, '
-                  'mas o histórico (cases, trajetória) continua guardado.'
+    is_active = models.BooleanField(
+        default=True, verbose_name='Exibir na equipe',
+        help_text='Desmarque quando a pessoa sair do clube: ela some da página Equipe, mas o perfil, '
+                  'os projetos, os cases e a trajetória continuam guardados.'
     )
-    email = models.EmailField(null=True, blank=True, verbose_name='Email')
     linkedin = models.URLField(null=True, blank=True, verbose_name='LinkedIn')
     projects = models.ManyToManyField(Project, blank=True, verbose_name='Projetos participados', related_name='members')
 
@@ -241,10 +220,6 @@ class Member(models.Model):
 
     def __str__(self):
         return self.name
-
-    @property
-    def number_of_projects(self):
-        return self.projects.filter(is_active=True).count()
 
 
 class MemberTrajectory(models.Model):
@@ -280,8 +255,12 @@ class DirectorateMembership(models.Model):
     mesmo tempo com cargos diferentes em cada uma (ex: Diretora de
     Pedagógico e, também, Mentora na Escola de Mentores).
     """
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='directorate_memberships')
-    directorate = models.ForeignKey(Directorate, on_delete=models.CASCADE, related_name='memberships')
+    member = models.ForeignKey(
+        Member, on_delete=models.CASCADE, related_name='directorate_memberships', verbose_name='Membro'
+    )
+    directorate = models.ForeignKey(
+        Directorate, on_delete=models.CASCADE, related_name='memberships', verbose_name='Diretoria'
+    )
     cargo = models.CharField(max_length=200, verbose_name='Cargo nessa diretoria')
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
@@ -298,8 +277,8 @@ class DirectorateMembership(models.Model):
 
 
 class ProgramComponent(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
+    title = models.CharField(max_length=200, verbose_name='Título')
+    description = models.TextField(verbose_name='Descrição')
     program = models.ForeignKey(
         Program, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name='Programa', related_name='components'
@@ -332,8 +311,8 @@ class ProgramContentBlock(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Bloco de conteúdo'
-        verbose_name_plural = 'Blocos de conteúdo'
+        verbose_name = 'Bloco de conteúdo do programa'
+        verbose_name_plural = 'Blocos de conteúdo do programa'
         ordering = ['order']
 
     def __str__(self):
@@ -446,7 +425,7 @@ class SelectionProcess(models.Model):
 
     registrations_open = models.BooleanField(
         default=False, verbose_name='Inscrições abertas',
-        help_text='Marque quando o PS abrir. Desmarcado, o site mostra "inscrições encerradas" e o link do formulário fica escondido.'
+        help_text='Marque quando o processo seletivo abrir. Desmarcado, o site mostra "inscrições encerradas" e o link do formulário fica escondido.'
     )
     registration_url = models.URLField(
         max_length=300, blank=True, verbose_name='Link de inscrição',
@@ -506,7 +485,7 @@ class SelectionProcessStage(models.Model):
         SelectionProcess, 
         on_delete=models.CASCADE, 
         related_name='stages', 
-        verbose_name='Processo Seletivo'
+        verbose_name='Processo seletivo'
         )
     label = models.CharField(max_length=200, verbose_name="Nome da etapa")
     date = models.CharField(max_length=200, verbose_name="Data/Período")
@@ -525,7 +504,7 @@ class SelectionProcessStep(models.Model):
         SelectionProcess,
         on_delete=models.CASCADE, 
         related_name='steps', 
-        verbose_name='Processo Seletivo'
+        verbose_name='Processo seletivo'
     )
     number = models.CharField(max_length=10, verbose_name='Número')
     title = models.CharField(max_length=200, verbose_name='Título')
@@ -548,7 +527,7 @@ class SelectionProcessStep(models.Model):
 
 
 class SelectionProcessRequirement(models.Model):
-    process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE, related_name='requirements', verbose_name='Processo Seletivo')
+    process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE, related_name='requirements', verbose_name='Processo seletivo')
     text = models.CharField(max_length=300, verbose_name='Texto do requisito')
     icon = LimitedImageField(upload_to='process/requirements/', null=True, blank=True, verbose_name='Ícone (imagem)')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -567,7 +546,7 @@ class PreparationMaterial(models.Model):
         SelectionProcess, 
         on_delete=models.CASCADE,
         related_name='materials',
-        verbose_name='Processo Seletivo'
+        verbose_name='Processo seletivo'
     )
     title = models.CharField(max_length=200, verbose_name='Título')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -596,8 +575,8 @@ class PreparationMaterialItem(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Item'
-        verbose_name_plural = 'Itens'
+        verbose_name = 'Item do material'
+        verbose_name_plural = 'Itens do material'
         ordering = ['order']
 
     def __str__(self):
@@ -650,8 +629,8 @@ class ProgramCaseParticipant(models.Model):
     Participação de um membro num case, como integrante do grupo ou mentor.
     O vínculo é com o membro, e não com o nome escrito à mão, para que o
     LinkedIn exibido no case seja sempre o mesmo do perfil da pessoa.
-    Quem já saiu do clube continua cadastrado com data de saída, o que o
-    mantém fora da listagem da Equipe sem tirá-lo dos cases antigos.
+    Quem já saiu do clube continua cadastrado (com "Exibir na equipe" desmarcado), o
+    que o mantém fora da listagem da Equipe sem tirá-lo dos cases antigos.
     """
     class Role(models.TextChoices):
         INTEGRANTE = 'integrante', 'Integrante do grupo'

@@ -135,14 +135,8 @@ class Command(BaseCommand):
             membro, _ = Member.objects.update_or_create(
                 name=item["nome"],
                 defaults={
-                    "biography": item["bio"],
                     "position": posicoes[item["cargo"]],
-                    "course": item["curso"],
-                    "year": item["periodo"],
-                    "hours": item["horas"],
-                    "entry_date": item["entrada"],
-                    "exit_date": item.get("saida"),
-                    "email": f"{slug}@example.com" if item["contato"] else None,
+                    "is_active": item.get("ativo", True),
                     "linkedin": f"https://example.com/linkedin/{slug}" if item["contato"] else None,
                 },
             )
@@ -203,8 +197,6 @@ class Command(BaseCommand):
                     "subtitle": item["subtitulo"],
                     "description": item["descricao"],
                     "highlights": item["topicos"],
-                    "badge": item["selo"],
-                    "badge_class": item["estilo"],
                     "signup_url": item["inscricao"],
                     "is_active": item.get("ativo", True),
                     "order": item["ordem"],

@@ -91,12 +91,10 @@ class ArticleDetailSlugTests(TestCase):
 class MemberTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.current = Member.objects.create(name="Ana", entry_date=date(2025, 1, 1))
-        self.former = Member.objects.create(
-            name="Bruno", entry_date=date(2024, 1, 1), exit_date=date(2025, 6, 1),
-        )
+        self.current = Member.objects.create(name="Ana")
+        self.former = Member.objects.create(name="Bruno", is_active=False)
 
-    def test_list_hides_members_with_exit_date(self):
+    def test_list_hides_archived_members(self):
         response = self.client.get("/api/members/")
 
         self.assertEqual(response.status_code, 200)
@@ -141,7 +139,7 @@ class PartnerTests(TestCase):
 
         self.assertEqual([p["name"] for p in response.data], ["Outra"])
 
-    def test_completed_projects_count_only_counts_active_finished_projects(self):
+    def test_partner_lists_only_active_finished_projects_and_sends_no_counts(self):
         done = Project.objects.create(
             title="Concluído", description="d",
             start_date=date(2025, 1, 1), end_date=date(2025, 6, 1),
@@ -158,8 +156,9 @@ class PartnerTests(TestCase):
 
         response = self.client.get(f"/api/partners/{self.visible.id}/")
 
-        self.assertEqual(response.data["projects_count"], 2)
-        self.assertEqual(response.data["completed_projects_count"], 1)
+        self.assertEqual([p["title"] for p in response.data["projects"]], ["Concluído"])
+        self.assertNotIn("projects_count", response.data)
+        self.assertNotIn("completed_projects_count", response.data)
 
     def test_list_query_count_does_not_grow_with_partners(self):
         def make_partner(i):
@@ -183,7 +182,7 @@ class PartnerTests(TestCase):
 
         self.assertEqual(len(many), len(few))
         by_name = {p["name"]: p for p in response.data}
-        self.assertEqual(by_name["P7"]["completed_projects_count"], 1)
+        self.assertEqual(len(by_name["P7"]["projects"]), 1)
         self.assertEqual(by_name["P7"]["projects"][0]["title"], "Proj7")
 
     def test_completed_projects_are_listed_newest_first(self):
@@ -699,6 +698,7 @@ class TranslationFixesTests(TestCase):
 @SEM_MANIFESTO
 class AdminNavigationTests(TestCase):
     def test_superuser_sees_every_group_in_order(self):
+        # O que se edita toda semana vem primeiro; a configuração do site e o acesso ficam no fim.
         from config.navigation import navegacao
 
         usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
@@ -708,7 +708,7 @@ class AdminNavigationTests(TestCase):
 
         self.assertEqual(
             [g["title"] for g in grupos],
-            ["Site", "Equipe", "Parceiros", "Programas e projetos", "Artigos", "Processo seletivo", "Acesso"],
+            ["Artigos", "Equipe", "Parceiros", "Programas e projetos", "Processo seletivo", "Site", "Acesso"],
         )
         itens = [i["title"] for g in grupos for i in g["items"]]
         self.assertEqual(len(itens), 17)  # 15 modelos do site, mais Usuários e Grupos
@@ -750,7 +750,7 @@ class AdminViewOnSiteTests(TestCase):
         artigo = Article.objects.create(title="A", description="d", slug="meu-artigo", published=True)
         sem_slug = Article.objects.create(title="B", description="d", published=True)
         parceiro = Partner.objects.create(name="X", description="d")
-        membro = Member.objects.create(name="M", entry_date=date(2025, 1, 1))
+        membro = Member.objects.create(name="M")
 
         self.assertEqual(url(Program, programa), "https://exemplo.com.br/projetos/pedagogico")
         self.assertEqual(url(Project, projeto), f"https://exemplo.com.br/projetos/projeto/{projeto.pk}")
@@ -1046,7 +1046,7 @@ class TrajectoryMigrationTests(TransactionTestCase):
 
         executor = MigrationExecutor(connection)
         executor.migrate(executor.loader.graph.leaf_nodes())
-        membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+        membro = Member.objects.create(name="Ana")
         membro.trajectory_steps.create(semester="2025.1", role="Membro")
         membro.trajectory_steps.create(semester="2024.2", role="Trainee")
 
@@ -1061,7 +1061,7 @@ class TrajectoryMigrationTests(TransactionTestCase):
 
 class TrajectoryTests(TestCase):
     def setUp(self):
-        self.membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+        self.membro = Member.objects.create(name="Ana")
 
     def test_profile_api_keeps_the_same_format_in_semester_order(self):
         self.membro.trajectory_steps.create(semester="2025.2", role="Presidente")
@@ -1301,7 +1301,7 @@ class ImageSizeLimitTests(TestCase):
         Image.frombytes("RGB", (1600, 1600), os.urandom(1600 * 1600 * 3)).save(buffer, format="PNG")
         self.assertGreater(buffer.tell(), 5 * 1024 * 1024)
         form = MemberForm(
-            data={"name": "Ana", "entry_date": "2024-02-01", "projects": []},
+            data={"name": "Ana", "projects": []},
             files={"photo": SimpleUploadedFile("foto.png", buffer.getvalue(), content_type="image/png")},
         )
 
@@ -1414,7 +1414,7 @@ class ActionPermissionTests(TestCase):
         leitor = get_user_model().objects.create_user("leitor", "l@example.com", "senha-de-teste", is_staff=True)
         leitor.user_permissions.add(*Permission.objects.filter(codename__in=["view_member", "view_project", "view_sitetext"]))
         self.client.force_login(leitor)
-        membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+        membro = Member.objects.create(name="Ana")
         projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
         texto = SiteText.objects.get(key="equipe.titulo")
         SiteText.objects.filter(pk=texto.pk).update(value="Editado")
@@ -1424,7 +1424,7 @@ class ActionPermissionTests(TestCase):
         self.client.post("/admin/website/sitetext/", {"action": "restaurar", "_selected_action": [texto.pk]})
 
         membro.refresh_from_db(); projeto.refresh_from_db(); texto.refresh_from_db()
-        self.assertIsNone(membro.exit_date)
+        self.assertTrue(membro.is_active)
         self.assertTrue(projeto.is_active)
         self.assertEqual(texto.value, "Editado")
 
@@ -1434,12 +1434,12 @@ class ActionPermissionTests(TestCase):
         editora = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste", is_staff=True)
         editora.groups.add(Group.objects.get(name="Editores"))
         self.client.force_login(editora)
-        membro = Member.objects.create(name="Ana", entry_date=date(2024, 2, 1))
+        membro = Member.objects.create(name="Ana")
 
         self.client.post("/admin/website/member/", {"action": "arquivar", "_selected_action": [membro.pk]})
 
         membro.refresh_from_db()
-        self.assertIsNotNone(membro.exit_date)
+        self.assertFalse(membro.is_active)
 
 
 @SEM_MANIFESTO
@@ -1518,13 +1518,13 @@ class SeedDataTests(TestCase):
         from website.models import MemberTrajectory
 
         helena = Member.objects.get(name="Helena Prado")
-        Member.objects.filter(pk=helena.pk).update(hours=1)
+        Member.objects.filter(pk=helena.pk).update(linkedin="https://exemplo.com/outro")
         MemberTrajectory.objects.create(member=helena, semester="2030.1", role="Cargo que o seed não conhece")
 
         call_command("seed_mock_data", stdout=mock.Mock())
 
         helena.refresh_from_db()
-        self.assertEqual(helena.hours, 460)
+        self.assertEqual(helena.linkedin, "https://example.com/linkedin/helena-prado")
         self.assertFalse(helena.trajectory_steps.filter(semester="2030.1").exists())
 
     # --- casos de borda
@@ -1537,14 +1537,12 @@ class SeedDataTests(TestCase):
         self.assertIsNone(sem_logo_nem_site.site)
         self.assertFalse(Partner.objects.get(name="Antiga Parceira Ltda").is_active)
         self.assertFalse(Program.objects.get(slug="programa-em-reformulacao").is_active)
-        self.assertEqual(Program.objects.get(slug="departamento-de-alumni").badge, "")
         self.assertFalse(ProgramCase.objects.filter(is_active=False).get().is_active)
 
         mateus = Member.objects.get(name="Mateus Ribeiro")
-        self.assertIsNone(mateus.email)
         self.assertIsNone(mateus.linkedin)
         self.assertFalse(mateus.trajectory_steps.exists())
-        self.assertEqual(Member.objects.filter(exit_date__isnull=False).count(), 2)
+        self.assertEqual(Member.objects.filter(is_active=False).count(), 2)
         self.assertGreater(max(len(m.name) for m in Member.objects.all()), 50)
         duas = Member.objects.get(name="Isabela Fontes")
         self.assertEqual(DirectorateMembership.objects.filter(member=duas).count(), 2)
@@ -1600,9 +1598,8 @@ class SeedDataTests(TestCase):
         from website.models import Partner, ProgramCase
 
         for membro in Member.objects.all():
-            for valor in (membro.email, membro.linkedin):
-                if valor:
-                    self.assertIn("example.com", valor, membro.name)
+            if membro.linkedin:
+                self.assertIn("example.com", membro.linkedin, membro.name)
         enderecos = (
             [p.site for p in Partner.objects.all()] + [p.signup_url for p in Program.objects.all()]
             + [a.link for a in Article.objects.all()] + [c.publication_url for c in ProgramCase.objects.all()]
@@ -1619,7 +1616,6 @@ class SeedDataTests(TestCase):
         for modelo in (Member, Article, Project, Program, SelectionProcess, NavItem, MemberTrajectory, ProgramComponent):
             for objeto in modelo.objects.all():
                 objeto.full_clean()
-        self.assertLessEqual(max(len(m.biography) for m in Member.objects.all()), 200)
 
     # --- imagens
 
@@ -1856,4 +1852,291 @@ class AdminListThumbnailTests(TestCase):
 
         consultas_de_imagens = [q for q in consultas if "website_projectimage" in q["sql"]]
         self.assertEqual(len(consultas_de_imagens), 1)
+
+
+
+class AdminJavaScriptTranslationTests(TestCase):
+    """O seletor de duas listas (permissões de um grupo) usa frases que não dependem do gênero."""
+
+    def test_two_list_selector_phrases_do_not_depend_on_gender(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste-123"))
+        texto = self.client.get("/admin/jsi18n/").content.decode()
+
+        self.assertIn("Escolher tudo em %s", texto)
+        self.assertIn("Remover tudo de %s", texto)
+        self.assertNotIn("Escolher todos %s", texto)
+        self.assertNotIn("Remover todos %s", texto)
+
+
+@SEM_MANIFESTO
+class AdminPortugueseTextsTests(TestCase):
+    def setUp(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste-123"))
+
+    def test_permissions_are_listed_in_portuguese(self):
+        for url in ("/admin/auth/group/add/", "/admin/auth/user/1/change/"):
+            pagina = self.client.get(url).content.decode()
+
+            self.assertNotIn("Can add", pagina, url)
+            self.assertNotIn("Can view", pagina, url)
+            self.assertIn("Conteúdo do site | Artigo | Pode adicionar", pagina, url)
+            self.assertIn("Conteúdo do site | Artigo | Pode alterar", pagina, url)
+            self.assertIn("Conteúdo do site | Artigo | Pode excluir", pagina, url)
+            self.assertIn("Conteúdo do site | Artigo | Pode ver", pagina, url)
+
+    def test_permission_labels_are_unique_and_tell_apart_similar_models(self):
+        import re
+
+        pagina = self.client.get("/admin/auth/group/add/").content.decode()
+        rotulos = [r for r in re.findall(r"<option[^>]*>([^<]+)</option>", pagina) if " | " in r]
+
+        self.assertGreater(len(rotulos), 50)
+        self.assertEqual(len(rotulos), len(set(rotulos)), "há permissões com o mesmo nome na lista")
+        self.assertIn("Conteúdo do site | Bloco de conteúdo do projeto | Pode alterar", rotulos)
+        self.assertIn("Conteúdo do site | Bloco de conteúdo do programa | Pode alterar", rotulos)
+        self.assertIn("Conteúdo do site | Item do material | Pode alterar", rotulos)
+
+    def test_project_program_field_explains_what_empty_means(self):
+        pagina = self.client.get("/admin/website/project/add/").content.decode()
+
+        self.assertIn("Deixe vazio para ele aparecer em", pagina)
+
+    def test_user_form_uses_corrected_django_sentences(self):
+        pagina = self.client.get("/admin/auth/user/1/change/").content.decode()
+
+        self.assertIn("Indica que o usuário consegue acessar este site de administração.", pagina)
+        self.assertIn("Os grupos a que este usuário pertence.", pagina)
+
+    def test_fields_have_portuguese_names(self):
+        from django.apps import apps
+
+        sem_nome = []
+        for modelo in apps.get_app_config("website").get_models():
+            for campo in modelo._meta.get_fields():
+                if not campo.concrete or campo.auto_created or campo.primary_key:
+                    continue
+                # Sem verbose_name, o Django usa o nome do campo em inglês (ex.: "title").
+                if str(campo.verbose_name) == campo.name.replace("_", " "):
+                    sem_nome.append(f"{modelo.__name__}.{campo.name}")
+        self.assertEqual(sem_nome, [])
+
+
+class ErrorPagesTests(TestCase):
+    """Em produção (DEBUG desligado), as páginas de erro do Django saem em português."""
+
+    def test_not_found_page_is_in_portuguese(self):
+        resposta = self.client.get("/endereco-que-nao-existe/")
+
+        self.assertEqual(resposta.status_code, 404)
+        self.assertContains(resposta, "Página não encontrada", status_code=404)
+        self.assertNotContains(resposta, "The requested resource", status_code=404)
+
+    @SEM_MANIFESTO
+    def test_forbidden_page_is_in_portuguese(self):
+        editor = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste-123", is_staff=True)
+        self.client.force_login(editor)
+
+        resposta = self.client.get("/admin/auth/user/")
+
+        self.assertContains(resposta, "Sem permissão", status_code=403)
+
+    def test_server_error_and_bad_request_pages_are_in_portuguese(self):
+        from django.test import RequestFactory
+        from django.views.defaults import bad_request, server_error
+
+        requisicao = RequestFactory().get("/")
+
+        self.assertIn("Erro no servidor", server_error(requisicao).content.decode())
+        self.assertIn("Requisição inválida", bad_request(requisicao, Exception()).content.decode())
+
+
+@SEM_MANIFESTO
+class DjangoMessagesInPortugueseTests(TestCase):
+    """Correções de gramática e de termos em inglês nas mensagens padrão do Django."""
+
+    def setUp(self):
+        from django.utils import translation
+
+        translation.activate("pt-br")
+        self.addCleanup(translation.deactivate)
+
+    def test_invalid_login_message(self):
+        import re
+
+        resposta = self.client.post("/admin/login/", {"username": "x", "password": "y"})
+
+        texto = " ".join(re.sub(r"<[^>]+>", " ", resposta.content.decode()).split())
+        self.assertIn("Confira o usuário e a senha", texto)
+        self.assertNotIn("entre com", texto)
+
+    def test_validators_use_the_right_preposition(self):
+        from django import forms
+        from django.core.exceptions import ValidationError
+        from django.core.validators import MaxValueValidator, MinValueValidator
+
+        with self.assertRaises(ValidationError) as minimo:
+            MinValueValidator(5)(1)
+        with self.assertRaises(ValidationError) as maximo:
+            MaxValueValidator(5)(9)
+        with self.assertRaises(ValidationError) as email:
+            forms.EmailField().clean("sem-arroba")
+
+        self.assertEqual(minimo.exception.messages, ["Certifique-se de que este valor seja maior ou igual a 5."])
+        self.assertEqual(maximo.exception.messages, ["Certifique-se de que este valor seja menor ou igual a 5."])
+        self.assertEqual(email.exception.messages, ["Informe um endereço de e-mail válido."])
+
+    def test_form_error_banner_and_formset_messages_are_singular_and_plural(self):
+        from django.utils.translation import ngettext
+
+        erro, erros = "Please correct the error below.", "Please correct the errors below."
+        self.assertEqual(ngettext(erro, erros, 1), "Corrija o erro abaixo.")
+        self.assertEqual(ngettext(erro, erros, 2), "Corrija os erros abaixo.")
+        maximo, maximos = "Please submit at most %(num)d form.", "Please submit at most %(num)d forms."
+        self.assertEqual(ngettext(maximo, maximos, 1) % {"num": 1}, "Envie no máximo 1 formulário.")
+        self.assertEqual(ngettext(maximo, maximos, 3) % {"num": 3}, "Envie no máximo 3 formulários.")
+
+    def test_action_warning_in_javascript_catalog(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste-123"))
+
+        texto = self.client.get("/admin/jsi18n/").content.decode()
+
+        self.assertIn("de novo.", texto)
+        self.assertNotIn("de rodar", texto)
+
+
+@SEM_MANIFESTO
+class AdminAdvancedSectionTests(TestCase):
+    """Os campos que quase nunca mudam ficam numa seção recolhida, depois dos de uso diário."""
+
+    def setUp(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste-123"))
+
+    def posicoes(self, url, visiveis, avancados):
+        pagina = self.client.get(url).content.decode()
+        marco = pagina.index("Avançado")
+        for campo in visiveis:
+            self.assertLess(pagina.index(f'name="{campo}"'), marco, f"{campo} deveria estar antes de Avançado")
+        for campo in avancados:
+            self.assertGreater(pagina.index(f'name="{campo}"'), marco, f"{campo} deveria estar em Avançado")
+        return pagina
+
+    def test_article_form_keeps_only_daily_fields_visible(self):
+        self.posicoes(
+            "/admin/website/article/add/",
+            visiveis=["title", "slug", "authors", "topics", "description", "content", "published", "date", "image"],
+            avancados=["order", "source", "link"],
+        )
+
+    def test_partner_program_and_case_forms(self):
+        self.posicoes("/admin/website/partner/add/", ["name", "logo_url", "category", "is_active"], ["order"])
+        self.posicoes("/admin/website/program/add/", ["label", "slug", "signup_url", "is_active"], ["order"])
+        self.posicoes("/admin/website/programcase/add/", ["program", "semester", "title", "is_active"], ["order"])
+
+    def test_advanced_section_opens_by_itself_when_a_field_has_an_error(self):
+        sem_erro = self.client.get("/admin/website/article/add/").content.decode()
+
+        com_erro = self.client.post(
+            "/admin/website/article/add/",
+            {"title": "T", "description": "d", "link": "isto-nao-e-um-link", "order": "0"},
+        ).content.decode()
+
+        self.assertIn("URL válid", com_erro)
+        self.assertLess(com_erro.count("<details"), sem_erro.count("<details"))
+
+
+@SEM_MANIFESTO
+class MemberArchiveTests(TestCase):
+    """O membro que sai é arquivado com a caixa "Exibir na equipe", como parceiros, programas e cases."""
+
+    def setUp(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste"))
+
+    def test_member_is_shown_by_default_and_archived_members_keep_their_data(self):
+        membro = Member.objects.create(name="Ana")
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
+        membro.projects.add(projeto)
+        membro.trajectory_steps.create(semester="2025.1", role="Membro")
+
+        self.assertTrue(membro.is_active)
+        Member.objects.filter(pk=membro.pk).update(is_active=False)
+
+        membro.refresh_from_db()
+        self.assertEqual(list(membro.projects.all()), [projeto])
+        self.assertEqual(membro.trajectory_steps.count(), 1)
+
+    def test_archive_and_reactivate_actions(self):
+        membro = Member.objects.create(name="Ana")
+
+        self.client.post("/admin/website/member/", {"action": "arquivar", "_selected_action": [membro.pk]})
+        membro.refresh_from_db()
+        self.assertFalse(membro.is_active)
+
+        self.client.post("/admin/website/member/", {"action": "reativar", "_selected_action": [membro.pk]})
+        membro.refresh_from_db()
+        self.assertTrue(membro.is_active)
+
+    def test_status_filter_separates_current_members_from_alumni(self):
+        Member.objects.create(name="Ana")
+        Member.objects.create(name="Bruno", is_active=False)
+
+        atuais = self.client.get("/admin/website/member/?situacao=atual").content.decode()
+        ex = self.client.get("/admin/website/member/?situacao=ex").content.decode()
+
+        self.assertIn("Ana", atuais)
+        self.assertNotIn("Bruno", atuais)
+        self.assertIn("Bruno", ex)
+        self.assertNotIn("Ana", ex)
+
+    def test_archived_member_still_appears_in_the_project_team_api(self):
+        ex = Member.objects.create(name="Bruno", is_active=False)
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
+        ex.projects.add(projeto)
+
+        resposta = self.client.get(f"/api/projects/{projeto.pk}/")
+
+        self.assertEqual([m["name"] for m in resposta.data["members"]], ["Bruno"])
+
+
+class MemberActiveMigrationTests(TransactionTestCase):
+    """Migration 0026: quem tinha data de saída fica desmarcado em "Exibir na equipe"."""
+
+    ANTES = ("website", "0025_remove_campos_sem_uso_e_padroniza_nomes")
+    DEPOIS = ("website", "0026_membro_ativo")
+
+    def _estado(self, alvo):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        MigrationExecutor(connection).migrate([alvo])
+        return MigrationExecutor(connection).loader.project_state([alvo]).apps
+
+    def tearDown(self):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_members_with_exit_date_become_archived_and_the_rest_stay_active(self):
+        antigo = self._estado(self.ANTES)
+        Member = antigo.get_model("website", "Member")
+        Member.objects.create(name="Ana")
+        Member.objects.create(name="Bruno", exit_date=date(2025, 7, 15))
+
+        novo = self._estado(self.DEPOIS)
+        Member = novo.get_model("website", "Member")
+
+        self.assertTrue(Member.objects.get(name="Ana").is_active)
+        self.assertFalse(Member.objects.get(name="Bruno").is_active)
+
+    def test_migrating_back_gives_archived_members_a_date(self):
+        novo = self._estado(self.DEPOIS)
+        novo.get_model("website", "Member").objects.create(name="Bruno", is_active=False)
+        novo.get_model("website", "Member").objects.create(name="Ana")
+
+        antigo = self._estado(self.ANTES)
+        Member = antigo.get_model("website", "Member")
+
+        self.assertIsNotNone(Member.objects.get(name="Bruno").exit_date)
+        self.assertIsNone(Member.objects.get(name="Ana").exit_date)
 

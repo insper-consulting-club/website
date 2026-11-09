@@ -1,0 +1,61 @@
+# Correções da tradução em português do Django usada pelo seletor de duas listas do admin
+# (por exemplo, as permissões de um grupo). O Django encaixa o nome do modelo no meio da
+# frase, então "todos %s" saía errado para nomes femininos ("todos permissões"). As
+# frases abaixo não dependem do gênero. Este catálogo tem precedência sobre o do Django
+# (LOCALE_PATHS em settings.py).
+msgid ""
+msgstr ""
+"Project-Id-Version: icc-website\n"
+"PO-Revision-Date: 2026-11-08 00:00-0300\n"
+"Last-Translator: ICC\n"
+"Language-Team: ICC\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Available %s"
+msgstr "Disponíveis em %s"
+
+msgid ""
+"Choose %s by selecting them and then select the \"Choose\" arrow button."
+msgstr ""
+"Selecione os itens de %s e depois use o botão de seta “Escolher”."
+
+msgid "Type into this box to filter down the list of available %s."
+msgstr "Digite nesta caixa para filtrar os itens disponíveis em %s."
+
+msgid "Choose all %s"
+msgstr "Escolher tudo em %s"
+
+msgid "Choose selected %s"
+msgstr "Escolher os itens selecionados de %s"
+
+msgid "Remove selected %s"
+msgstr "Remover os itens selecionados de %s"
+
+msgid "Chosen %s"
+msgstr "Escolhidos em %s"
+
+msgid ""
+"Remove %s by selecting them and then select the \"Remove\" arrow button."
+msgstr ""
+"Selecione os itens de %s e depois use o botão de seta “Remover”."
+
+msgid "Type into this box to filter down the list of selected %s."
+msgstr "Digite nesta caixa para filtrar os itens escolhidos em %s."
+
+msgid "Remove all %s"
+msgstr "Remover tudo de %s"
+
+#. Django (admin): "você" em minúscula depois do ponto e "de rodar"
+msgid ""
+"You have selected an action, but you haven’t saved your changes to "
+"individual fields yet. Please click OK to save. You’ll need to re-run the "
+"action."
+msgstr ""
+"Você selecionou uma ação, mas ainda não salvou as alterações feitas nos "
+"campos individuais. Clique em OK para salvar. Depois, você precisará "
+"executar a ação de novo."
+
