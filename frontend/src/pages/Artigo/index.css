@@ -155,18 +155,97 @@
   margin-bottom: 1.5rem;
 }
 
-.artigo__acoes .is-aberto {
-  border-color: var(--vermelho-icc);
+/* Janela "Citar": uma aba por forma de citação, o texto e o botão de copiar. */
+.citar {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.25);
+  color: inherit;
+}
+
+.citar::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.citar__caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.citar__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.citar__topo h2 {
+  font-size: var(--fs-h3);
+}
+
+.citar__fechar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.citar__fechar:hover {
+  background: var(--cinza-100);
+}
+
+.citar__abas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--cinza-bordas);
+}
+
+.citar__abas button {
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-weight: 600;
+  color: var(--cinza-descricoes);
+  cursor: pointer;
+}
+
+.citar__abas button:hover {
+  color: var(--preto);
+}
+
+.citar__abas button.is-ativa {
+  border-bottom-color: var(--vermelho-icc);
   color: var(--vermelho-icc);
 }
 
-/* A referência em BibTeX ou BibLaTeX, com o botão de copiar. */
-.artigo__referencia {
-  margin-bottom: 2rem;
+.citar__painel {
+  overflow-y: auto;
 }
 
-.artigo__referencia pre {
-  margin: 0 0 12px;
+.citar__texto {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--cinza-bordas);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-fundos);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.citar__painel pre {
+  margin: 0;
   padding: 1rem 1.25rem;
   overflow-x: auto;
   border: 1px solid var(--cinza-bordas);
@@ -176,8 +255,13 @@
   line-height: 1.6;
 }
 
-.artigo__referencia code {
+.citar__painel code {
   padding: 0;
   background: none;
   font-size: inherit;
+}
+
+.citar__acoes {
+  display: flex;
+  justify-content: flex-end;
 }

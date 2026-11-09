@@ -285,25 +285,22 @@ class ArticleSerializer(serializers.ModelSerializer):
     # Imagens chamadas no texto como ![](imagem-1); o site troca pelo endereço.
     images = ArticleImageSerializer(many=True, read_only=True)
     authors = serializers.SerializerMethodField()
-    # As referências para citar o artigo. Trazem o marcador DATA_DE_ACESSO, que o site troca pela data de hoje.
-    bibtex = serializers.SerializerMethodField()
-    biblatex = serializers.SerializerMethodField()
+    # As citações do artigo (ABNT, APA, BibTeX, BibLaTeX e RIS). Trazem marcadores de data de acesso, que o site
+    # troca pela data de quem copia (ver citacao.py).
+    citations = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
         fields = [
             "id", "slug", "title", "authors", "topics", "description", "content", "images", "image_url", "date", "order",
-            "bibtex", "biblatex",
+            "citations",
         ]
 
     def get_authors(self, obj):
         return autores_do_artigo(obj)
 
-    def get_bibtex(self, obj):
-        return citacao.bibtex(obj)
-
-    def get_biblatex(self, obj):
-        return citacao.biblatex(obj)
+    def get_citations(self, obj):
+        return citacao.citacoes(obj)
 
     def get_image_url(self, obj):
         request = self.context.get("request")

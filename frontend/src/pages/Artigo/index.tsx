@@ -4,6 +4,7 @@ import { api } from "../../api"
 import type { Article } from "../../types"
 import ArtigoMarkdown from "../../components/ArtigoMarkdown"
 import AutoresDoArtigo from "../../components/AutoresDoArtigo"
+import CitarArtigo from "../../components/CitarArtigo"
 import PageHero from "../../components/PageHero"
 import { ArrowLeftIcon, LinkedInIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
@@ -16,24 +17,11 @@ function formatDate(date: string) {
   return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
 }
 
-type Formato = "bibtex" | "biblatex"
-
-// A API entrega as referências com este marcador no lugar da data de acesso, que é a de quem copia.
-const DATA_DE_ACESSO = "__DATA_DE_ACESSO__"
-
-function hoje() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
-
 export default function Artigo() {
   const t = useTextos()
   const { slugOrId } = useParams<{ slugOrId: string }>()
   const [artigo, setArtigo] = useState<Article | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
-  const [copiado, setCopiado] = useState(false)
-  // A referência aberta, ou nenhuma. Começa fechada: é longa, e quase ninguém precisa dela.
-  const [formato, setFormato] = useState<Formato | null>(null)
   const loading = loadedId !== slugOrId
   const artigoDaRota = artigo && (artigo.slug === slugOrId || String(artigo.id) === slugOrId) ? artigo : null
   usePageTitle(loading ? undefined : artigoDaRota?.title, loading ? undefined : artigoDaRota?.description)
@@ -68,19 +56,6 @@ export default function Artigo() {
 
   const temas = artigo.topics.split(",").map((t) => t.trim()).filter(Boolean)
   const url = window.location.href
-  const referencia = formato ? artigo[formato].split(DATA_DE_ACESSO).join(hoje()) : ""
-
-  function copiarReferencia() {
-    navigator.clipboard.writeText(referencia).then(() => {
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2000)
-    })
-  }
-
-  function alterna(novo: Formato) {
-    setCopiado(false)
-    setFormato(formato === novo ? null : novo)
-  }
 
   return (
     <div className="artigo-page">
@@ -104,30 +79,8 @@ export default function Artigo() {
               <LinkedInIcon size={16} />
               {t("artigo.compartilhar")}
             </a>
-            {(["bibtex", "biblatex"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={`btn btn--secondary${formato === f ? " is-aberto" : ""}`}
-                aria-expanded={formato === f}
-                aria-controls="artigo-referencia"
-                onClick={() => alterna(f)}
-              >
-                {t(f === "bibtex" ? "artigo.exportar_bibtex" : "artigo.exportar_biblatex")}
-              </button>
-            ))}
+            <CitarArtigo citacoes={artigo.citations} />
           </div>
-          {formato && (
-            <div className="artigo__referencia" id="artigo-referencia">
-              <pre tabIndex={0}>
-                <code>{referencia}</code>
-              </pre>
-              <button type="button" className="btn btn--secondary" onClick={copiarReferencia}>
-                {copiado ? t("artigo.copiado") : t("artigo.copiar")}
-              </button>
-            </div>
-          )}
-
           {temas.length > 0 && (
             <ul className="artigo__temas">
               {temas.map((tema) => (

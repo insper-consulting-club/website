@@ -2471,7 +2471,7 @@ class ContentRegistryTests(TestCase):
 
         chaves = [t.chave for p in PAGINAS for t in p.textos]
         self.assertEqual(len(chaves), len(set(chaves)))
-        self.assertEqual(len(chaves), 147)
+        self.assertEqual(len(chaves), 148)
         self.assertEqual(len({p.slug for p in PAGINAS}), len(PAGINAS))
         for pagina in PAGINAS:
             self.assertTrue(pagina.textos, pagina.slug)
@@ -3545,17 +3545,154 @@ class CitationTests(TestCase):
 
         self.assertIn(f"https://icc.example.com/artigos/{artigo.pk}", biblatex(artigo))
 
+    # --- nomes
+
+    def test_names_are_split_the_way_bibtex_reads_them(self):
+        from website.citacao import analisa_nome
+
+        casos = {
+            "Maria da Silva": ("Maria", "da", "Silva", ""),
+            "Maria da Silva Lima": ("Maria", "da", "Silva Lima", ""),
+            "Ana Paula Souza Lima": ("Ana Paula Souza", "", "Lima", ""),
+            "Robert {Lucas Jr}": ("Robert", "", "Lucas Jr", ""),
+            "{Maria Clara} {Souza Lima}": ("Maria Clara", "", "Souza Lima", ""),
+            "Lucas, Jr., Robert": ("Robert", "", "Lucas", "Jr."),
+            "da Silva, Maria": ("Maria", "da", "Silva", ""),
+            "Ludwig van Beethoven": ("Ludwig", "van", "Beethoven", ""),
+            "Madonna": ("", "", "Madonna", ""),
+        }
+        for nome, (primeiro, von, sobrenome, sufixo) in casos.items():
+            analisado = analisa_nome(nome)
+            self.assertEqual((analisado.nome, analisado.von, analisado.sobrenome, analisado.sufixo), (primeiro, von, sobrenome, sufixo), nome)
+
+    # --- ABNT e APA: o texto que o biblatex-abnt e o biblatex-apa imprimem para as mesmas entradas
+
+    URL = "https://icc.example.com/artigos/"
+
+    def amostra(self, slug):
+        casos = {
+            "um": ("Precificação dinâmica no varejo brasileiro: um estudo de caso", ["Maria da Silva"], False, date(2026, 3, 12)),
+            "dois": ("Preço e valor", ["Maria da Silva", "Robert {Lucas Jr}"], False, date(2026, 3, 12)),
+            "quatro": ("Como escolher a ferramenta certa para priorizar projetos",
+                       ["Ana Paula Souza Lima", "Beto Souza", "Carla Dias", "Davi Nunes"], False, date(2026, 5, 20)),
+            "inst": ("Relatório anual do clube", [], True, date(2026, 6, 2)),
+            "semdata": ("Texto sem data de publicação", ["Maria da Silva"], False, None),
+        }
+        titulo, autores, institucional, data = casos[slug]
+        return self.artigo(titulo, autores, slug=slug, date=data, institutional=institucional)
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_abnt_matches_what_biblatex_abnt_prints(self):
+        from website.citacao import abnt
+
+        esperado = {
+            "um": "SILVA, Maria da. Precificação dinâmica no varejo brasileiro: um estudo de caso. Insper Consulting Club. 12 mar. 2026.",
+            "dois": "SILVA, Maria da; LUCAS JR, Robert. Preço e valor. Insper Consulting Club. 12 mar. 2026.",
+            "quatro": "LIMA, Ana Paula Souza et al. Como escolher a ferramenta certa para priorizar projetos. Insper Consulting Club. 20 maio 2026.",
+            "inst": "INSPER CONSULTING CLUB. Relatório anual do clube. Insper Consulting Club. 2 jun. 2026.",
+            "semdata": "SILVA, Maria da. Texto sem data de publicação. Insper Consulting Club.",
+        }
+        for slug, inicio in esperado.items():
+            self.assertEqual(
+                abnt(self.amostra(slug))["texto"],
+                f"{inicio} Disponível em: {self.URL}{slug}. Acesso em: __DATA_DE_ACESSO_ABNT__.", slug,
+            )
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_abnt_puts_the_title_in_bold_and_et_al_in_italic(self):
+        from website.citacao import abnt
+
+        citacao = abnt(self.amostra("quatro"))
+        partes = citacao["partes"]
+
+        self.assertEqual([p["t"] for p in partes if p["e"] == "b"], ["Como escolher a ferramenta certa para priorizar projetos."])
+        self.assertEqual([p["t"] for p in partes if p["e"] == "i"], ["et al"])
+        self.assertEqual("".join(p["t"] for p in partes), citacao["texto"])
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_apa_matches_biblatex_apa_except_for_two_deliberate_differences(self):
+        from website.citacao import apa
+
+        # Diferenças: a data sai "12 de março" (o biblatex-apa imprime "março 12", ordem do inglês) e o nome do site não
+        # se repete quando o autor é o próprio clube (o que a APA 7 pede; o biblatex-apa repete). Sem data de acesso:
+        # a APA só a pede em páginas que mudam, e o biblatex-apa só a imprime quando a entrada tem urldate.
+        esperado = {
+            "um": "da Silva, M. (2026, 12 de março). Precificação dinâmica no varejo brasileiro: um estudo de caso. Insper Consulting Club.",
+            "dois": "da Silva, M., & Lucas Jr, R. (2026, 12 de março). Preço e valor. Insper Consulting Club.",
+            "quatro": "Lima, A. P. S., Souza, B., Dias, C., & Nunes, D. (2026, 20 de maio). Como escolher a ferramenta certa para priorizar projetos. Insper Consulting Club.",
+            "inst": "Insper Consulting Club. (2026, 2 de junho). Relatório anual do clube.",
+            "semdata": "da Silva, M. (s.d.). Texto sem data de publicação. Insper Consulting Club.",
+        }
+        for slug, inicio in esperado.items():
+            self.assertEqual(apa(self.amostra(slug))["texto"], f"{inicio} {self.URL}{slug}", slug)
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_apa_puts_only_the_title_in_italic(self):
+        from website.citacao import apa
+
+        partes = apa(self.amostra("um"))["partes"]
+
+        self.assertEqual([p["t"] for p in partes if p["e"]], ["Precificação dinâmica no varejo brasileiro: um estudo de caso."])
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_a_title_that_ends_in_punctuation_does_not_get_a_second_period(self):
+        from website.citacao import abnt, apa
+
+        artigo = self.artigo("Vale a pena?", ["Ana Souza"], slug="p")
+
+        self.assertIn("Vale a pena? Insper Consulting Club.", abnt(artigo)["texto"])
+        self.assertIn("Vale a pena? Insper Consulting Club.", apa(artigo)["texto"])
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_apa_initials_keep_the_hyphen_of_compound_first_names(self):
+        from website.citacao import apa
+
+        artigo = self.artigo("T", ["Jean-Paul Sartre"], slug="s")
+
+        self.assertTrue(apa(artigo)["texto"].startswith("Sartre, J.-P. ("))
+
+    @override_settings(FRONTEND_URL="")
+    def test_text_citations_leave_out_the_address_and_access_date_without_the_site_address(self):
+        from website.citacao import abnt, apa
+
+        artigo = self.artigo()
+
+        self.assertNotIn("Disponível", abnt(artigo)["texto"])
+        self.assertNotIn("http", apa(artigo)["texto"])
+
+    # --- RIS
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_ris_entry(self):
+        from website.citacao import ris
+
+        self.assertEqual(ris(self.amostra("dois")), (
+            "TY  - ELEC\n"
+            "AU  - da Silva, Maria\n"
+            "AU  - Lucas Jr, Robert\n"
+            "TI  - Preço e valor\n"
+            "PB  - Insper Consulting Club\n"
+            "PY  - 2026\n"
+            "DA  - 2026/03/12\n"
+            "UR  - https://icc.example.com/artigos/dois\n"
+            "Y2  - __DATA_DE_ACESSO_RIS__\n"
+            "LA  - pt\n"
+            "ER  - \n"
+        ))
+        self.assertIn("AU  - Insper Consulting Club\n", ris(self.amostra("inst")))
+
     # --- API
 
     @override_settings(FRONTEND_URL="https://icc.example.com")
-    def test_the_detail_has_both_references_and_the_list_does_not(self):
+    def test_the_detail_has_the_five_citations_in_order_and_the_list_does_not(self):
         artigo = self.artigo()
 
         detalhe = APIClient().get(f"/api/articles/{artigo.slug}/").data
         lista = APIClient().get("/api/articles/").data[0]
 
-        self.assertTrue(detalhe["biblatex"].startswith("@online{silva2026precificacao,"))
-        self.assertTrue(detalhe["bibtex"].startswith("@misc{silva2026precificacao,"))
-        self.assertNotIn("biblatex", lista)
-        self.assertNotIn("bibtex", lista)
-
+        self.assertEqual([c["id"] for c in detalhe["citations"]], ["abnt", "apa", "bibtex", "biblatex", "ris"])
+        self.assertEqual([c["kind"] for c in detalhe["citations"]], ["texto", "texto", "codigo", "codigo", "codigo"])
+        self.assertTrue(detalhe["citations"][2]["texto"].startswith("@misc{silva2026precificacao,"))
+        self.assertTrue(detalhe["citations"][3]["texto"].startswith("@online{silva2026precificacao,"))
+        self.assertNotIn("citations", lista)
+        self.assertNotIn("bibtex", detalhe)

@@ -173,13 +173,22 @@ export interface Article {
   topics: string
   content: string
   images: ArticleImage[]
-  // Referências para citar o artigo, com o marcador __DATA_DE_ACESSO__ no lugar da data de quem copia.
-  bibtex: string
-  biblatex: string
+  // As citações do artigo, com marcadores no lugar da data de acesso, que é a de quem copia.
+  citations: ArticleCitation[]
 }
 
-// Item da lista de artigos: o texto, as imagens do corpo e as referências só vêm no artigo completo.
-export type ArticleSummary = Omit<Article, "content" | "images" | "bibtex" | "biblatex">
+// Uma forma de citar o artigo. "texto" (ABNT, APA) vem em partes, para pôr título e "et al." em destaque; "codigo"
+// (BibTeX, BibLaTeX, RIS) é para copiar como está.
+export interface ArticleCitation {
+  id: string
+  label: string
+  kind: "texto" | "codigo"
+  texto: string
+  partes?: { t: string; e: "b" | "i" | null }[]
+}
+
+// Item da lista de artigos: o texto, as imagens do corpo e as citações só vêm no artigo completo.
+export type ArticleSummary = Omit<Article, "content" | "images" | "citations">
 
 // Imagem chamada no texto do artigo como ![](imagem-<number>).
 export interface ArticleImage {
