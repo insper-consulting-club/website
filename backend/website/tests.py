@@ -566,18 +566,16 @@ class SiteTextAdminTests(TestCase):
 
 
 class NavItemTests(TestCase):
-    def test_migration_reproduces_the_previous_menu(self):
-        itens = list(NavItem.objects.values_list("label", "area", "page"))
+    def test_migrations_create_exactly_the_default_menu_and_benefits(self):
+        from website.conteudo_padrao import BENEFICIOS_PADRAO, NAV_ITEMS_PADRAO
+        from website.models import PartnerBenefit
 
-        self.assertEqual(itens, [
-            ("Nossa Equipe", "menu", "equipe"),
-            ("Parceiros", "menu", "parceiros"),
-            ("Projetos", "menu", "projetos"),
-            ("Artigos", "menu", "artigos"),
-            ("Seja membro", "rodape", "processo"),
-            ("Contato", "menu", "contato"),
-            ("Seja membro", "botao", "processo"),
-        ])
+        itens = list(NavItem.objects.values_list("label", "area", "page", "order"))
+        beneficios = list(PartnerBenefit.objects.values_list("title", "description", "order"))
+
+        # A fonte do arquivo de reserva do frontend (conteudo_padrao.py) tem de ser o que um banco novo recebe.
+        self.assertEqual(itens, NAV_ITEMS_PADRAO)
+        self.assertEqual(beneficios, BENEFICIOS_PADRAO)
 
     def test_endpoint_lists_active_items_with_resolved_paths(self):
         config = SiteConfig.get_solo()
@@ -910,7 +908,7 @@ class BrandImageValidationTests(TestCase):
 
         config = SiteConfig.get_solo()
         dados = {k: v for k, v in model_to_dict(config).items()
-                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo")}
+                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo", "home_hidden_sections")}
         # O banco de teste não tem o programa do slug padrão, e essa regra não é o assunto aqui.
         dados["featured_program_slug"] = ""
         return SiteConfigForm(data=dados, files=arquivos, instance=config)
@@ -1759,7 +1757,7 @@ class PermissionLevelsTests(TestCase):
 
         config = SiteConfig.get_solo()
         dados = {k: v for k, v in model_to_dict(config).items()
-                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo")}
+                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo", "home_hidden_sections")}
         dados.update({"featured_program_slug": "", "email": "novo@example.com",
                       "site_name": "Nome trocado", "privacy_text": "Texto trocado"})
         self.client.force_login(self.editor)
@@ -1777,7 +1775,7 @@ class PermissionLevelsTests(TestCase):
 
         config = SiteConfig.get_solo()
         dados = {k: v for k, v in model_to_dict(config).items()
-                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo")}
+                 if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo", "home_hidden_sections")}
         dados.update({"featured_program_slug": "", "site_name": "Nome novo"})
         # As listas da página (menu e benefícios) trazem o próprio formulário de controle.
         dados.update({"nav_items-TOTAL_FORMS": "0", "nav_items-INITIAL_FORMS": "0",
@@ -2491,3 +2489,38 @@ class AdminSmallImprovementsTests(TestCase):
         self.assertEqual([p["name"] for p in api[0]["participants"]], ["Zélia", "Ana", "Luiz"])
         self.assertEqual(site_admin.ProgramCaseParticipantInline.ordering_field, "order")
         self.assertTrue(site_admin.ProgramCaseParticipantInline.hide_ordering_field)
+
+
+class FrontendFallbackTests(TestCase):
+    """O arquivo de reserva do frontend (siteConfigPadrao.ts) é gerado do backend, e não escrito à mão."""
+
+    def test_frontend_config_fallback_matches_the_generator(self):
+        from pathlib import Path
+
+        from website.management.commands.export_site_config_padrao import gera_arquivo_ts
+
+        arquivo = Path(__file__).resolve().parents[2] / "frontend" / "src" / "siteConfigPadrao.ts"
+
+        self.assertEqual(
+            arquivo.read_text(encoding="utf-8"), gera_arquivo_ts(),
+            "frontend/src/siteConfigPadrao.ts está desatualizado. Rode: "
+            "python manage.py export_site_config_padrao --saida ../frontend/src/siteConfigPadrao.ts",
+        )
+
+    def test_generated_fallback_has_the_expected_sections(self):
+        from website.management.commands.export_site_config_padrao import gera_arquivo_ts
+
+        ts = gera_arquivo_ts()
+
+        for trecho in ('privacy_text: ""', "logo_url: null", 'area: "botao"', "texts: TEXTOS_PADRAO",
+                       'title: "Acesso a talentos"'):
+            self.assertIn(trecho, ts)
+
+    def test_generated_fallback_uses_the_model_defaults_for_every_text_field(self):
+        from website.management.commands.export_site_config_padrao import gera_arquivo_ts
+
+        ts = gera_arquivo_ts()
+
+        for campo in SiteConfig._meta.concrete_fields:
+            if campo.name in ("site_name", "email", "home_hero_title", "mission", "footer_tagline"):
+                self.assertIn(f"{campo.name}: ", ts)
