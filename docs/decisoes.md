@@ -27,7 +27,7 @@ Um painel próprio no frontend continua possível no futuro e exigiria APIs de e
 
 ## 3. Arquivar em vez de excluir
 
-Membros que saem do clube são **arquivados** (recebem data de saída): somem do site, mas o histórico de cases e a trajetória continuam guardados. Projetos seguem a mesma ideia com o campo "Ativo". Parceiros, programas e cases têm "Exibir no site", e artigos têm "Publicado" (rascunho).
+Membros que saem do clube são **arquivados** (desmarcam "Exibir na equipe"): somem do site, mas o histórico de cases e a trajetória continuam guardados. Projetos seguem a mesma ideia com o campo "Ativo". Parceiros, programas e cases têm "Exibir no site", e artigos têm "Publicado" (rascunho).
 
 A **exclusão** continua disponível para cadastros feitos por engano. Um projeto arquivado some da API pública, e a página dele responde 404.
 

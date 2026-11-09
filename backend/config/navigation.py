@@ -7,11 +7,10 @@ apenas o que pode usar.
 from django.urls import reverse
 
 # (título do grupo, [(app, modelo, texto do menu, ícone)]). Ícones: Material Symbols.
+# A ordem segue o uso: o que se edita toda semana vem primeiro, e a configuração vem no fim.
 GRUPOS = [
-    ("Site", [
-        ("website", "siteconfig", "Configuração do site", "tune"),
-        ("website", "sitetext", "Textos do site", "text_fields"),
-        ("website", "statistic", "Estatísticas", "bar_chart"),
+    ("Artigos", [
+        ("website", "article", "Artigos", "article"),
     ]),
     ("Equipe", [
         ("website", "member", "Membros", "groups"),
@@ -23,21 +22,24 @@ GRUPOS = [
         ("website", "partnercategory", "Categorias dos parceiros", "category"),
     ]),
     ("Programas e projetos", [
-        ("website", "program", "Programas", "school"),
-        ("website", "programcomponent", "Componentes dos programas", "extension"),
-        ("website", "programcase", "Cases dos programas", "emoji_events"),
         ("website", "project", "Projetos", "folder_open"),
-    ]),
-    ("Artigos", [
-        ("website", "article", "Artigos", "article"),
+        ("website", "program", "Programas", "school"),
+        ("website", "programcase", "Cases dos programas", "emoji_events"),
     ]),
     ("Processo seletivo", [
         ("website", "selectionprocess", "Processos seletivos", "how_to_reg"),
         ("website", "preparationmaterial", "Materiais de preparação", "menu_book"),
     ]),
+    ("Site", [
+        ("website", "siteconfig", "Configuração do site", "tune"),
+        ("website", "paginadosite", "Textos do site", "text_fields"),
+        ("website", "secaodahome", "Seções da Home", "view_agenda"),
+        ("website", "statistic", "Estatísticas", "bar_chart"),
+    ]),
     ("Acesso", [
         ("auth", "user", "Usuários", "person"),
         ("auth", "group", "Grupos", "admin_panel_settings"),
+        ("admin", "logentry", "Atividade recente", "history"),
     ]),
 ]
 

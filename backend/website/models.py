@@ -5,9 +5,12 @@ from django.utils.text import slugify
 
 from .fields import LimitedImageField
 
+# Semestre no formato usado em todo o site: "2026.1" (janeiro a junho) e "2026.2" (julho a dezembro).
+SEMESTRE_VALIDATOR = RegexValidator(r'^\d{4}\.[12]$', 'Use o formato AAAA.S, por exemplo 2026.1.')
+
 
 class PartnerCategory(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, verbose_name='Título')
 
     class Meta:
         verbose_name = 'Categoria do parceiro'
@@ -40,9 +43,9 @@ class Directorate(models.Model):
 class Position(models.Model):
     title = models.CharField(max_length=200, verbose_name='Cargo')
     power = models.IntegerField(
-        verbose_name='Prioridade para exibição',
+        default=4, verbose_name='Prioridade para exibição',
         help_text='0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, '
-                  '4 = Membro/Mentor, 5 = Trainee. Até 2 aparece na Home como liderança.'
+                  '4 = Membro/Mentor, 5 = Trainee. Cargos com valor até 2 aparecem na Home como liderança.'
     )
 
     class Meta:
@@ -84,21 +87,6 @@ class Partner(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def projects_count(self):
-        return self.projects.filter(is_active=True).count()
-
-    @property
-    def completed_projects_count(self):
-        return self.projects.filter(is_active=True, end_date__isnull=False).count()
-
-
-BADGE_CHOICES = [
-    ('badge--continuo', 'Contínuo'),
-    ('badge--semanal', 'Semanal'),
-    ('badge--mensal', 'Mensal'),
-    ('badge--semestral', 'Semestral'),
-]
 
 IMAGE_ALIGN_CHOICES = [
     ('right', 'Imagem à direita'),
@@ -108,7 +96,11 @@ IMAGE_ALIGN_CHOICES = [
 
 
 class Program(models.Model):
-    slug = models.SlugField(max_length=50, unique=True, verbose_name='Slug (identificador na URL)')
+    slug = models.SlugField(
+        max_length=50, unique=True, verbose_name='Slug da URL',
+        help_text='Identificador do programa no endereço do site, por exemplo jornada-do-consultor. '
+                  'Se mudar depois de publicado, o link antigo deixa de funcionar.'
+    )
     label = models.CharField(max_length=200, verbose_name='Nome')
     subtitle = models.CharField(
         max_length=200, blank=True, verbose_name='Subtítulo',
@@ -117,11 +109,6 @@ class Program(models.Model):
     description = models.TextField(verbose_name='Descrição')
     highlights = models.TextField(verbose_name='Tópicos', blank=True, help_text='Um tópico por linha.')
     icon = LimitedImageField(upload_to='categories/', null=True, blank=True, verbose_name='Ícone do card')
-    badge = models.CharField(
-        max_length=50, blank=True, verbose_name='Frequência (badge)',
-        help_text='Opcional. Deixe vazio quando o programa não tiver uma periodicidade definida.'
-    )
-    badge_class = models.CharField(max_length=50, choices=BADGE_CHOICES, verbose_name='Estilo do badge', default='badge--semanal')
     signup_url = models.URLField(
         max_length=300, blank=True, verbose_name='Link de inscrição',
         help_text='Preenchido apenas nos programas que têm formulário próprio de inscrição.'
@@ -149,9 +136,15 @@ class Project(models.Model):
     description = models.TextField(verbose_name='Descrição')
     program = models.ForeignKey(
         Program, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name='Programa', related_name='projects'
+        null=True, blank=True, verbose_name='Programa', related_name='projects',
+        help_text='Escolha o programa a que este projeto pertence. Deixe vazio para ele aparecer em '
+                  '"Outros projetos" no site.'
     )
     partners = models.ManyToManyField(Partner, blank=True, verbose_name='Parceiros envolvidos', related_name='projects')
+    members = models.ManyToManyField(
+        'Member', blank=True, verbose_name='Equipe', related_name='projects',
+        help_text='Membros que participaram do projeto. Aparecem na página do projeto e no perfil de cada pessoa.'
+    )
     start_date = models.DateField(verbose_name='Data de início')
     end_date = models.DateField(null=True, blank=True, verbose_name='Data de conclusão')
     is_active = models.BooleanField(
@@ -163,6 +156,10 @@ class Project(models.Model):
         verbose_name = 'Projeto'
         verbose_name_plural = 'Projetos'
         ordering = ['-start_date']
+
+    def clean(self):
+        if self.end_date and self.start_date and self.end_date < self.start_date:
+            raise ValidationError({'end_date': 'A data de conclusão não pode ser anterior à data de início.'})
 
     def __str__(self):
         return self.title
@@ -209,8 +206,8 @@ class ProjectContentBlock(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Bloco de conteúdo'
-        verbose_name_plural = 'Blocos de conteúdo'
+        verbose_name = 'Bloco de conteúdo do projeto'
+        verbose_name_plural = 'Blocos de conteúdo do projeto'
         ordering = ['order']
 
     def __str__(self):
@@ -220,20 +217,13 @@ class ProjectContentBlock(models.Model):
 class Member(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome')
     photo = LimitedImageField(upload_to='team/', null=True, blank=True, verbose_name='Foto')
-    biography = models.TextField(max_length=200, blank=True, verbose_name='Biografia')
     position = models.ForeignKey(Position, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Cargo principal')
-    course = models.CharField(max_length=200, null=True, blank=True, verbose_name='Curso')
-    year = models.CharField(max_length=50, null=True, blank=True, verbose_name='Período')
-    hours = models.IntegerField(null=True, blank=True, verbose_name='Horas dedicadas')
-    entry_date = models.DateField(verbose_name='Data de entrada')
-    exit_date = models.DateField(
-        null=True, blank=True, verbose_name='Data de saída',
-        help_text='Preencha quando a pessoa sair do clube: ela some da página Equipe, '
-                  'mas o histórico (cases, trajetória) continua guardado.'
+    is_active = models.BooleanField(
+        default=True, verbose_name='Exibir na equipe',
+        help_text='Desmarque quando a pessoa sair do clube: ela some da página Equipe, mas o perfil, '
+                  'os projetos, os cases e a trajetória continuam guardados.'
     )
-    email = models.EmailField(null=True, blank=True, verbose_name='Email')
     linkedin = models.URLField(null=True, blank=True, verbose_name='LinkedIn')
-    projects = models.ManyToManyField(Project, blank=True, verbose_name='Projetos participados', related_name='members')
 
     class Meta:
         verbose_name = 'Membro'
@@ -241,10 +231,6 @@ class Member(models.Model):
 
     def __str__(self):
         return self.name
-
-    @property
-    def number_of_projects(self):
-        return self.projects.filter(is_active=True).count()
 
 
 class MemberTrajectory(models.Model):
@@ -255,7 +241,7 @@ class MemberTrajectory(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='trajectory_steps', verbose_name='Membro')
     semester = models.CharField(
         max_length=10, verbose_name='Semestre',
-        validators=[RegexValidator(r'^\d{4}\.[12]$', 'Use o formato AAAA.S, por exemplo 2026.1.')],
+        validators=[SEMESTRE_VALIDATOR],
         help_text='No formato AAAA.S, por exemplo 2026.1.'
     )
     role = models.CharField(max_length=200, verbose_name='Cargo nesse semestre', help_text='Por exemplo: Trainee, Membro, Diretor de Projetos.')
@@ -280,8 +266,12 @@ class DirectorateMembership(models.Model):
     mesmo tempo com cargos diferentes em cada uma (ex: Diretora de
     Pedagógico e, também, Mentora na Escola de Mentores).
     """
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='directorate_memberships')
-    directorate = models.ForeignKey(Directorate, on_delete=models.CASCADE, related_name='memberships')
+    member = models.ForeignKey(
+        Member, on_delete=models.CASCADE, related_name='directorate_memberships', verbose_name='Membro'
+    )
+    directorate = models.ForeignKey(
+        Directorate, on_delete=models.CASCADE, related_name='memberships', verbose_name='Diretoria'
+    )
     cargo = models.CharField(max_length=200, verbose_name='Cargo nessa diretoria')
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
 
@@ -298,16 +288,14 @@ class DirectorateMembership(models.Model):
 
 
 class ProgramComponent(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    program = models.ForeignKey(
-        Program, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name='Programa', related_name='components'
-    )
+    title = models.CharField(max_length=200, verbose_name='Título')
+    description = models.TextField(verbose_name='Descrição')
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, verbose_name='Programa', related_name='components')
 
     class Meta:
         verbose_name = 'Componente do programa'
         verbose_name_plural = 'Componentes dos programas'
+        ordering = ['id']
 
     def __str__(self):
         return self.title
@@ -332,8 +320,8 @@ class ProgramContentBlock(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Bloco de conteúdo'
-        verbose_name_plural = 'Blocos de conteúdo'
+        verbose_name = 'Bloco de conteúdo do programa'
+        verbose_name_plural = 'Blocos de conteúdo do programa'
         ordering = ['order']
 
     def __str__(self):
@@ -397,8 +385,8 @@ class ArticleImage(models.Model):
     """
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='images', verbose_name='Artigo')
     number = models.PositiveIntegerField(
-        verbose_name='Número',
-        help_text='No texto, escreva ![](imagem-1) para a imagem de número 1.'
+        blank=True, verbose_name='Número',
+        help_text='Deixe vazio para numerar sozinho. No texto, escreva ![](imagem-1) para a imagem de número 1.'
     )
     image = LimitedImageField(upload_to='articles/', verbose_name='Imagem')
     caption = models.CharField(
@@ -413,6 +401,13 @@ class ArticleImage(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['article', 'number'], name='numero_unico_por_artigo'),
         ]
+
+    def save(self, *args, **kwargs):
+        # Sem número (por exemplo, criada fora do admin), usa o próximo livre do artigo.
+        if self.number is None:
+            ultimo = ArticleImage.objects.filter(article=self.article_id).aggregate(maior=models.Max('number'))['maior']
+            self.number = (ultimo or 0) + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'imagem-{self.number}'
@@ -446,7 +441,7 @@ class SelectionProcess(models.Model):
 
     registrations_open = models.BooleanField(
         default=False, verbose_name='Inscrições abertas',
-        help_text='Marque quando o PS abrir. Desmarcado, o site mostra "inscrições encerradas" e o link do formulário fica escondido.'
+        help_text='Marque quando o processo seletivo abrir. Desmarcado, o site mostra "inscrições encerradas" e o link do formulário fica escondido.'
     )
     registration_url = models.URLField(
         max_length=300, blank=True, verbose_name='Link de inscrição',
@@ -506,7 +501,7 @@ class SelectionProcessStage(models.Model):
         SelectionProcess, 
         on_delete=models.CASCADE, 
         related_name='stages', 
-        verbose_name='Processo Seletivo'
+        verbose_name='Processo seletivo'
         )
     label = models.CharField(max_length=200, verbose_name="Nome da etapa")
     date = models.CharField(max_length=200, verbose_name="Data/Período")
@@ -525,7 +520,7 @@ class SelectionProcessStep(models.Model):
         SelectionProcess,
         on_delete=models.CASCADE, 
         related_name='steps', 
-        verbose_name='Processo Seletivo'
+        verbose_name='Processo seletivo'
     )
     number = models.CharField(max_length=10, verbose_name='Número')
     title = models.CharField(max_length=200, verbose_name='Título')
@@ -548,7 +543,7 @@ class SelectionProcessStep(models.Model):
 
 
 class SelectionProcessRequirement(models.Model):
-    process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE, related_name='requirements', verbose_name='Processo Seletivo')
+    process = models.ForeignKey(SelectionProcess, on_delete=models.CASCADE, related_name='requirements', verbose_name='Processo seletivo')
     text = models.CharField(max_length=300, verbose_name='Texto do requisito')
     icon = LimitedImageField(upload_to='process/requirements/', null=True, blank=True, verbose_name='Ícone (imagem)')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -567,7 +562,7 @@ class PreparationMaterial(models.Model):
         SelectionProcess, 
         on_delete=models.CASCADE,
         related_name='materials',
-        verbose_name='Processo Seletivo'
+        verbose_name='Processo seletivo'
     )
     title = models.CharField(max_length=200, verbose_name='Título')
     order = models.IntegerField(default=0, verbose_name='Ordem')
@@ -596,8 +591,8 @@ class PreparationMaterialItem(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Item'
-        verbose_name_plural = 'Itens'
+        verbose_name = 'Item do material'
+        verbose_name_plural = 'Itens do material'
         ordering = ['order']
 
     def __str__(self):
@@ -614,7 +609,10 @@ class ProgramCase(models.Model):
         related_name='cases',
         verbose_name='Programa'
     )
-    semester = models.CharField(max_length=10, verbose_name='Semestre', help_text='No formato AAAA.S, por exemplo 2025.1.')
+    semester = models.CharField(
+        max_length=10, verbose_name='Semestre', validators=[SEMESTRE_VALIDATOR],
+        help_text='No formato AAAA.S, por exemplo 2025.1.'
+    )
     title = models.CharField(
         max_length=100, blank=True, verbose_name='Título',
         help_text='Só é necessário quando o semestre tem mais de um case, por exemplo "1º Case".'
@@ -650,8 +648,8 @@ class ProgramCaseParticipant(models.Model):
     Participação de um membro num case, como integrante do grupo ou mentor.
     O vínculo é com o membro, e não com o nome escrito à mão, para que o
     LinkedIn exibido no case seja sempre o mesmo do perfil da pessoa.
-    Quem já saiu do clube continua cadastrado com data de saída, o que o
-    mantém fora da listagem da Equipe sem tirá-lo dos cases antigos.
+    Quem já saiu do clube continua cadastrado (com "Exibir na equipe" desmarcado), o
+    que o mantém fora da listagem da Equipe sem tirá-lo dos cases antigos.
     """
     class Role(models.TextChoices):
         INTEGRANTE = 'integrante', 'Integrante do grupo'
@@ -691,10 +689,10 @@ class ProgramCaseParticipant(models.Model):
 
 class SiteConfig(models.Model):
     """
-    Textos e contatos do site que ficam fora dos demais cadastros:
-    a Home, o rodapé, a abertura de cada página, os canais de contato e a
-    Política de Privacidade. Existe um único registro (pk=1), criado pela
-    migration com os textos que o site já tinha.
+    Contatos, marca e imagens do site, o programa em destaque e a Política de
+    Privacidade. Os textos de cada página (Home, rodapé, abertura das páginas)
+    ficam em SiteText, no registro de conteúdo. Existe um único registro
+    (pk=1), criado pela migration.
     """
     # Campos que o frontend grava no HTML durante o build (ver plugins/siteConfig.ts).
     site_name = models.CharField(
@@ -742,31 +740,7 @@ class SiteConfig(models.Model):
     )
     github_label = models.CharField(max_length=100, default='insper-consulting-club', verbose_name='Nome exibido do GitHub')
 
-    # Home
-    home_hero_title = models.CharField(
-        max_length=200, default='O futuro consultor começa no ICC', verbose_name='Título do topo'
-    )
-    home_statement = models.CharField(
-        max_length=300,
-        default='Preparamos nossos membros para os processos seletivos mais exigentes do mercado.',
-        verbose_name='Frase de destaque'
-    )
-    home_about_title = models.CharField(
-        max_length=200, default='Mais do que um clube, somos um ambiente de formação',
-        verbose_name='Título de "Quem somos"'
-    )
-    home_about_title_highlight = models.CharField(
-        max_length=200, blank=True, default='para futuros consultores.',
-        verbose_name='Final do título, em destaque',
-        help_text='Opcional. Aparece em vermelho, logo depois do título.'
-    )
-    home_about_text = models.TextField(
-        default='A Liga Insper Consulting Club é uma organização estudantil fundada em 2020, '
-                'dedicada ao desenvolvimento de futuros consultores. Ao longo do semestre, '
-                'promovemos capacitações, resolução de cases, visitas corporativas e iniciativas '
-                'que aproximam nossos membros da realidade das principais empresas do mercado.',
-        verbose_name='Texto de "Quem somos"'
-    )
+    # Foto de "Quem somos" (o texto da Home fica em SiteText)
     home_about_photo = LimitedImageField(
         upload_to='site/', null=True, blank=True, verbose_name='Foto de "Quem somos"',
         help_text='Opcional. Sem foto enviada, o site usa a foto da reunião inaugural.'
@@ -776,78 +750,13 @@ class SiteConfig(models.Model):
         verbose_name='Descrição da foto',
         help_text='Lida por leitores de tela. Descreva o que aparece na foto.'
     )
-    mission = models.TextField(
-        default='Conectar alunos do Insper ao mercado de consultoria, desenvolvendo as competências '
-                'técnicas e comportamentais exigidas pelas principais firmas do setor.',
-        verbose_name='Missão'
-    )
-    mission_how = models.TextField(
-        default='Treinamento para processos seletivos (GMAT, Verbal, Data e Fit Interview) e '
-                'capacitação prática na resolução de cases reais de negócio.',
-        verbose_name='Como preparamos'
-    )
-    mission_goal = models.TextField(
-        default='Consolidar o ICC como referência em consultoria entre os clubes estudantis do Brasil '
-                'e expandir a atuação para tecnologia e empreendedorismo.',
-        verbose_name='Onde queremos chegar'
-    )
-    home_cta_title = models.CharField(
-        max_length=200, default='Pronto para dar o próximo passo na sua carreira?',
-        verbose_name='Chamada final'
-    )
 
-    # Rodapé
-    footer_tagline = models.CharField(
-        max_length=300,
-        default='Mais do que um clube, somos um ambiente de formação para futuros consultores.',
-        verbose_name='Frase do rodapé'
-    )
-
-    # Abertura de cada página (o texto abaixo do título)
-    team_lead = models.CharField(
-        max_length=300, default='Conheça os membros que fazem parte da Liga Insper Consulting Club',
-        verbose_name='Página Equipe'
-    )
-    partners_lead = models.CharField(
-        max_length=300,
-        default='Conheça as empresas que apoiam o Insper Consulting Club e contribuem para a '
-                'formação dos futuros líderes em consultoria.',
-        verbose_name='Página Parceiros'
-    )
-    partners_benefits_title = models.CharField(
-        max_length=200, default='O que sua empresa ganha ao apoiar o Insper Consulting Club',
-        verbose_name='Título de "Por que ser parceiro"',
-        help_text='Os benefícios em si ficam na aba Parceiros.'
-    )
-    projects_lead = models.CharField(
-        max_length=300,
-        default='Como formamos consultores, do primeiro semestre na entidade aos cases reais '
-                'resolvidos ao longo da Jornada do Consultor.',
-        verbose_name='Página Projetos'
-    )
+    # Página Projetos
     featured_program_slug = models.CharField(
         max_length=50, blank=True, default='jornada-do-consultor',
         verbose_name='Programa dos cases em destaque',
-        help_text='Identificador (slug) do programa para onde o botão "Ver os cases" da página Projetos leva. '
-                  'Precisa ser igual ao slug de um programa cadastrado. Deixe vazio para esconder a seção.'
-    )
-    articles_lead = models.CharField(
-        max_length=300, default='Artigos e publicações produzidos por membros do ICC',
-        verbose_name='Página Artigos'
-    )
-    contact_lead = models.CharField(
-        max_length=300, default='Entre em contato com o Insper Consulting Club',
-        verbose_name='Página Contato'
-    )
-    process_lead = models.CharField(
-        max_length=300,
-        default='Participe do processo seletivo e faça parte da Liga Insper Consulting Club',
-        verbose_name='Página Processo Seletivo'
-    )
-    process_closed_message = models.CharField(
-        max_length=300,
-        default='Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.',
-        verbose_name='Mensagem de inscrições encerradas'
+        help_text='Programa para onde o botão "Ver os cases" da página Projetos leva. '
+                  'Deixe vazio para esconder a seção.'
     )
 
     # Política de Privacidade (o texto inicial é criado pela migration)
@@ -905,26 +814,46 @@ class PartnerBenefit(models.Model):
 
 class SiteText(models.Model):
     """
-    Texto curto do site (título de seção, rótulo, botão, mensagem de lista
-    vazia). As entradas nascem do catálogo em site_texts.py; o admin só edita
-    o valor, não cria nem exclui.
+    Texto do site (título de seção, rótulo, botão, mensagem de lista vazia). As entradas nascem do registro de
+    conteúdo (website/conteudo/); o admin só edita o valor, pela tela de cada página (PaginaDoSite), e não cria
+    nem exclui.
     """
     key = models.CharField(max_length=100, unique=True, verbose_name='Chave')
     group = models.CharField(max_length=100, verbose_name='Página')
     description = models.CharField(max_length=200, verbose_name='Onde aparece')
-    value = models.CharField(
-        max_length=300, verbose_name='Texto',
+    value = models.TextField(
+        verbose_name='Texto',
         help_text='Mantenha os trechos entre chaves, como {n} ou {data}: o site os preenche.'
     )
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Texto do site'
-        verbose_name_plural = 'Textos do site'
+        verbose_name = 'Valor de texto do site'
+        verbose_name_plural = 'Valores de textos do site'
         ordering = ['order']
 
     def __str__(self):
         return f'{self.group}: {self.description}'
+
+
+class PaginaDoSite(models.Model):
+    """
+    Uma página do site, para organizar a tela "Textos do site" do admin: cada página tem as suas seções e os seus
+    textos. As linhas nascem do registro de conteúdo (website/conteudo/) a cada migração, e não se criam nem se
+    excluem à mão; os textos de cada uma ficam em SiteText.
+    """
+    slug = models.SlugField(max_length=40, unique=True, verbose_name='Identificador')
+    title = models.CharField(max_length=100, verbose_name='Página')
+    path = models.CharField(max_length=200, verbose_name='Endereço no site')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Página do site'
+        verbose_name_plural = 'Textos do site'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
 
 
 class NavItem(models.Model):
@@ -1005,4 +934,51 @@ class NavItem(models.Model):
         if self.url and not self.url.startswith(('/', 'http://', 'https://', 'mailto:')):
             raise ValidationError({
                 'url': 'O link precisa começar com https://, http://, mailto: ou / (caminho do site).'
+            })
+
+
+class SecaoDaHome(models.Model):
+    """
+    Uma seção da Home que o editor mostra, esconde e reordena. As linhas nascem do registro de conteúdo
+    (website/conteudo/secoes.py) a cada migração e não se criam nem se excluem à mão. O Topo e a Apresentação ficam
+    sempre no começo e não têm linha. Os campos do botão só valem para o aviso.
+    """
+    key = models.SlugField(max_length=40, unique=True, verbose_name='Identificador')
+    title = models.CharField(max_length=100, verbose_name='Seção')
+    visible = models.BooleanField(
+        default=True, verbose_name='Mostrar no site', help_text='Desmarque para esconder a seção da Home.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+    button_page = models.CharField(
+        max_length=40, choices=NavItem.PAGE_CHOICES, blank=True, verbose_name='Página do site',
+        help_text='Para onde o botão leva. Escolha uma página do site, ou deixe vazio e preencha "Link livre". '
+                  'Sem texto do botão (em Textos do site), nenhum botão aparece.'
+    )
+    button_url = models.CharField(
+        max_length=300, blank=True, verbose_name='Link livre',
+        help_text='Endereço completo (https://...) ou um caminho do site (/equipe). Use só se não houver página na lista.'
+    )
+
+    class Meta:
+        verbose_name = 'Seção da Home'
+        verbose_name_plural = 'Seções da Home'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def button_path(self):
+        return NavItem.PAGINAS[self.button_page] if self.button_page else self.button_url
+
+    @property
+    def button_external(self):
+        return self.button_path.startswith(('http://', 'https://', 'mailto:'))
+
+    def clean(self):
+        if self.button_page and self.button_url:
+            raise ValidationError('Preencha a página do site ou o link livre, não os dois.')
+        if self.button_url and not self.button_url.startswith(('/', 'http://', 'https://', 'mailto:')):
+            raise ValidationError({
+                'button_url': 'O link precisa começar com https://, http://, mailto: ou / (caminho do site).'
             })

@@ -29,123 +29,105 @@ DIRETORIAS = [
     ("Escola de Mentores", 5),
 ]
 
-# foto: gera uma foto de exemplo. contato: False deixa e-mail e LinkedIn vazios.
-# saida: data de saída (ex-membro, some da página Equipe). vinculos: (diretoria, cargo nela).
+# foto: gera uma foto de exemplo. contato: False deixa o LinkedIn vazio.
+# ativo: False marca um ex-membro (some da página Equipe). vinculos: (diretoria, cargo nela).
 MEMBROS = [
     {
-        "nome": "Helena Prado", "cargo": "Presidente", "curso": "Administração", "periodo": "6º semestre",
-        "horas": 460, "entrada": date(2024, 2, 5), "foto": True, "contato": True,
-        "bio": "Lidera o ICC e a relação com a diretoria executiva. Gosta de problemas de estratégia e crescimento.",
+        "nome": "Helena Prado", "cargo": "Presidente",
+        "foto": True, "contato": True,
         "vinculos": [("Presidência", "Presidente")],
         "trajetoria": [("2024.1", "Trainee"), ("2024.2", "Membro"), ("2025.2", "Diretora de Projetos"), ("2026.1", "Presidente")],
     },
     {
-        "nome": "Rafael Moura", "cargo": "Vice-presidente", "curso": "Economia", "periodo": "7º semestre",
-        "horas": 440, "entrada": date(2023, 8, 7), "foto": True, "contato": True,
-        "bio": "Apoia a presidência na gestão interna e no acompanhamento das metas do semestre.",
+        "nome": "Rafael Moura", "cargo": "Vice-presidente",
+        "foto": True, "contato": True,
         "vinculos": [("Presidência", "Vice-presidente")],
         "trajetoria": [("2023.2", "Trainee"), ("2024.1", "Membro"), ("2025.1", "Coordenador"), ("2026.1", "Vice-presidente")],
     },
     {
-        "nome": "Camila Duarte", "cargo": "Diretor de Projetos", "curso": "Engenharia", "periodo": "5º semestre",
-        "horas": 380, "entrada": date(2024, 8, 12), "foto": True, "contato": True,
-        "bio": "Cuida da gestão de projetos e da qualidade das entregas, do kickoff à apresentação final.",
+        "nome": "Camila Duarte", "cargo": "Diretor de Projetos",
+        "foto": True, "contato": True,
         "vinculos": [("Projetos", "Diretora de Projetos")],
         "trajetoria": [("2024.2", "Trainee"), ("2025.1", "Membro"), ("2026.1", "Diretora de Projetos")],
     },
     {
-        "nome": "Lucas Tavares", "cargo": "Diretor de Capacitação", "curso": "Economia", "periodo": "5º semestre",
-        "horas": 350, "entrada": date(2024, 8, 12), "foto": True, "contato": True,
-        "bio": "Conduz os treinamentos de case, mercado e storytelling para os novos membros.",
+        "nome": "Lucas Tavares", "cargo": "Diretor de Capacitação",
+        "foto": True, "contato": True,
         "vinculos": [("Capacitação", "Diretor de Capacitação")],
         "trajetoria": [("2024.2", "Trainee"), ("2025.1", "Membro"), ("2026.1", "Diretor de Capacitação")],
     },
     {
-        "nome": "Beatriz Salgado", "cargo": "Diretor de Relacionamento", "curso": "Administração", "periodo": "6º semestre",
-        "horas": 340, "entrada": date(2024, 2, 19), "foto": False, "contato": True,
-        "bio": "Coordena o contato com parceiros e os eventos institucionais do clube.",
+        "nome": "Beatriz Salgado", "cargo": "Diretor de Relacionamento",
+        "foto": False, "contato": True,
         "vinculos": [("Relacionamento", "Diretora de Relacionamento")],
         "trajetoria": [("2024.1", "Trainee"), ("2024.2", "Membro"), ("2026.1", "Diretora de Relacionamento")],
     },
     {
-        "nome": "Thiago Marques", "cargo": "Coordenador", "curso": "Ciência da Computação", "periodo": "5º semestre",
-        "horas": 300, "entrada": date(2024, 8, 12), "foto": True, "contato": True,
-        "bio": "Coordena as equipes de projeto e faz a ponte entre membros, diretoria e parceiros.",
+        "nome": "Thiago Marques", "cargo": "Coordenador",
+        "foto": True, "contato": True,
         "vinculos": [("Projetos", "Coordenador de Projetos")],
         "trajetoria": [("2024.2", "Trainee"), ("2025.1", "Membro"), ("2026.1", "Coordenador")],
     },
     {
         # Em duas diretorias ao mesmo tempo, para testar o agrupamento da página Equipe.
-        "nome": "Isabela Fontes", "cargo": "Mentor", "curso": "Administração", "periodo": "Alumni",
-        "horas": 540, "entrada": date(2023, 2, 6), "foto": True, "contato": True,
-        "bio": "Ex-presidente que segue acompanhando trainees e cases como mentora.",
+        "nome": "Isabela Fontes", "cargo": "Mentor",
+        "foto": True, "contato": True,
         "vinculos": [("Escola de Mentores", "Mentora"), ("Capacitação", "Instrutora de Case")],
         "trajetoria": [("2023.1", "Trainee"), ("2023.2", "Membro"), ("2024.2", "Presidente"), ("2025.2", "Mentora")],
     },
     {
-        "nome": "Gabriel Ferraz", "cargo": "Membro", "curso": "Engenharia", "periodo": "4º semestre",
-        "horas": 210, "entrada": date(2025, 2, 17), "foto": False, "contato": True,
-        "bio": "Participa dos projetos com foco em análise de dados e modelagem financeira.",
+        "nome": "Gabriel Ferraz", "cargo": "Membro",
+        "foto": False, "contato": True,
         "vinculos": [("Projetos", "Analista de Projetos")],
         "trajetoria": [("2025.1", "Trainee"), ("2025.2", "Membro")],
     },
     {
-        "nome": "Larissa Quintela", "cargo": "Membro", "curso": "Economia", "periodo": "4º semestre",
-        "horas": 190, "entrada": date(2025, 2, 17), "foto": True, "contato": True,
-        "bio": "Cuida da agenda de eventos e da comunicação com os parceiros.",
+        "nome": "Larissa Quintela", "cargo": "Membro",
+        "foto": True, "contato": True,
         "vinculos": [("Relacionamento", "Analista de Relacionamento")],
         "trajetoria": [("2025.1", "Trainee"), ("2025.2", "Membro")],
     },
     {
         # Nome muito longo, para testar quebra de linha nos cards, no perfil e no admin.
         "nome": "Pedro Henrique Cavalcanti Albuquerque de Vasconcelos Neto", "cargo": "Membro",
-        "curso": "Administração", "periodo": "3º semestre", "horas": 120, "entrada": date(2025, 8, 11),
         "foto": True, "contato": True,
-        "bio": "Entrou no último processo seletivo e trabalha na capacitação dos trainees.",
         "vinculos": [("Capacitação", "Analista de Capacitação")],
         "trajetoria": [("2025.2", "Trainee"), ("2026.1", "Membro")],
     },
     {
-        "nome": "Júlia Nogueira", "cargo": "Trainee", "curso": "Administração", "periodo": "2º semestre",
-        "horas": 80, "entrada": date(2026, 8, 10), "foto": False, "contato": True,
-        "bio": "Participa do ciclo de formação do ICC.",
+        "nome": "Júlia Nogueira", "cargo": "Trainee",
+        "foto": False, "contato": True,
         "vinculos": [],
         "trajetoria": [("2026.2", "Trainee")],
     },
     {
-        # Sem e-mail, sem LinkedIn, sem curso, sem horas e sem trajetória: campos vazios.
-        "nome": "Mateus Ribeiro", "cargo": "Trainee", "curso": None, "periodo": None,
-        "horas": None, "entrada": date(2026, 8, 10), "foto": False, "contato": False,
-        "bio": "Perfil só com o essencial, para testar os campos vazios.",
+        # Sem foto, sem LinkedIn e sem trajetória: campos vazios.
+        "nome": "Mateus Ribeiro", "cargo": "Trainee", "foto": False, "contato": False,
         "vinculos": [],
         "trajetoria": [],
     },
     {
-        "nome": "Sofia Brandão", "cargo": "Trainee", "curso": "Ciência da Computação", "periodo": "3º semestre",
-        "horas": 75, "entrada": date(2026, 8, 10), "foto": True, "contato": True,
-        "bio": "Em formação no ICC, interessada em dados e tecnologia.",
+        "nome": "Sofia Brandão", "cargo": "Trainee",
+        "foto": True, "contato": True,
         "vinculos": [],
         "trajetoria": [("2026.2", "Trainee")],
     },
     {
-        "nome": "Davi Lacerda", "cargo": "Membro", "curso": "Economia", "periodo": "5º semestre",
-        "horas": 260, "entrada": date(2025, 2, 17), "foto": False, "contato": True,
-        "bio": "Atua nos projetos de mercado e em pesquisa secundária.",
+        "nome": "Davi Lacerda", "cargo": "Membro",
+        "foto": False, "contato": True,
         "vinculos": [("Projetos", "Analista de Projetos")],
         "trajetoria": [("2025.1", "Trainee"), ("2025.2", "Membro"), ("2026.1", "Membro")],
     },
     # Ex-membros: somem da página Equipe, mas o perfil e os cases antigos continuam.
     {
-        "nome": "Carolina Mendonça", "cargo": "Mentor", "curso": "Administração", "periodo": "Alumni",
-        "horas": 610, "entrada": date(2022, 8, 8), "saida": date(2025, 7, 15), "foto": False, "contato": True,
-        "bio": "Ex-mentora, hoje atua em consultoria de estratégia. Aparece como mentora nos cases antigos.",
+        "nome": "Carolina Mendonça", "cargo": "Mentor",
+        "ativo": False, "foto": False, "contato": True,
         "vinculos": [],
         "trajetoria": [("2022.2", "Trainee"), ("2023.1", "Membro"), ("2024.1", "Presidente"), ("2024.2", "Mentora")],
     },
     {
-        "nome": "Bruno Teixeira", "cargo": "Membro", "curso": "Economia", "periodo": "Alumni",
-        "horas": 300, "entrada": date(2023, 2, 6), "saida": date(2025, 1, 31), "foto": False, "contato": True,
-        "bio": "Ex-membro. Participou de dois projetos e do case final da Jornada do Consultor.",
+        "nome": "Bruno Teixeira", "cargo": "Membro",
+        "ativo": False, "foto": False, "contato": True,
         "vinculos": [],
         "trajetoria": [("2023.1", "Trainee"), ("2023.2", "Membro"), ("2024.2", "Membro")],
     },
@@ -204,7 +186,7 @@ PROGRAMAS = [
                      "aproximando-o do ambiente e da prática de consultoria. A aprovação nesta etapa é condição para a "
                      "permanência do membro nos semestres seguintes.",
         "topicos": "Visitas a escritórios de consultoria\nCapacitações semanais\nCase final com banca\nAcompanhamento por mentores",
-        "selo": "Semestral", "estilo": "badge--semestral", "inscricao": "",
+        "inscricao": "",
         "componentes": [
             ("Visitas corporativas", "Encontros em escritórios de consultoria parceiros, com conversas abertas com consultores."),
             ("Capacitações semanais", "Aulas práticas de estrutura de problemas, Excel, storytelling e comunicação executiva."),
@@ -233,7 +215,7 @@ PROGRAMAS = [
         "descricao": "Prática de resolução de cases e de processos seletivos, incluindo a vertente quantitativa. Prepara os "
                      "membros para as etapas mais exigidas pelas firmas de consultoria: GMAT, Verbal, Data e Fit Interview.",
         "topicos": "Case interview\nGMAT e raciocínio quantitativo\nVerbal\nData\nFit interview",
-        "selo": "Semanal", "estilo": "badge--semanal", "inscricao": "https://example.com/pedagogico/inscricao",
+        "inscricao": "https://example.com/pedagogico/inscricao",
         "componentes": [
             ("Simulados de case", "Rodadas semanais de case interview, com retorno individual dos mentores."),
             ("Trilha quantitativa", "Treino de GMAT, estimativas e leitura de gráficos."),
@@ -254,7 +236,7 @@ PROGRAMAS = [
         "subtitulo": "Formação de quem acompanha os trainees",
         "descricao": "Formação preparatória para os mentores que acompanham os grupos de trainees ao longo da Jornada do Consultor.",
         "topicos": "Como dar feedback\nLiderança de grupos\nAcompanhamento de cases",
-        "selo": "Mensal", "estilo": "badge--mensal", "inscricao": "",
+        "inscricao": "",
         "componentes": [
             ("Formação de mentores", "Encontros mensais sobre feedback, escuta e condução de reuniões."),
             ("Acompanhamento de grupos", "Cada mentor acompanha um grupo de trainees durante o semestre."),
@@ -272,7 +254,7 @@ PROGRAMAS = [
         "descricao": "Programa voltado a ex-alunos do Insper que já se formaram, mas ainda buscam ingressar em grandes firmas de "
                      "consultoria, com preparação equivalente à oferecida aos membros, sem as obrigações do ciclo regular de trainee.",
         "topicos": "Preparação para processos seletivos\nMentoria com membros\nSimulados de case",
-        "selo": "", "estilo": "badge--semestral", "inscricao": "https://example.com/alumni/inscricao",
+        "inscricao": "https://example.com/alumni/inscricao",
         "componentes": [
             ("Preparação para processos seletivos", "Trilha equivalente à dos membros, adaptada a quem já se formou."),
             ("Mentoria com membros", "Conversas individuais com membros e ex-membros que passaram pelos processos."),
@@ -289,7 +271,7 @@ PROGRAMAS = [
         "slug": "programa-em-reformulacao", "nome": "Programa em reformulação", "ordem": 5, "icone": False,
         "subtitulo": "", "ativo": False,
         "descricao": "Programa com \"Exibir no site\" desmarcado: só aparece no admin.",
-        "topicos": "", "selo": "", "estilo": "badge--semestral", "inscricao": "",
+        "topicos": "", "inscricao": "",
         "componentes": [], "blocos": [],
     },
 ]

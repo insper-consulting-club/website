@@ -37,11 +37,11 @@ Cada artigo aparece em dois lugares:
 
 1. **Escreva** o artigo no formato que preferir, inclusive direto em Markdown (`.md`). Use os estilos de título do editor para seções, subseções e subsubseções (no Google Docs, `Ctrl+Alt+2`, `Ctrl+Alt+3` e `Ctrl+Alt+4`). Deixe as imagens em arquivos separados.
 2. **Converta** o texto para Markdown (ver [Converter o texto para Markdown](#converter-o-texto-para-markdown)).
-3. **Revise** o artigo como ele ficará no site (ver [Revisar antes de publicar](#revisar-antes-de-publicar)).
-4. No admin, abra **Artigos > Adicionar artigo** e preencha os campos (ver [Campo a campo](#campo-a-campo)).
-5. **Cole** o texto convertido em **Texto do artigo**.
-6. **Envie as imagens** em **Imagens do artigo** e coloque-as no texto pelo número (ver [Imagens no meio do texto](#imagens-no-meio-do-texto)).
-7. **Salve** com **Publicado** desmarcado. O artigo fica guardado como rascunho e não aparece no site.
+3. No admin, abra **Artigos > Adicionar artigo** e preencha os campos (ver [Campo a campo](#campo-a-campo)).
+4. **Cole** o texto convertido em **Texto do artigo**.
+5. **Envie as imagens** em **Imagens do artigo** e coloque-as no texto pelo número (ver [Imagens no meio do texto](#imagens-no-meio-do-texto)).
+6. Clique em **Salvar e continuar editando**, com **Publicado** desmarcado. O artigo fica guardado como rascunho e não aparece no site.
+7. **Revise** o texto com o botão **Mostrar prévia**, abaixo de **Texto do artigo** (ver [Revisar antes de publicar](#revisar-antes-de-publicar)). Corrija e salve até ficar certo.
 8. Marque **Publicado**, salve e abra a página no site para conferir. Se algo estiver errado, desmarque **Publicado** e corrija.
 
 Dica: antes de abrir o admin, prepare numa ficha o título, os autores, os temas, o resumo, o slug, a data e a lista das imagens (número, arquivo e legenda), respeitando os limites de [Campo a campo](#campo-a-campo).
@@ -49,6 +49,8 @@ Dica: antes de abrir o admin, prepare numa ficha o título, os autores, os temas
 ---
 
 ## Campo a campo
+
+Os campos **Ordem de exibição**, **Publicação** e **Link externo** ficam na seção recolhida **Avançado**, no fim do formulário. Clique nela para abrir. Os demais aparecem à vista.
 
 | Campo | Obrigatório | Limite | O que escrever |
 | --- | --- | --- | --- |
@@ -165,7 +167,7 @@ Links que começam com `http` abrem em outra aba.
 As imagens são cadastradas no mesmo formulário do artigo, sem precisar salvar antes.
 
 1. Desça até **Imagens do artigo**. Em cada linha, preencha:
-   - **Número:** 1, 2, 3, na ordem que você preferir. Cada número só pode ser usado uma vez no artigo;
+   - **Número:** deixe vazio e o admin numera sozinho (1, 2, 3, na ordem em que as imagens entram). Se preferir, digite o seu; cada número só pode ser usado uma vez no artigo;
    - **Imagem:** um arquivo JPG ou PNG (SVG é recusado), com nome de até 100 caracteres, de preferência com 1400 px ou mais de largura e até cerca de 2 MB. Textos e números dentro da imagem precisam ser legíveis no celular;
    - **Legenda:** o texto que aparece embaixo da imagem, com até 300 caracteres. Fonte e notas longas ficam melhor no texto do artigo.
 2. No **Texto do artigo**, no ponto onde a imagem deve aparecer, escreva em uma linha sozinha:
@@ -174,7 +176,7 @@ As imagens são cadastradas no mesmo formulário do artigo, sem precisar salvar 
    ![](imagem-1)
    ```
 
-   Troque o 1 pelo número da imagem.
+   Troque o 1 pelo número da imagem. Depois de salvar, cada linha mostra o trecho pronto na coluna **Para colar no texto**, com o botão **Copiar**.
 3. Salve. No site, a imagem ocupa a largura do texto, com a legenda embaixo.
 
 Para usar uma legenda diferente só naquele ponto, escreva-a entre os colchetes:
@@ -254,11 +256,19 @@ Outros formatos: `.docx` e `.odt` abrem no Google Docs, e um `.md` só precisa s
 
 ## Revisar antes de publicar
 
-O admin não tem pré-visualização. Um artigo com **Publicado** desmarcado só aparece para quem edita, como texto cru, e um artigo publicado fica visível para qualquer pessoa. **Quem publica deve revisar o artigo antes de publicá-lo**, de preferência no ambiente local.
+Um artigo com **Publicado** desmarcado fica guardado só no admin, e um artigo publicado fica visível para qualquer pessoa. **Quem publica deve revisar o artigo antes de publicá-lo.** Há duas formas de conferir, e a primeira basta para a maioria dos artigos.
 
-### Ambiente local (recomendado)
+### Prévia no admin (o caso comum)
 
-Mostra o artigo exatamente como o site vai mostrar, com imagens e fórmulas. O [Guia do ambiente local](guia-ambiente-local.md) ensina a montá-lo do zero, sem conhecimento técnico.
+Abaixo do campo **Texto do artigo**, o botão **Mostrar prévia** abre o texto desenhado pelo próprio site, com os mesmos estilos, tabelas, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita, e nada é publicado até clicar em **Salvar**.
+
+- **Imagens.** Num artigo novo, elas só aparecem depois de salvar o artigo e as imagens uma vez (use **Salvar e continuar editando**).
+- **O que a prévia não mostra.** Só o corpo do texto aparece. Título, autores, data, resumo, imagem de capa e o card da lista não entram. Para vê-los, use o ambiente local.
+- **Se o botão não aparecer**, o endereço do site não está configurado no servidor (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)). Use o ambiente local.
+
+### Ambiente local (para ver a página inteira)
+
+Mostra o artigo exatamente como o site vai mostrar, com título, capa, card, imagens e fórmulas. Vale a pena quando o artigo tem capa, muitas imagens ou fórmulas, ou quando o layout importa. O [Guia do ambiente local](guia-ambiente-local.md) ensina a montá-lo do zero, sem conhecimento técnico.
 
 1. Atualize o projeto para a `main` e ligue o ambiente local, como explica o guia.
 2. No admin local (http://localhost:8000/admin/), cadastre o artigo com **Publicado** marcado. O banco local é separado do de produção, então não há risco de publicar por engano.
@@ -269,7 +279,7 @@ O artigo precisa ser cadastrado de novo em produção: o texto se copia e se col
 
 ### Visualizador de Markdown na internet
 
-Serve só para conferir a estrutura de textos simples: seções, listas, links, negrito e tabelas. Ele **não** reproduz o site, e por isso:
+Com a prévia do admin, ele quase não é necessário. Serve só para conferir a estrutura de textos simples: seções, listas, links, negrito e tabelas. Ele **não** reproduz o site, e por isso:
 
 - **Fórmulas.** O site só abre fórmula com `$$`, mas muitos visualizadores usam outra regra. Uns mostram o `$$...$$` como texto cru e outros tratam o `$` simples como fórmula, o que estraga trechos como "R$ 10 mi e R$ 20 mi".
 - **Imagens.** `![](imagem-1)` aparece como imagem quebrada, porque o número só é resolvido pelo site.
@@ -279,6 +289,7 @@ Serve só para conferir a estrutura de textos simples: seções, listas, links, 
 
 - [ ] Título, autores, resumo e data preenchidos, dentro dos limites de caracteres (legenda de imagem: 300).
 - [ ] Slug sem acento, sem espaço e sem letra maiúscula (ou em branco).
+- [ ] Prévia do admin conferida (texto, imagens e fórmulas).
 - [ ] Cada parágrafo separado por uma linha em branco.
 - [ ] Títulos com `##`, `###` ou `####`, e um espaço depois dos símbolos.
 - [ ] Listas com uma linha em branco antes.

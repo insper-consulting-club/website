@@ -41,17 +41,17 @@ class MemberListView(generics.ListAPIView):
             F("min_directorate_order").asc(nulls_last=True),
             "position__power", "name",
         )
-        # Membros arquivados (com data de saída) nunca aparecem na API pública.
-        return qs.filter(exit_date__isnull=True)
+        # Membros arquivados (desmarcados em "Exibir na equipe") nunca aparecem na API pública.
+        return qs.filter(is_active=True)
 
 
 class MemberDetailView(generics.RetrieveAPIView):
     serializer_class = MemberDetailSerializer
-    # Sem filtro de propósito: membros arquivados (com data de saída) não entram
+    # Sem filtro de propósito: membros arquivados (desmarcados em "Exibir na equipe") não entram
     # na listagem da equipe, mas o perfil deles continua acessível por link
     # (ex.: a partir da equipe de um projeto).
     queryset = Member.objects.select_related("position").prefetch_related(
-        "projects__partners", "directorate_memberships__directorate", "trajectory_steps"
+        "directorate_memberships__directorate", "trajectory_steps"
     ).all()
 
 

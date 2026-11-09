@@ -14,7 +14,7 @@ import "./index.css"
 export default function Projetos() {
   const config = useSiteConfig()
   const t = useTextos()
-  usePageTitle(t("projetos.eyebrow"), config.projects_lead)
+  usePageTitle(t("projetos.eyebrow"), t("projetos.abertura"))
   const programas = useProgramas()
   const [cases, setCases] = useState<ProgramCase[]>([])
   const [outrosProjetos, setOutrosProjetos] = useState<Project[]>([])
@@ -40,7 +40,7 @@ export default function Projetos() {
       <PageHero
         eyebrow={t("projetos.eyebrow")}
         title={<>{t("projetos.titulo")} <span className="destaque">{t("projetos.titulo_destaque")}</span></>}
-        lead={config.projects_lead}
+        lead={t("projetos.abertura")}
       />
 
       <section className="section">

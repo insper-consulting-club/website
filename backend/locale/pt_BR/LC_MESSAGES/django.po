@@ -23,21 +23,21 @@ msgid ""
 " database tables have been created, and make sure the database is readable "
 "by the appropriate user."
 msgstr ""
-"Alguma coisa está errada com sua instalação do banco de dados. Certifique-se"
-" que as tabelas apropriadas foram criadas, e certifique-se que o banco de "
-"dados pode ser acessado pelo usuário apropriado."
+"Algo está errado com a instalação do banco de dados. Certifique-se de que as "
+"tabelas apropriadas foram criadas e de que o banco de dados pode ser "
+"acessado pelo usuário apropriado."
 
 #. Django (admin): 'Obirgado' -> 'Obrigado'
 msgid ""
 "There’s been an error. It’s been reported to the site administrators via "
 "email and should be fixed shortly. Thanks for your patience."
 msgstr ""
-"Ocorreu um erro. Este foi reportado para os administradores do site via "
-"email e deve ser corrigido logo. Obrigado por sua paciência."
+"Ocorreu um erro. Ele foi comunicado por e-mail aos administradores do site "
+"e deve ser corrigido em breve. Obrigado pela paciência."
 
 #. Django (auth): 'datos' -> 'dados'
 msgid "Conflicting form data submitted. Please try again."
-msgstr "Formulário com dados conflitantes. Por favor, tente novamente."
+msgstr "Formulário com dados conflitantes. Tente novamente."
 
 msgid "Select record"
 msgstr "Selecionar registro"
@@ -599,3 +599,98 @@ msgstr "Data"
 
 msgid "Select currency"
 msgstr "Selecionar moeda"
+
+#. Django (auth): faltava o artigo e a preposição
+msgid "Designates whether the user can log into this admin site."
+msgstr "Indica que o usuário consegue acessar este site de administração."
+
+#. Django (auth): 'que este usuário pertence' -> 'a que este usuário pertence'
+msgid ""
+"The groups this user belongs to. A user will get all permissions granted to "
+"each of their groups."
+msgstr ""
+"Os grupos a que este usuário pertence. Um usuário terá todas as permissões "
+"concedidas a cada um dos seus grupos."
+
+#. Django (auth e admin): a mensagem de login inválido dizia "entre com" e tinha espaço duplo
+msgid ""
+"Please enter a correct %(username)s and password. Note that both fields may "
+"be case-sensitive."
+msgstr ""
+"Confira o %(username)s e a senha. Os dois campos diferenciam maiúsculas de "
+"minúsculas."
+
+msgid ""
+"Please enter the correct %(username)s and password for a staff account. Note "
+"that both fields may be case-sensitive."
+msgstr ""
+"Confira o %(username)s e a senha: a conta precisa ser da equipe. Os dois "
+"campos diferenciam maiúsculas de minúsculas."
+
+#. Django (admin): faltava a vírgula depois de "Por favor"
+msgid "Please correct the error below."
+msgid_plural "Please correct the errors below."
+msgstr[0] "Corrija o erro abaixo."
+msgstr[1] "Corrija os erros abaixo."
+
+#. Django (validadores): "Certifique-se que" -> "Certifique-se de que"
+msgid "Ensure this value is less than or equal to %(limit_value)s."
+msgstr "Certifique-se de que este valor seja menor ou igual a %(limit_value)s."
+
+msgid "Ensure this value is greater than or equal to %(limit_value)s."
+msgstr "Certifique-se de que este valor seja maior ou igual a %(limit_value)s."
+
+#. Django: 'checkbox' -> 'opção'
+msgid "Please either submit a file or check the clear checkbox, not both."
+msgstr "Envie um arquivo ou marque a opção de limpar, mas não faça as duas coisas."
+
+msgid "Please submit at most %(num)d form."
+msgid_plural "Please submit at most %(num)d forms."
+msgstr[0] "Envie no máximo %(num)d formulário."
+msgstr[1] "Envie no máximo %(num)d formulários."
+
+msgid "Please submit at least %(num)d form."
+msgid_plural "Please submit at least %(num)d forms."
+msgstr[0] "Envie pelo menos %(num)d formulário."
+msgstr[1] "Envie pelo menos %(num)d formulários."
+
+msgid "Please correct the duplicate data for %(field)s."
+msgstr "Corrija o valor duplicado em %(field)s."
+
+msgid "Please correct the duplicate data for %(field)s, which must be unique."
+msgstr "Corrija o valor duplicado em %(field)s, que deve ser único."
+
+msgid ""
+"Please correct the duplicate data for %(field_name)s which must be unique "
+"for the %(lookup)s in %(date_field)s."
+msgstr ""
+"Corrija o dado duplicado em %(field_name)s, que deve ser único para "
+"%(lookup)s em %(date_field)s."
+
+msgid "Please correct the duplicate values below."
+msgstr "Corrija os valores duplicados abaixo."
+
+#. Django: 'email' -> 'e-mail'
+msgid "Enter a valid email address."
+msgstr "Informe um endereço de e-mail válido."
+
+msgid "email address"
+msgstr "endereço de e-mail"
+
+#. Django (página de falha do CSRF): 'browser' -> 'navegador'
+msgid ""
+"If you have configured your browser to disable “Referer” headers, please re-"
+"enable them, at least for this site, or for HTTPS connections, or for “same-"
+"origin” requests."
+msgstr ""
+"Se você configurou seu navegador para desabilitar os cabeçalhos “Referer”, "
+"reabilite-os, ao menos para este site, para conexões HTTPS ou para "
+"requisições “same-origin”."
+
+msgid ""
+"If you have configured your browser to disable cookies, please re-enable "
+"them, at least for this site, or for “same-origin” requests."
+msgstr ""
+"Se você configurou seu navegador para desabilitar cookies, reabilite-os, ao "
+"menos para este site ou para requisições “same-origin”."
+

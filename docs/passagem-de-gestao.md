@@ -79,7 +79,7 @@ Gere uma nova `SECRET_KEY` (o comando está em [`backend/.env.example`](../backe
 
 No `/admin`, em **Usuários**, desative quem saiu (desmarque "Ativo") e crie os logins de quem entrou, um por pessoa. Veja as regras no [guia do admin](guia-admin.md#logins-para-outras-pessoas-do-icc).
 
-Quem tem **Status de superusuário** pode criar outros logins e apagar qualquer registro. Mantenha isso restrito a poucas pessoas. Para quem só cuida do conteúdo, use o grupo **Editores**, sem superusuário.
+O admin tem dois níveis, descritos no [guia do admin](guia-admin.md#logins-para-outras-pessoas-do-icc): **Administrador** (com **Status de superusuário**) e **Editor** (grupo **Editores**). Mantenha **duas** pessoas como administradoras, por exemplo o Diretor Tech e alguém da presidência, para que um acesso perdido não deixe o admin sem responsável. Na troca de gestão, torne o novo Diretor Tech administrador e desative o anterior. Só administradores mexem na marca, no menu, nos benefícios e na Política de Privacidade, e a mudança de marca pede um novo deploy do frontend no Render ([operacao.md](operacao.md#marca-do-site-e-novo-deploy-do-frontend)). Para quem só cuida do conteúdo, use o grupo **Editores**, sem superusuário.
 
 ### 6. Pessoas fora da organização
 
@@ -109,6 +109,7 @@ Chaves e senhas pessoais do ex-Diretor Tech (por exemplo, a `DATABASE_URL` copia
 ### Para quem entra
 
 - [ ] Receber a conta de infraestrutura e trocar a senha e a recuperação de conta.
+- [ ] Ter um login de administrador no `/admin` e confirmar que existem duas pessoas com esse nível.
 - [ ] Conferir quem é o titular do domínio no Registro.br e a data de vencimento ([Titularidade do domínio](#titularidade-do-domínio)).
 - [ ] Entrar no Render, no Neon, no Cloudinary e no UptimeRobot e confirmar que tudo está ativo.
 - [ ] Ser adicionado à organização do GitHub e conseguir rodar o projeto seguindo [`desenvolvimento.md`](desenvolvimento.md).

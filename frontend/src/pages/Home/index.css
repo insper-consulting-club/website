@@ -411,3 +411,17 @@
     align-items: flex-start;
   }
 }
+
+/* Aviso opcional, depois da Apresentação. Texto e botão do guia de marca; as quebras de linha do texto valem. */
+.home-notice .section-title {
+  margin-bottom: 1rem;
+}
+
+.home-notice__text {
+  max-width: 46rem;
+  white-space: pre-line;
+}
+
+.home-notice__actions {
+  margin-top: 1.5rem;
+}

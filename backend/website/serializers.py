@@ -10,7 +10,7 @@ from .models import (
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
     ProgramCase, ProgramCaseParticipant,
-    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SecaoDaHome, SiteText, NavItem
 )
 
 
@@ -38,7 +38,7 @@ class ProgramSerializer(serializers.ModelSerializer):
     class Meta:
         model = Program
         fields = ["id", "slug", "label", "subtitle", "description", "highlights",
-                  "icon_url", "badge", "badge_class", "signup_url", "order"]
+                  "icon_url", "signup_url", "order"]
 
     def get_highlights(self, obj):
         return obj.get_highlights_list()
@@ -84,8 +84,6 @@ class PartnerProjectSerializer(serializers.ModelSerializer):
 class PartnerSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     logo_url = serializers.SerializerMethodField()
-    projects_count = serializers.SerializerMethodField()
-    completed_projects_count = serializers.SerializerMethodField()
     projects = serializers.SerializerMethodField()
 
     class Meta:
@@ -97,8 +95,6 @@ class PartnerSerializer(serializers.ModelSerializer):
             "category",
             "site",
             "logo_url",
-            "projects_count",
-            "completed_projects_count",
             "projects",
         ]
 
@@ -110,12 +106,6 @@ class PartnerSerializer(serializers.ModelSerializer):
         if projects is None:
             projects = list(obj.projects.filter(is_active=True).select_related("program"))
         return projects
-
-    def get_projects_count(self, obj):
-        return len(self._active_projects(obj))
-
-    def get_completed_projects_count(self, obj):
-        return len(self._completed_projects(obj))
 
     def _completed_projects(self, obj):
         done = [p for p in self._active_projects(obj) if p.end_date is not None]
@@ -219,7 +209,7 @@ class MemberListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = ["id", "name", "position", "position_power", "directorate_memberships",
-                  "photo_url", "course", "year", "linkedin"]
+                  "photo_url", "linkedin"]
 
     def get_photo_url(self, obj):
         request = self.context.get("request")
@@ -232,27 +222,18 @@ class MemberDetailSerializer(serializers.ModelSerializer):
     position = serializers.StringRelatedField()
     directorate_memberships = DirectorateMembershipSerializer(many=True)
     photo_url = serializers.SerializerMethodField()
-    projects = serializers.SerializerMethodField()
-    number_of_projects = serializers.IntegerField()
     trajetoria = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
         fields = [
-            "id", "name", "position", "directorate_memberships", "photo_url", "biography",
-            "number_of_projects", "projects", "hours",
-            "entry_date", "exit_date", "course", "year", "linkedin",
+            "id", "name", "position", "directorate_memberships", "photo_url", "linkedin",
             "trajetoria",
         ]
 
     def get_trajetoria(self, obj):
         # Mesmo formato de antes: o frontend lê [{"semestre", "cargo"}], em ordem de semestre.
         return [{"semestre": etapa.semester, "cargo": etapa.role} for etapa in obj.trajectory_steps.all()]
-
-    def get_projects(self, obj):
-        # Projetos arquivados não aparecem no perfil do membro.
-        qs = obj.projects.filter(is_active=True).select_related("program").prefetch_related("partners")
-        return ProjectListSerializer(qs, many=True, context=self.context).data
 
     def get_photo_url(self, obj):
         request = self.context.get("request")
@@ -429,6 +410,7 @@ class SiteConfigSerializer(serializers.ModelSerializer):
     partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
     texts = serializers.SerializerMethodField()
     nav_items = serializers.SerializerMethodField()
+    home_sections = serializers.SerializerMethodField()
 
     class Meta:
         model = SiteConfig
@@ -439,6 +421,22 @@ class SiteConfigSerializer(serializers.ModelSerializer):
         # Item escondido no admin não chega ao site.
         ativos = [item for item in obj.nav_items.all() if item.is_active]
         return NavItemSerializer(ativos, many=True).data
+
+    def get_home_sections(self, obj):
+        # As seções visíveis da Home, na ordem do editor (o Topo e a Apresentação ficam fora: são sempre os primeiros).
+        # O aviso só sai quando tem texto; o botão, quando tem destino.
+        aviso = SiteText.objects.filter(key="home.aviso_texto").values_list("value", flat=True).first() or ""
+        secoes = []
+        for secao in SecaoDaHome.objects.filter(visible=True):
+            if secao.key != "aviso":
+                secoes.append({"key": secao.key})
+            elif aviso.strip():
+                secoes.append({
+                    "key": secao.key,
+                    "button_path": secao.button_path or None,
+                    "button_external": secao.button_external,
+                })
+        return secoes
 
     def get_texts(self, obj):
         # Parte do catálogo: um texto que ainda não chegou ao banco sai com o

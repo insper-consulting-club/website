@@ -6,8 +6,6 @@ export interface Program {
   description: string
   highlights: string[]
   icon_url: string | null
-  badge: string
-  badge_class: string
   signup_url: string
   order: number
 }
@@ -135,13 +133,6 @@ export interface TrajetoriaEtapa {
 }
 
 export interface MemberDetail extends Member {
-  biography: string
-  number_of_projects: number
-  hours: number
-  entry_date: string
-  exit_date: string | null
-  linkedin: string | null
-  projects: Project[]
   trajetoria: TrajetoriaEtapa[]
 }
 
@@ -257,6 +248,13 @@ export interface NavItem {
 }
 
 // Textos e contatos editáveis no admin (Configuração do site).
+// Uma seção da Home. Só o aviso traz o destino do botão.
+export interface HomeSection {
+  key: string
+  button_path?: string | null
+  button_external?: boolean
+}
+
 export interface SiteConfig {
   site_name: string
   site_description: string
@@ -270,31 +268,15 @@ export interface SiteConfig {
   linkedin_label: string
   github_url: string
   github_label: string
-  home_hero_title: string
-  home_statement: string
-  home_about_title: string
-  home_about_title_highlight: string
-  home_about_text: string
   home_about_photo_url: string | null
   home_about_photo_alt: string
-  mission: string
-  mission_how: string
-  mission_goal: string
-  home_cta_title: string
-  footer_tagline: string
-  team_lead: string
-  partners_lead: string
-  partners_benefits_title: string
-  projects_lead: string
   featured_program_slug: string
-  articles_lead: string
-  contact_lead: string
-  process_lead: string
-  process_closed_message: string
   privacy_updated: string
   privacy_text: string
   partner_benefits: PartnerBenefit[]
-  // Textos curtos (títulos, rótulos, botões), por chave. Ver textosPadrao.ts.
+  // Seções da Home que o editor deixou visíveis, na ordem dele (depois do Topo e da Apresentação).
+  home_sections: HomeSection[]
+  // Todos os textos das páginas (títulos, rótulos, botões, frases), por chave. Declarados em backend/website/conteudo/.
   texts: Record<string, string>
   nav_items: NavItem[]
 }

@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import date
 from pathlib import Path
 
 from django.conf import settings
@@ -52,20 +51,6 @@ def _power(cargo):
     if cargo.startswith("trainee"):
         return 5
     return 4
-
-
-def _semester_start(semestre):
-    """'2025.2' -> 1º de agosto de 2025; '2025.1' -> 1º de fevereiro."""
-    year, half = semestre.split(".")
-    return date(int(year), 2 if half == "1" else 8, 1)
-
-
-def _course_and_year(cursos):
-    if not cursos:
-        return None, None
-    course = " e ".join(c["nome"] for c in cursos)
-    periodos = [c["periodo"] for c in cursos if c.get("periodo")]
-    return course, (periodos[0] if periodos else "Formado")
 
 
 def _find_image(folder, slug):
@@ -177,30 +162,22 @@ class Command(BaseCommand):
 
     def _save_member(self, person_id, person, cargo, active=True):
         trajetoria = person.get("trajetoria", [])
-        course, year = _course_and_year(person.get("cursos"))
-        defaults = {
-            "name": person["nome"],
-            "course": course,
-            "year": year,
-        }
+        defaults = {"name": person["nome"]}
         if cargo:
             position, _ = Position.objects.get_or_create(
                 title=cargo, defaults={"power": _power(cargo)},
             )
             defaults["position"] = position
         if active:
-            defaults["exit_date"] = None
+            defaults["is_active"] = True
 
         # O LinkedIn é o identificador estável: todo mundo no icc.json tem um,
         # e nome pode ser corrigido pelo admin sem gerar um membro duplicado.
         member = Member.objects.filter(linkedin=person["linkedin"]).first()
         if member is None:
-            first = trajetoria[0]["semestre"] if trajetoria else None
             member = Member(
                 linkedin=person["linkedin"],
-                biography="",
-                entry_date=_semester_start(first) if first else date.today(),
-                exit_date=None if active else date.today(),
+                is_active=active,
             )
         for field, value in defaults.items():
             setattr(member, field, value)
@@ -224,7 +201,7 @@ class Command(BaseCommand):
     def _archive_former_members(self, people, current_ids):
         """
         Quem está no registro de pessoas mas ficou sem diretoria saiu do
-        clube: ganha data de saída (some da Equipe) em vez de ser apagado,
+        clube: é arquivado (some da Equipe) em vez de ser apagado,
         para continuar aparecendo nos cases antigos.
         """
         archived = []
@@ -232,8 +209,8 @@ class Command(BaseCommand):
             if person_id in current_ids:
                 continue
             updated = Member.objects.filter(
-                linkedin=person["linkedin"], exit_date__isnull=True,
-            ).update(exit_date=date.today())
+                linkedin=person["linkedin"], is_active=True,
+            ).update(is_active=False)
             if updated:
                 archived.append(person["nome"])
         return archived
