@@ -30,7 +30,10 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 │   ├── .env.example
 │   ├── config/                   # configuração do projeto Django
 │   │   ├── settings.py
+│   │   ├── navigation.py         # menu lateral do admin
 │   │   └── urls.py
+│   ├── locale/                   # traduções do admin em português (.po e .mo)
+│   ├── admin_static/             # CSS e JavaScript do admin (prévia de Markdown)
 │   └── website/                  # app com toda a lógica
 │       ├── models.py
 │       ├── admin.py
@@ -38,6 +41,7 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 │       ├── api_views.py
 │       ├── urls.py
 │       ├── tests.py
+│       ├── templates/            # páginas de erro 400, 403, 404 e 500
 │       ├── migrations/
 │       └── management/commands/  # setup_dev, seed_mock_data, import_icc_data
 └── frontend/
@@ -58,12 +62,15 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 | `serializers.py` | Formato JSON de cada recurso. Monta as URLs absolutas das imagens |
 | `api_views.py` | Views da API (todas de leitura, mais o health check) |
 | `urls.py` | Rotas da API |
+| `editors_group.py` | Permissões padrão do grupo Editores |
+| `site_texts.py` | Catálogo dos textos do site editáveis no admin |
+| `widgets.py` e `fields.py` | Campo de Markdown com prévia e campo de imagem com limite de tamanho, usados no admin |
 
 ### Modelos de dados
 
 | Grupo | Modelos | Observações |
 |---|---|---|
-| Equipe | `Member`, `MemberTrajectory`, `Position`, `Directorate`, `DirectorateMembership` | Uma pessoa pode estar em mais de uma diretoria, com cargo diferente em cada. `Position.power` define a ordem e a presença na liderança da Home (valores até 2). Membro com `exit_date` é considerado arquivado |
+| Equipe | `Member`, `MemberTrajectory`, `Position`, `Directorate`, `DirectorateMembership` | Uma pessoa pode estar em mais de uma diretoria, com cargo diferente em cada. `Position.power` define a ordem e a presença na liderança da Home (valores até 2). Membro com `is_active` desmarcado (exibido como "Exibir na equipe") é considerado arquivado |
 | Parceiros | `Partner`, `PartnerCategory` | `is_active` esconde o parceiro sem apagá-lo |
 | Programas | `Program`, `ProgramComponent`, `ProgramContentBlock` | `Program` representa cada programa do ICC, e seu `slug` é usado na URL `/projetos/<slug>`. `ProgramComponent` guarda os componentes de um programa (título e descrição), exibidos em "Como funciona" na página dele. `ProgramContentBlock` guarda os blocos de texto livres (Markdown, com imagem opcional) que descrevem o programa em detalhe, abaixo do topo da página. No admin, os nomes são **Programas** e **Componentes dos programas** |
 | Projetos | `Project`, `ProjectContentBlock`, `ProjectImage`, `ProjectTimelineEvent` | `is_active=False` arquiva. Um projeto sem programa (`program` vazio) aparece em "Outros projetos". Um projeto com `end_date` conta como projeto concluído do parceiro |
@@ -78,7 +85,7 @@ Os motivos dessas escolhas estão em [`decisoes.md`](decisoes.md).
 
 | Entidade | Como esconder do site |
 |---|---|
-| Membro | Preencher `exit_date` (ações "Arquivar" e "Reativar" na lista) |
+| Membro | Desmarcar `is_active`, exibido como "Exibir na equipe" (ações "Arquivar" e "Reativar" na lista) |
 | Projeto | Desmarcar `is_active` (mesmas ações) |
 | Parceiro, programa e case | Desmarcar `is_active`, exibido como "Exibir no site" |
 | Artigo | Desmarcar `published` |
@@ -97,7 +104,7 @@ Todos os endpoints são públicos e somente leitura. Itens ocultos ou arquivados
 
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/members/` | Membros atuais (sem data de saída), ordenados por diretoria, cargo e nome |
+| GET | `/members/` | Membros atuais (com "Exibir na equipe" marcado), ordenados por diretoria, cargo e nome |
 | GET | `/members/<id>/` | Detalhe de um membro, inclusive ex-membro |
 | GET | `/directorates/` | Diretorias, com `slug` derivado do nome |
 | GET | `/partners/` | Parceiros visíveis. Aceita `?category=<id>` |
@@ -125,7 +132,7 @@ O `/health/` não acessa o banco de propósito: o monitor de uptime o chama a ca
 - **Prévia de Markdown no admin:** o widget `website/widgets.py` mostra um botão que abre `FRONTEND_URL/previa` num iframe e envia o texto por `postMessage` (script em `backend/admin_static/website/markdown_preview.js`). A página `/previa` do frontend desenha o texto com os mesmos componentes do site (`ArtigoMarkdown` e `TextoMarkdown`) e só aceita mensagens vindas da origem do backend (`VITE_API_URL`), então o admin precisa ser aberto pelo endereço do backend. `STATICFILES_DIRS` aponta para `admin_static/`, que não pode ser a pasta de `STATIC_ROOT`.
 - **Formulários do admin:** as listas que se repetem (trajetória, vínculos, imagens, blocos, etapas) são abas no alto do formulário (`tab = True` nos inlines); os campos do registro ficam em seções na própria página. `TextoCompactoMixin` (em `admin.py`) define quantas linhas cada caixa de texto tem (`linhas_dos_campos`), e os relacionamentos com muitos registros usam busca com seleção (`autocomplete_fields`) em vez do seletor duplo. `admin_static/website/admin.css`, ligado por `UNFOLD['STYLES']`, mantém o seletor duplo restante (permissões) e os blocos de campos dentro da largura da tela. Todo modelo precisa de `verbose_name` em português no singular, e um teste confere.
 - **Menu e navegação do admin:** o menu lateral vem de `config/navigation.py` (`UNFOLD['SIDEBAR']`), que agrupa os modelos por assunto e esconde o que o usuário não tem permissão de ver. Um modelo novo só aparece no menu depois de ser incluído em `GRUPOS`. Os campos `order` são reordenados arrastando (`ordering_field` e `hide_ordering_field` nos admins e inlines do Unfold), exceto onde a ordem vem de outro campo (data do cronograma, data do artigo). Os botões "Ver no site" usam `view_on_site` em cada admin e `FRONTEND_URL`.
-- **Tradução do admin:** a tradução em português do Django traz erros de grafia (por exemplo, "ordenção"), e o tema django-unfold não traz português. A pasta `backend/locale/` tem um catálogo do projeto, ativado por `LOCALE_PATHS` em `settings.py`, que corrige as grafias e traduz os textos do Unfold; ele vale antes do catálogo do Django, e testes conferem as correções e os trechos como `%(nome)s`. Ao atualizar o `django-unfold`, textos novos dele aparecem em inglês até serem acrescentados ao catálogo. O `django.mo` compilado é versionado (exceção no `.gitignore`), porque o deploy não compila mensagens. Para corrigir outro texto, acrescente a entrada em `django.po` e rode `msgfmt -o locale/pt_BR/LC_MESSAGES/django.mo locale/pt_BR/LC_MESSAGES/django.po` dentro de `backend/`.
+- **Tradução do admin:** a tradução em português do Django traz erros de grafia e de gramática (por exemplo, "ordenção" e "Certifique-se que"), e o tema django-unfold não traz português. A pasta `backend/locale/` tem dois catálogos do projeto, ativados por `LOCALE_PATHS` em `settings.py`, que valem antes dos do Django: `django.po` (grafias, mensagens padrão do Django e textos do Unfold) e `djangojs.po` (frases do seletor de duas listas, que o Django monta com o nome do modelo no meio e erravam o gênero, como "todos permissões"). Testes conferem as correções e os trechos como `%(nome)s`. Ao atualizar o `django-unfold`, textos novos dele aparecem em inglês até serem acrescentados ao catálogo. Os `.mo` compilados são versionados (exceção no `backend/.gitignore`), porque o deploy não compila mensagens. Para corrigir outro texto, acrescente a entrada no `.po` e rode, dentro de `backend/`, `msgfmt --check -o locale/pt_BR/LC_MESSAGES/django.mo locale/pt_BR/LC_MESSAGES/django.po` (para o `djangojs`, troque os nomes). Dois textos não passam por catálogo: o nome das permissões, que o Django grava em inglês no banco e o admin traduz só na exibição (`rotulo_da_permissao`, em `admin.py`), e as páginas de erro 400, 403, 404 e 500, que são templates em `website/templates/`.
 - `BEHIND_PROXY=True` faz o Django confiar no cabeçalho `X-Forwarded-Proto`. É necessário no Render, que termina o HTTPS na frente do Django. Sem isso, o site entra em loop de redirecionamento.
 - O banco vem de `DATABASE_URL`. Sem ela, usa as variáveis `DB_*` do Compose.
 - O armazenamento de uploads é o Cloudinary quando `CLOUDINARY_CLOUD_NAME` está definido, e o disco local caso contrário.
@@ -172,5 +179,5 @@ Resumo; os detalhes (rotas, tokens, componentes e como adicionar uma página) es
 
 1. Uma pessoa do ICC cadastra ou edita algo no admin.
 2. O Django grava no PostgreSQL. Imagens enviadas vão para o Cloudinary, e o banco guarda o caminho.
-3. O frontend chama a API, que lê o banco, aplica os filtros (ativo, publicado, sem data de saída) e devolve JSON com URLs absolutas das imagens.
+3. O frontend chama a API, que lê o banco, aplica os filtros (ativo, publicado, exibido) e devolve JSON com URLs absolutas das imagens.
 4. A mudança aparece no site ao recarregar a página. Não há cache entre o banco e a API.

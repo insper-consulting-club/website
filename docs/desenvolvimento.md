@@ -53,7 +53,7 @@ docker compose exec backend python manage.py seed_mock_data
 
 **O que o `seed_mock_data` cria.** Um conjunto único e completo de dados **fictícios** (exceto os nomes e as descrições dos quatro programas do ICC, que são os reais): 16 membros, 8 parceiros, os programas com blocos de conteúdo, componentes e cases, 7 projetos, 7 artigos, dois processos seletivos (um antigo e o ativo, com inscrições abertas), a trajetória e os vínculos de diretoria dos membros e dois itens de menu a mais. Pessoas, e-mails e links são inventados e usam `example.com`.
 
-Ele inclui de propósito os casos de borda que o admin e o site tratam, para testar a apresentação: nome e título muito longos, membro sem e-mail e sem LinkedIn, ex-membros (que somem da Equipe), parceiro sem logo e sem site, programa sem selo, projeto de um dia só, projeto sem parceiros nem programa, artigo sem slug, artigo só com link externo, rascunho, e itens ocultos ou arquivados (parceiro, programa, case e projeto), que aparecem no admin mas não no site. Fotos, logos, capas e galerias recebem imagens de exemplo geradas na hora; algumas entidades ficam sem imagem de propósito.
+Ele inclui de propósito os casos de borda que o admin e o site tratam, para testar a apresentação: nome e título muito longos, membro sem foto e sem LinkedIn, ex-membros (que somem da Equipe), parceiro sem logo e sem site, programa sem link de inscrição, projeto de um dia só, projeto sem parceiros nem programa, artigo sem slug, artigo só com link externo, rascunho, e itens ocultos ou arquivados (parceiro, programa, case e projeto), que aparecem no admin mas não no site. Fotos, logos, capas e galerias recebem imagens de exemplo geradas na hora; algumas entidades ficam sem imagem de propósito.
 
 **Repetir é seguro.** Por padrão, rodar de novo atualiza os registros de exemplo sem duplicá-los (e remove itens de lista que o seed não descreve mais), mas desfaz edições feitas nesses registros. As imagens são regravadas com o mesmo nome, então não se acumulam. A configuração do site (textos, contatos, menu padrão) não é alterada.
 
@@ -88,7 +88,7 @@ site-data/
 docker compose exec backend python manage.py import_icc_data
 ```
 
-O comando pode ser repetido: atualiza registros em vez de duplicar, e identifica membros pelo LinkedIn. Quem sai de todas as diretorias no `icc.json` recebe data de saída e deixa de aparecer na Equipe. Fotos já cadastradas só são substituídas com `--atualizar-fotos`.
+O comando pode ser repetido: atualiza registros em vez de duplicar, e identifica membros pelo LinkedIn. Quem sai de todas as diretorias no `icc.json` é arquivado (desmarcado em "Exibir na equipe") e deixa de aparecer na Equipe. Fotos já cadastradas só são substituídas com `--atualizar-fotos`.
 
 Depois que o site está no ar, a fonte oficial dos dados é a área administrativa de produção. Rodar este comando contra o banco de produção sobrescreve edições feitas lá, então evite.
 

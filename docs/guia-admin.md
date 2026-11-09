@@ -21,6 +21,8 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
 - **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
+- **Menu lateral:** vem com o que se edita com mais frequência primeiro (Artigos, Equipe, Parceiros, Programas e projetos, Processo seletivo), e deixa **Site** (configuração, textos e estatísticas) e **Acesso** (usuários e grupos) no fim.
+- **Seção Avançado:** nos formulários de artigo, parceiro, programa e case, os campos que quase nunca mudam (ordem de exibição, link externo e publicação do artigo) ficam numa seção recolhida chamada **Avançado**, no fim da página. Clique nela para abrir. Se um desses campos tiver erro ao salvar, ela abre sozinha.
 - **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
 | Quero cadastrar ou editar | Linha do admin |
@@ -45,7 +47,7 @@ Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Priv
 
 ### Esconder ou apagar
 
-Parceiros, programas e cases têm o campo **"Exibir no site"**. Projetos têm o campo **"Ativo"**. Artigos têm o campo **"Publicado"**. Desmarcado, o item some do site, mas continua guardado e pode voltar quando você quiser. Membros que saem são arquivados com a data de saída (ver [Membros](#membros)).
+Parceiros, programas e cases têm o campo **"Exibir no site"**. Projetos têm o campo **"Ativo"**. Artigos têm o campo **"Publicado"**. Desmarcado, o item some do site, mas continua guardado e pode voltar quando você quiser. Membros que saem são arquivados com a caixa **"Exibir na equipe"** (ver [Membros](#membros)).
 
 **Prefira esconder ou arquivar a apagar**: apagar é definitivo.
 
@@ -67,11 +69,11 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
 - **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Cargos aparecem só para consulta, porque definem quem é liderança na Home.
 - O menu mostra só o que a pessoa pode usar.
 
-O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, apague o grupo **Editores** em **Grupos**: ele é recriado com as permissões originais no próximo deploy (as pessoas que estavam nele precisam ser colocadas de novo).
+O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, apague o grupo **Editores** em **Grupos**: ele é recriado com as permissões originais no próximo deploy (as pessoas que estavam nele precisam ser colocadas de novo). As permissões aparecem agrupadas por assunto, como "Pode ver", "Pode alterar", "Pode adicionar" e "Pode excluir".
 
 **Quando alguém sai da gestão:** abra o usuário dela e desmarque **"Ativo"**. Ela perde o acesso na hora.
 
-**Senhas:** o admin exige pelo menos **12 caracteres** e recusa senhas comuns ou só de números. Cada pessoa deve ter uma senha longa e só dela, de preferência guardada num gerenciador de senhas (assim ninguém precisa decorar nem reaproveitar a de outro serviço). O login do admin não bloqueia depois de várias tentativas erradas, então a senha longa é a principal proteção. A sessão expira depois de 12 horas sem uso, e aí é preciso entrar de novo.
+**Senhas:** o admin exige pelo menos **12 caracteres** e recusa senhas comuns ou só de números. Cada pessoa deve ter uma senha longa e só dela, de preferência guardada num gerenciador de senhas (assim ninguém precisa decorar nem reaproveitar a de outro serviço). O login do admin não bloqueia depois de várias tentativas erradas, então a senha longa é a principal proteção. A sessão expira depois de 12 horas sem uso, e aí é preciso entrar de novo. O admin não tem "esqueci minha senha", porque não envia e-mail: quem perder a senha pede a um administrador, que abre o usuário em **Usuários** e usa o link de alterar a senha, ao lado do campo **Senha**.
 
 ---
 
@@ -81,13 +83,12 @@ O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo 
 
 **Membros > Adicionar membro**
 
-1. **Nome**, **Foto** (JPG ou PNG, de preferência quadrada), **Cargo principal**, **LinkedIn** e **Email**.
-2. **Formação:** Curso e Período.
-3. **No ICC:** Data de entrada, Biografia (até 200 caracteres) e, se quiser, Horas dedicadas e Projetos participados.
-4. Nas abas **Trajetória** e **Vínculos com diretorias**, no alto do formulário, ficam as listas da pessoa:
+1. **Nome**, **Foto** (JPG ou PNG, de preferência quadrada), **Cargo principal** e **LinkedIn**.
+2. **No ICC:** **Projetos participados**, se quiser (eles formam a equipe de cada projeto). A caixa **Exibir na equipe** fica marcada; desmarque quando a pessoa deixa o clube (veja "Quando alguém sai do clube").
+3. Nas abas **Trajetória** e **Vínculos com diretorias**, no alto do formulário, ficam as listas da pessoa:
    - **Trajetória** (opcional): uma linha por semestre, com o **Semestre** no formato `AAAA.S` (por exemplo, `2026.1`) e o **Cargo nesse semestre**. O perfil público mostra as etapas em ordem de semestre, e o admin recusa um semestre fora do formato.
    - **Vínculos com diretorias:** uma linha por diretoria da pessoa, com o cargo nela. Arraste a linha para mudar a ordem dentro da diretoria.
-5. Salvar.
+4. Salvar.
 
 Em **Projetos participados**, digite parte do nome do projeto para buscar e escolha; os escolhidos aparecem como etiquetas, e o "x" tira cada um.
 
@@ -97,8 +98,9 @@ O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home.
 
 Em vez de apagar, **arquive**:
 
-- na lista de Membros, marque a pessoa, escolha a ação **"Arquivar selecionados"** e clique em **Ir**; ou
-- abra a pessoa e preencha a **Data de saída**.
+- na lista de Membros, marque a pessoa, escolha a ação **"Arquivar selecionados"** e clique em **Ir**;
+- na própria lista, desmarque a caixa **Exibir na equipe** da pessoa e salve; ou
+- abra a pessoa e desmarque **Exibir na equipe**.
 
 A pessoa some da página Equipe, mas o histórico (cases, trajetória) continua guardado. Para trazê-la de volta, use **"Reativar selecionados"**. O filtro **Situação**, à direita, separa membros atuais de ex-membros.
 
@@ -134,10 +136,10 @@ Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá p
 - **Nome**, **Subtítulo** e **Descrição**.
 - **Slug:** o identificador usado no endereço da página (`/projetos/<slug>`). Ele é preenchido a partir do nome. Depois de publicado, evite mudá-lo, porque os links antigos deixam de funcionar.
 - **Tópicos:** um por linha.
-- **Ícone do card**, **Frequência (badge)** e **Estilo do badge**.
+- **Ícone do card.**
 - **Link de inscrição:** só para programas com formulário próprio.
-- **Exibir no site** e **Ordem de exibição**.
-- **Blocos de conteúdo:** no fim do formulário, em **Blocos de conteúdo**, você escreve a descrição detalhada da página, no formato que fizer sentido para aquele programa. Clique em adicionar bloco e preencha:
+- **Exibir no site.** A **Ordem de exibição** fica em **Avançado**, mas o mais simples é arrastar a linha na lista.
+- **Blocos de conteúdo:** no fim do formulário, na aba **Blocos de conteúdo do programa**, você escreve a descrição detalhada da página, no formato que fizer sentido para aquele programa. Clique em adicionar bloco e preencha:
   - **Título** (opcional), como "Para quem é", "Como funciona" ou "Requisitos".
   - **Texto**, em Markdown: `## Subtítulo`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
   - **Imagem** (opcional), com **Legenda** e **Posição da imagem** (à direita, à esquerda ou centralizada, abaixo do texto).
@@ -171,7 +173,7 @@ A página **Projetos** do site mostra os programas, e a página de cada programa
 2. **Data de conclusão**, quando o projeto terminar.
 3. **Parceiros envolvidos:** escolha na caixa da esquerda e passe para a direita.
 4. Embaixo, se quiser, o conteúdo da página do projeto:
-   - **Blocos de Conteúdo:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). Arraste para mudar a sequência. Para separar parágrafos, quebre a linha.
+   - **Blocos de conteúdo do projeto:** título, texto e, se quiser, uma imagem com legenda e posição (à direita, à esquerda ou centralizada). Arraste para mudar a sequência. Para separar parágrafos, quebre a linha.
    - **Imagens do Projeto:** a galeria, com uma **Legenda** para cada imagem. Arraste para reordenar.
    - **Eventos do Cronograma:** data, título e descrição de cada etapa.
 5. Salvar.
@@ -202,7 +204,7 @@ Os artigos são escritos pelos membros do ICC e ficam **dentro do site**: cada u
 
 O passo a passo completo, com a referência de Markdown, imagens, fórmulas, conversão de documentos e solução de problemas, está no **[guia de artigos](guia-artigos.md)**. Em resumo:
 
-1. **Artigos > Adicionar artigo.** Preencha título, autores, resumo, temas, data e, se quiser, slug, link externo, publicação e imagem de capa.
+1. **Artigos > Adicionar artigo.** Preencha título, autores, resumo, temas, data e, se quiser, o slug e a imagem de capa. O link externo e a publicação ficam em **Avançado**.
 2. Escreva o **Texto do artigo** em Markdown, com uma linha em branco entre os parágrafos.
 3. Envie as imagens do texto em **Imagens do artigo** e chame cada uma no texto por `![](imagem-1)`.
 4. Revise o artigo antes de publicar, de preferência no ambiente local (ver o [guia do ambiente local](guia-ambiente-local.md)).
