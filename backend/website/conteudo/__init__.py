@@ -27,6 +27,4 @@ PAGINAS = (
 POR_SLUG = {pagina.slug: pagina for pagina in PAGINAS}
 POR_CHAVE = {texto.chave: (pagina, texto) for pagina in PAGINAS for texto in pagina.textos}
 PADRAO = {chave: texto.padrao for chave, (_pagina, texto) in POR_CHAVE.items()}
-# Os textos que antes eram campos da Configuração do site: nome que a API ainda usa -> chave. Sai na etapa em que o
-# frontend passar a ler tudo por chave.
-CAMPOS_DA_API = {texto.campo_da_api: texto.chave for _pagina, texto in POR_CHAVE.values() if texto.campo_da_api}
+

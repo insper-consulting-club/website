@@ -4,7 +4,6 @@ import MemberCard from "../../components/MemberCard";
 import PageHero from "../../components/PageHero";
 import usePageTitle from "../../hooks/usePageTitle";
 import useTextos from "../../hooks/useTextos";
-import useSiteConfig from "../../hooks/useSiteConfig";
 import { api } from "../../api";
 import type { Member } from "../../types";
 import "./index.css";
@@ -13,8 +12,7 @@ type Group = { directorate: string; slug: string; members: { member: Member; car
 
 export default function Equipe() {
   const t = useTextos();
-  const config = useSiteConfig();
-  usePageTitle(t("equipe.titulo"), config.team_lead);
+  usePageTitle(t("equipe.titulo"), t("equipe.abertura"));
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
@@ -64,7 +62,7 @@ export default function Equipe() {
       <PageHero
         eyebrow={t("equipe.eyebrow")}
         title={t("equipe.titulo")}
-        lead={config.team_lead}
+        lead={t("equipe.abertura")}
       />
 
       {!loading && groups.length > 0 && (

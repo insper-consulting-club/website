@@ -12,7 +12,7 @@ import "./index.css"
 export default function Parceiros() {
   const config = useSiteConfig()
   const t = useTextos()
-  usePageTitle(t("parceiros.eyebrow"), config.partners_lead)
+  usePageTitle(t("parceiros.eyebrow"), t("parceiros.abertura"))
   const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -29,7 +29,7 @@ export default function Parceiros() {
       <PageHero
         eyebrow={t("parceiros.eyebrow")}
         title={<>{t("parceiros.titulo")} <span className="destaque">{t("parceiros.titulo_destaque")}</span></>}
-        lead={config.partners_lead}
+        lead={t("parceiros.abertura")}
       />
 
       <section className="section">
@@ -65,7 +65,7 @@ export default function Parceiros() {
         <div className="container">
           <div className="section-head">
             <p className="eyebrow">{t("parceiros.beneficios_eyebrow")}</p>
-            <h2 className="section-title">{config.partners_benefits_title}</h2>
+            <h2 className="section-title">{t("parceiros.beneficios_titulo")}</h2>
           </div>
 
           <div className="grid grid--3 parceiros-beneficios">

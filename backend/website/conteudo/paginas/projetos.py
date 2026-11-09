@@ -6,7 +6,7 @@ PAGINA = Pagina(
         Texto("projetos.eyebrow", "Cabeçalho da página", "Palavra pequena acima do título (também é o nome da aba do navegador)", "Projetos"),
         Texto("projetos.titulo", "Cabeçalho da página", "Título, antes da palavra em destaque", "Programas e"),
         Texto("projetos.titulo_destaque", "Cabeçalho da página", "Palavra em destaque (em vermelho) no fim do título", "cases"),
-        Texto("projetos.abertura", "Cabeçalho da página", "Texto logo abaixo do título", "Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor.", campo_da_api="projects_lead"),
+        Texto("projetos.abertura", "Cabeçalho da página", "Texto logo abaixo do título", "Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor."),
         Texto("projetos.outros_eyebrow", "Outros projetos", "Palavra pequena acima do título da seção", "Além dos programas"),
         Texto("projetos.outros_titulo", "Outros projetos", "Título da seção (projetos que não são de nenhum programa)", "Outros projetos"),
         Texto("projetos.cases_eyebrow", "Cases em destaque", "Palavra pequena acima do título da seção", "Cases resolvidos"),

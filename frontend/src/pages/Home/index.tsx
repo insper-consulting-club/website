@@ -54,7 +54,7 @@ export default function Home() {
             height={410}
             fetchPriority="high"
           />
-          <h1 className="home-hero__title">{config.home_hero_title}</h1>
+          <h1 className="home-hero__title">{t("home.hero_titulo")}</h1>
         </div>
         <a href="#inicio-conteudo" className="home-hero__scroll" aria-label="Rolar para o conteúdo">
           <ChevronDownIcon size={22} />
@@ -66,7 +66,7 @@ export default function Home() {
 
       <section className="home-intro" id="inicio-conteudo">
         <div className="container home-intro__inner">
-          <p className="home-intro__statement">{config.home_statement}</p>
+          <p className="home-intro__statement">{t("home.hero_frase")}</p>
           <div className="home-intro__actions">
             <Link to="/processo" className="btn btn--primary">
               {t("home.hero_botao_principal")}
@@ -84,15 +84,15 @@ export default function Home() {
           <div>
             <p className="eyebrow">{t("home.sobre_eyebrow")}</p>
             <h2 className="section-title">
-              {config.home_about_title}
-              {config.home_about_title_highlight && (
+              {t("home.sobre_titulo")}
+              {t("home.sobre_titulo_destaque") && (
                 <>
                   {" "}
-                  <span className="destaque">{config.home_about_title_highlight}</span>
+                  <span className="destaque">{t("home.sobre_titulo_destaque")}</span>
                 </>
               )}
             </h2>
-            <p className="home-about__text">{config.home_about_text}</p>
+            <p className="home-about__text">{t("home.sobre_texto")}</p>
           </div>
           <figure className="home-about__figure">
             <img src={config.home_about_photo_url ?? reuniaoInaugural} alt={config.home_about_photo_alt} />
@@ -117,16 +117,16 @@ export default function Home() {
         <div className="container home-mission">
           <div className="home-mission__main">
             <p className="eyebrow">{t("home.missao_eyebrow")}</p>
-            <p className="home-mission__statement">{config.mission}</p>
+            <p className="home-mission__statement">{t("home.missao_texto")}</p>
           </div>
           <div className="home-mission__details">
             <div className="home-mission__detail">
               <h3>{t("home.missao_como_titulo")}</h3>
-              <p>{config.mission_how}</p>
+              <p>{t("home.missao_como_texto")}</p>
             </div>
             <div className="home-mission__detail">
               <h3>{t("home.missao_meta_titulo")}</h3>
-              <p>{config.mission_goal}</p>
+              <p>{t("home.missao_meta_texto")}</p>
             </div>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function Home() {
 
       <section className="home-cta">
         <div className="container home-cta__inner">
-          <h2 className="home-cta__title">{config.home_cta_title}</h2>
+          <h2 className="home-cta__title">{t("home.cta_titulo")}</h2>
           <div className="home-cta__actions">
             <Link to="/processo" className="btn btn--light">
               {t("home.cta_botao_principal")}

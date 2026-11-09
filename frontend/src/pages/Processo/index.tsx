@@ -11,7 +11,7 @@ import "./index.css"
 export default function Processo() {
   const t = useTextos()
   const config = useSiteConfig()
-  usePageTitle(t("processo.titulo"), config.process_lead)
+  usePageTitle(t("processo.titulo"), t("processo.abertura"))
   const [process, setProcess] = useState<SelectionProcess | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -37,7 +37,7 @@ export default function Processo() {
     </div>
   ) : (
     <div className="processo-cta">
-      <h2 className="processo-cta__title">{config.process_closed_message}</h2>
+      <h2 className="processo-cta__title">{t("processo.inscricoes_encerradas")}</h2>
       <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="btn btn--light">
         {t("processo.botao_instagram")}
         <ArrowRightIcon />
@@ -52,7 +52,7 @@ export default function Processo() {
       <PageHero
         eyebrow={t("processo.eyebrow")}
         title={process?.title || t("processo.titulo")}
-        lead={config.process_lead}
+        lead={t("processo.abertura")}
       />
 
       <section className="section">

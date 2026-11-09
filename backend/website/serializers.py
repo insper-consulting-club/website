@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from .conteudo import CAMPOS_DA_API
 from .site_texts import PADRAO as PADRAO_TEXTOS
 from .models import (
     Member, Partner, Statistic, Project, ProjectImage,
@@ -416,14 +415,6 @@ class SiteConfigSerializer(serializers.ModelSerializer):
         model = SiteConfig
         # As imagens não saem como campo de arquivo: o site recebe só o endereço.
         exclude = ["id", "home_about_photo", "logo", "favicon", "og_image"]
-
-    def to_representation(self, instance):
-        dados = super().to_representation(instance)
-        # Os textos de página saíram dos campos da configuração, mas a resposta ainda os traz com os nomes de
-        # antes, para o frontend não mudar. Valem os mesmos valores de "texts".
-        for campo, chave in CAMPOS_DA_API.items():
-            dados[campo] = dados['texts'][chave]
-        return dados
 
     def get_nav_items(self, obj):
         # Item escondido no admin não chega ao site.

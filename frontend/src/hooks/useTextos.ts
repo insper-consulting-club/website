@@ -11,7 +11,8 @@ export default function useTextos() {
   const { texts } = useSiteConfig()
 
   return function t(chave: string, variaveis?: Variaveis): string {
-    const texto = texts?.[chave] || (import.meta.env.DEV ? chave : "")
+    // "??" e não "||": um texto opcional pode ter sido esvaziado de propósito.
+    const texto = texts?.[chave] ?? (import.meta.env.DEV ? chave : "")
     if (!variaveis) return texto
     return texto.replace(/\{(\w+)\}/g, (trecho, nome: string) =>
       nome in variaveis ? String(variaveis[nome]) : trecho

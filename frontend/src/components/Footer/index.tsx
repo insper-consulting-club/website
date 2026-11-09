@@ -24,7 +24,7 @@ export default function Footer() {
           <Link to="/" aria-label={`${config.site_name}, página inicial`}>
             <img src={config.logo_url ?? logoBranca} alt="" className="footer__logo" />
           </Link>
-          <p className="footer__tagline">{config.footer_tagline}</p>
+          <p className="footer__tagline">{t("rodape.frase")}</p>
         </div>
 
         <nav className="footer__col" aria-label="Navegação do rodapé">

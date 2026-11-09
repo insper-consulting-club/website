@@ -18,12 +18,8 @@ declare global {
 const VAZIA: SiteConfig = {
   site_name: "", site_description: "", logo_url: null, favicon_url: null, og_image_url: null,
   email: "", instagram_url: "", instagram_label: "", linkedin_url: "", linkedin_label: "",
-  github_url: "", github_label: "", home_hero_title: "", home_statement: "", home_about_title: "",
-  home_about_title_highlight: "", home_about_text: "", home_about_photo_url: null, home_about_photo_alt: "",
-  mission: "", mission_how: "", mission_goal: "", home_cta_title: "", footer_tagline: "",
-  team_lead: "", partners_lead: "", partners_benefits_title: "", projects_lead: "",
-  featured_program_slug: "", articles_lead: "", contact_lead: "", process_lead: "",
-  process_closed_message: "", privacy_updated: "", privacy_text: "",
+  github_url: "", github_label: "", home_about_photo_url: null, home_about_photo_alt: "",
+  featured_program_slug: "", privacy_updated: "", privacy_text: "",
   partner_benefits: [], texts: {}, nav_items: [],
 }
 

@@ -38,11 +38,11 @@ function canais(config: SiteConfig) {
 export default function Contato() {
   const t = useTextos()
   const config = useSiteConfig()
-  usePageTitle(t("contato.titulo"), config.contact_lead)
+  usePageTitle(t("contato.titulo"), t("contato.abertura"))
 
   return (
     <div className="contato-page">
-      <PageHero title={t("contato.titulo")} lead={config.contact_lead} />
+      <PageHero title={t("contato.titulo")} lead={t("contato.abertura")} />
 
       <section className="section">
         <div className="container contato-grid">

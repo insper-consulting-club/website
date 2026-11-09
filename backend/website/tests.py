@@ -407,7 +407,7 @@ class SiteConfigTests(TestCase):
         response = APIClient().get("/api/site-config/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["home_hero_title"], "O futuro consultor começa no ICC")
+        self.assertEqual(response.data["texts"]["home.hero_titulo"], "O futuro consultor começa no ICC")
         self.assertEqual(response.data["featured_program_slug"], "jornada-do-consultor")
         self.assertEqual(len(response.data["partner_benefits"]), 3)
         self.assertIsNone(response.data["home_about_photo_url"])
@@ -2731,26 +2731,27 @@ class TextosDoSiteAdminTests(TestCase):
 class PageTextsMovedFromConfigTests(TestCase):
     """Etapa B: os textos de página saíram dos campos da Configuração do site e vivem no registro."""
 
-    def test_the_site_configuration_no_longer_has_the_page_texts(self):
-        from website.conteudo import CAMPOS_DA_API
+    ANTIGOS = (
+        "home_hero_title", "home_statement", "home_about_title", "home_about_title_highlight", "home_about_text",
+        "mission", "mission_how", "mission_goal", "home_cta_title", "footer_tagline", "team_lead", "partners_lead",
+        "partners_benefits_title", "projects_lead", "articles_lead", "contact_lead", "process_lead",
+        "process_closed_message",
+    )
 
+    def test_the_site_configuration_no_longer_has_the_page_texts(self):
         campos = {c.name for c in SiteConfig._meta.get_fields()}
 
-        self.assertEqual(len(CAMPOS_DA_API), 18)
-        self.assertEqual(sorted(set(CAMPOS_DA_API) & campos), [])
+        self.assertEqual(sorted(set(self.ANTIGOS) & campos), [])
         self.assertTrue({"email", "home_about_photo", "home_about_photo_alt", "featured_program_slug",
                          "privacy_text", "privacy_updated"} <= campos)
 
-    def test_every_old_api_field_still_comes_out_with_the_value_of_its_text(self):
-        from website.conteudo import CAMPOS_DA_API, PADRAO
-
+    def test_the_api_serves_the_page_texts_only_by_key(self):
         SiteText.objects.filter(key="home.hero_titulo").update(value="Editado pelo ICC")
         dados = APIClient().get("/api/site-config/").data
 
-        self.assertEqual(dados["home_hero_title"], "Editado pelo ICC")
-        for campo, chave in CAMPOS_DA_API.items():
-            self.assertEqual(dados[campo], dados["texts"][chave], campo)
-        self.assertEqual(dados["mission"], PADRAO["home.missao_texto"])
+        self.assertEqual(dados["texts"]["home.hero_titulo"], "Editado pelo ICC")
+        self.assertEqual(sorted(set(self.ANTIGOS) & set(dados)), [])
+        self.assertIn("email", dados)
 
     def test_default_texts_are_what_the_site_always_had(self):
         from website.conteudo import PADRAO

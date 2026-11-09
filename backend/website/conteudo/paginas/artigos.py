@@ -4,7 +4,7 @@ PAGINA = Pagina(
     slug="artigos", titulo="Artigos", caminho="/artigos",
     textos=(
         Texto("artigos.titulo", "Lista de artigos", "Título da página (também é o nome da aba do navegador)", "Artigos"),
-        Texto("artigos.abertura", "Lista de artigos", "Texto logo abaixo do título", "Artigos e publicações produzidos por membros do ICC", campo_da_api="articles_lead"),
+        Texto("artigos.abertura", "Lista de artigos", "Texto logo abaixo do título", "Artigos e publicações produzidos por membros do ICC"),
         Texto("artigos.vazio", "Lista de artigos", "Mensagem quando não há nenhum artigo", "Nenhum artigo cadastrado no momento.", raro=True),
         Texto("artigos.card_link", "Lista de artigos", "Link no fim de cada cartão de artigo", "Ler artigo"),
         Texto("artigo.voltar", "Leitura de um artigo", "Link para voltar à lista de artigos", "Voltar para artigos"),

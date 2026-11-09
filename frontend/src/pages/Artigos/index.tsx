@@ -5,7 +5,6 @@ import type { ArticleSummary } from "../../types"
 import PageHero from "../../components/PageHero"
 import { ArrowRightIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
-import useSiteConfig from "../../hooks/useSiteConfig"
 import useTextos from "../../hooks/useTextos"
 import "./index.css"
 
@@ -19,7 +18,6 @@ function formatDate(date: string) {
 
 export default function Artigos() {
   const t = useTextos()
-  const config = useSiteConfig()
   usePageTitle(t("artigos.titulo"))
   const [artigos, setArtigos] = useState<ArticleSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,7 +34,7 @@ export default function Artigos() {
     <div className="artigos-page">
       <PageHero
         title={t("artigos.titulo")}
-        lead={config.articles_lead}
+        lead={t("artigos.abertura")}
       />
 
       <section className="section">
