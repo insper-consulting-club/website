@@ -58,7 +58,9 @@ O frontend é um site estático: o nome, a descrição, a imagem de compartilham
 
 Textos, contatos, menu e as demais imagens são lidos pela API a cada visita e aparecem em até um minuto, sem deploy.
 
-O build também falha se a resposta da API não trouxer `home_sections`, o que indica um backend ainda sem as seções da Home: **publique o backend antes do frontend**. Se a API estiver fora do ar durante o build, ele **falha** e avisa no log (`[site-config]`): o site não guarda textos próprios, então o deploy anterior continua no ar em vez de publicar um site sem textos. O backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera por isso. Se acontecer, abra a API no navegador para acordá-la e refaça o deploy. Não há mais `SKIP_SITE_CONFIG`; num build local, deixe o backend rodando.
+**Backend e frontend sobem ao mesmo tempo.** Um merge na `main` dispara os dois deploys, e o backend demora mais (build do Docker, migrations e subida). Por isso o build do frontend **espera o backend**: se a API responder sem `home_sections`, ele ainda é o backend antigo, e o build consulta de novo a cada 20 segundos, por até 10 minutos. Quando o backend novo sobe, o build segue sozinho. Não é preciso publicar nada na mão nem em ordem. Enquanto isso, o site continua com o frontend antigo; se o backend novo mudou ou removeu campos que ele usa, pode haver alguns minutos de textos em branco até o frontend novo ficar **Live**.
+
+O build **falha** e avisa no log (`[site-config]`) em três casos, e o deploy anterior continua no ar, em vez de publicar um site sem textos: a `VITE_API_URL` não está definida, a API não responde (duas tentativas) ou ela continua sem `home_sections` depois de 10 minutos, o que costuma indicar que o deploy do backend falhou (veja os Logs dele). O backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera por isso. Depois de corrigir o backend, use **Manual Deploy > Deploy latest commit** no frontend. Não há mais `SKIP_SITE_CONFIG`; num build local, deixe o backend rodando.
 
 ### Configuração do backend (`icc-backend`)
 
@@ -169,6 +171,7 @@ O primeiro lugar para investigar qualquer erro em produção são os **Logs** do
 
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
+| Deploy do frontend falha com "[site-config] a API não trouxe as seções da Home" (ou "não respondeu") | O deploy do backend falhou ou demorou mais de 10 minutos, ou a `VITE_API_URL` está errada | Ver os Logs do deploy do backend e a variável. Com o backend no ar e atualizado, **Manual Deploy > Deploy latest commit** no frontend |
 | Mudança com merge não aparece no site | O deploy falhou ou o Render perdeu a conexão com o GitHub | Ver **Events** e os Logs do deploy. Se nenhum deploy começou, reconectar o repositório |
 | Deploy do frontend falha com "Publish directory ... does not exist" | Build Command vazio ou Publish Directory errado | Build Command `npm run build` e Publish Directory `dist` |
 | Site ou admin demoram cerca de 30 s para abrir | O backend dormiu | Conferir o UptimeRobot e as horas do workspace no Render |

@@ -27,7 +27,7 @@ Antes de abrir um PR, rode `npm run lint` e `npm run build`: os dois precisam pa
 |---|---|
 | `VITE_API_URL` | Endereço da API, terminando em `/api`. Local: `http://localhost:8000/api` (o `docker-compose.yml` já define). Produção: `https://api.insperconsultingclub.com.br/api` |
 
-O build lê a Configuração do site na API e grava a cópia no `index.html`. Se a API não responder (o backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera), o build falha de propósito, para não publicar um site sem textos.
+O build lê a Configuração do site na API e grava a cópia no `index.html`. Se a API não responder (o backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera), o build falha de propósito, para não publicar um site sem textos. Se ela responder sem `home_sections`, ainda é o backend antigo (o Render publica os dois serviços juntos): o build consulta de novo a cada 20 segundos, por até 10 minutos, e só então falha.
 
 As variáveis `VITE_*` entram no código **na hora do build**. Mudar o valor no Render exige um novo deploy do frontend. O link "Área administrativa" do rodapé é derivado dessa variável.
 

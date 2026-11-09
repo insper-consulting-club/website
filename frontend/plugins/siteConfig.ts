@@ -22,27 +22,45 @@ type Dados = Record<string, unknown> & {
 const TENTATIVAS = 2
 // O backend gratuito dorme e leva cerca de 30 segundos para acordar.
 const ESPERA_MS = 60_000
+// O Render publica backend e frontend ao mesmo tempo, e o backend demora mais (build, migrations, subida). Se a API
+// responde mas ainda sem as seções da Home, é o backend antigo: o build espera a versão nova subir, em vez de falhar.
+const ESPERA_DO_BACKEND_MS = 10 * 60_000
+const INTERVALO_MS = 20_000
 
-async function busca(apiUrl: string): Promise<Dados | null> {
-  for (let tentativa = 1; tentativa <= TENTATIVAS; tentativa++) {
+const dorme = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function consulta(apiUrl: string): Promise<Dados> {
+  const resposta = await fetch(`${apiUrl.replace(/\/$/, "")}/site-config/`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(ESPERA_MS),
+  })
+  if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`)
+  const dados = (await resposta.json()) as Dados
+  if (typeof dados?.email !== "string") throw new Error("resposta sem os campos esperados")
+  return dados
+}
+
+async function busca(apiUrl: string): Promise<Dados> {
+  const limite = Date.now() + ESPERA_DO_BACKEND_MS
+  let backendAntigo = false // já recebeu uma resposta válida, mas sem as seções da Home
+  for (let tentativa = 1; ; tentativa++) {
     try {
-      const resposta = await fetch(`${apiUrl.replace(/\/$/, "")}/site-config/`, {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(ESPERA_MS),
-      })
-      if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`)
-      const dados = (await resposta.json()) as Dados
-      // home_sections falta quando o backend ainda não foi publicado com as seções da Home: melhor falhar o build.
-      if (typeof dados?.email !== "string" || !Array.isArray(dados?.home_sections)) {
-        throw new Error("resposta sem os campos esperados (o backend está publicado e atualizado?)")
-      }
-      return dados
+      const dados = await consulta(apiUrl)
+      if (Array.isArray(dados.home_sections)) return dados
+      backendAntigo = true
+      console.warn(`[site-config] a API ainda não traz as seções da Home (backend em publicação?). Nova consulta em ${INTERVALO_MS / 1000} s.`)
     } catch (erro) {
       const motivo = erro instanceof Error ? erro.message : String(erro)
-      console.warn(`[site-config] tentativa ${tentativa} de ${TENTATIVAS} falhou: ${motivo}`)
+      console.warn(`[site-config] tentativa ${tentativa} falhou: ${motivo}`)
+      // Sem nenhuma resposta ainda, desiste após TENTATIVAS. Depois de falar com o backend antigo, o erro costuma
+      // ser a troca de instância: segue tentando até o limite.
+      if (!backendAntigo && tentativa >= TENTATIVAS) throw new Error(`a API não respondeu em ${apiUrl}: build interrompido para não publicar um site sem textos.`)
     }
+    if (Date.now() >= limite) {
+      throw new Error(`a API não trouxe as seções da Home em ${ESPERA_DO_BACKEND_MS / 60_000} minutos: o backend foi publicado e atualizado? Build interrompido para não publicar um site sem textos.`)
+    }
+    await dorme(INTERVALO_MS)
   }
-  return null
 }
 
 const escapaAtributo = (valor: string) =>
@@ -96,8 +114,11 @@ export default function siteConfig(apiUrl: string | undefined): Plugin {
     apply: "build",
     async buildStart() {
       if (!apiUrl) throw new Error("[site-config] VITE_API_URL não está definida: sem ela o build não tem de onde ler os textos.")
-      dados = await busca(apiUrl)
-      if (!dados) throw new Error(`[site-config] a API não respondeu em ${apiUrl}: build interrompido para não publicar um site sem textos.`)
+      try {
+        dados = await busca(apiUrl)
+      } catch (erro) {
+        throw new Error(`[site-config] ${erro instanceof Error ? erro.message : String(erro)}`)
+      }
     },
     transformIndexHtml(html) {
       return dados ? aplicaNoHtml(html, dados) : html
