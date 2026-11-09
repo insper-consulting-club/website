@@ -903,9 +903,9 @@ class PartnerBenefit(models.Model):
 
 class SiteText(models.Model):
     """
-    Texto curto do site (título de seção, rótulo, botão, mensagem de lista
-    vazia). As entradas nascem do catálogo em site_texts.py; o admin só edita
-    o valor, não cria nem exclui.
+    Texto do site (título de seção, rótulo, botão, mensagem de lista vazia). As entradas nascem do registro de
+    conteúdo (website/conteudo/); o admin só edita o valor, pela tela de cada página (PaginaDoSite), e não cria
+    nem exclui.
     """
     key = models.CharField(max_length=100, unique=True, verbose_name='Chave')
     group = models.CharField(max_length=100, verbose_name='Página')
@@ -917,12 +917,32 @@ class SiteText(models.Model):
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
     class Meta:
-        verbose_name = 'Texto do site'
-        verbose_name_plural = 'Textos do site'
+        verbose_name = 'Valor de texto do site'
+        verbose_name_plural = 'Valores de textos do site'
         ordering = ['order']
 
     def __str__(self):
         return f'{self.group}: {self.description}'
+
+
+class PaginaDoSite(models.Model):
+    """
+    Uma página do site, para organizar a tela "Textos do site" do admin: cada página tem as suas seções e os seus
+    textos. As linhas nascem do registro de conteúdo (website/conteudo/) a cada migração, e não se criam nem se
+    excluem à mão; os textos de cada uma ficam em SiteText.
+    """
+    slug = models.SlugField(max_length=40, unique=True, verbose_name='Identificador')
+    title = models.CharField(max_length=100, verbose_name='Página')
+    path = models.CharField(max_length=200, verbose_name='Endereço no site')
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Página do site'
+        verbose_name_plural = 'Textos do site'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
 
 
 class NavItem(models.Model):

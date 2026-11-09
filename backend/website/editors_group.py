@@ -36,7 +36,7 @@ PERMISSOES = {
     # compartilhamento e Política de Privacidade da configuração, o menu e os benefícios
     # para parceiros são só dos administradores (ver SiteConfigAdmin).
     "siteconfig": ALTERACAO,
-    "sitetext": ALTERACAO,
+    "paginadosite": ALTERACAO,
     # Itens que vivem dentro de outro registro (tabelas do formulário):
     # precisam de todas as ações, senão o botão de remover linha não funciona.
     "directoratemembership": COMPLETO,
@@ -60,6 +60,19 @@ def codenames():
     return {f"{acao}_{modelo}" for modelo, acoes in PERMISSOES.items() for acao in acoes}
 
 
+def _acrescenta_permissoes_novas(grupo, Permission):
+    """
+    Um grupo que já existe não é refeito, mas ganha as permissões de telas que nasceram depois dele. Hoje, a de
+    "Textos do site" (PaginaDoSite), que substituiu a lista antiga de textos: quem podia alterar textos continua podendo.
+    """
+    novas = Permission.objects.filter(
+        content_type__app_label="website", codename__in=("change_paginadosite", "view_paginadosite"),
+    )
+    if novas.exists() and not grupo.permissions.filter(codename__in=("change_paginadosite", "view_paginadosite")).exists() \
+            and grupo.permissions.filter(codename="change_sitetext").exists():
+        grupo.permissions.add(*novas)
+
+
 def sincroniza_grupo_editores(apps, app_config=None):
     """
     Cria o grupo com as permissões padrão. Se ele já existe, não mexe (ajustes feitos no
@@ -76,6 +89,7 @@ def sincroniza_grupo_editores(apps, app_config=None):
 
     grupo, criado = Group.objects.get_or_create(name=NOME)
     if not criado:
+        _acrescenta_permissoes_novas(grupo, Permission)
         return False
     permissoes = Permission.objects.filter(content_type__app_label="website", codename__in=codenames())
     grupo.permissions.set(permissoes)

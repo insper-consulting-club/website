@@ -7,12 +7,14 @@ def sincroniza_textos_do_site(sender, apps=None, **kwargs):
     # Depois de cada migrate, cria os textos novos do catálogo. Usa o estado das
     # migrations: se a tabela ainda não existe (migrando para trás), não faz nada.
     # O comando flush envia este sinal sem "apps"; nesse caso valem os modelos atuais.
-    from .site_texts import sincroniza_textos
+    from .site_texts import sincroniza_paginas, sincroniza_textos
     apps = apps or apps_globais
     try:
         SiteText = apps.get_model('website', 'SiteText')
+        PaginaDoSite = apps.get_model('website', 'PaginaDoSite')
     except LookupError:
         return
+    sincroniza_paginas(PaginaDoSite)
     sincroniza_textos(SiteText)
 
 

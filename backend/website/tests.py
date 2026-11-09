@@ -15,7 +15,8 @@ from rest_framework.test import APIClient
 
 from website.models import (
     Article, ArticleImage, Member, Partner, PartnerCategory, Program, ProgramCase,
-    Directorate, NavItem, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
+    Directorate, NavItem, PaginaDoSite, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig,
+    SiteText,
 )
 
 
@@ -529,42 +530,6 @@ class SiteTextTests(TestCase):
 
 
 @SEM_MANIFESTO
-class SiteTextAdminTests(TestCase):
-    def setUp(self):
-        user = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
-        self.client.force_login(user)
-        self.texto = SiteText.objects.get(key="projetos.cases_titulo_varios")
-
-    def test_list_and_edit_pages_open_but_add_and_delete_are_blocked(self):
-        self.assertEqual(self.client.get("/admin/website/sitetext/").status_code, 200)
-        self.assertEqual(self.client.get(f"/admin/website/sitetext/{self.texto.pk}/change/").status_code, 200)
-        self.assertEqual(self.client.get("/admin/website/sitetext/add/").status_code, 403)
-        self.assertEqual(self.client.get(f"/admin/website/sitetext/{self.texto.pk}/delete/").status_code, 403)
-
-    def test_editing_must_keep_the_placeholders(self):
-        url = f"/admin/website/sitetext/{self.texto.pk}/change/"
-
-        recusado = self.client.post(url, {"value": "Cases do programa"})
-        self.assertEqual(recusado.status_code, 200)
-        self.texto.refresh_from_db()
-        self.assertEqual(self.texto.value, "{programa}: {n} cases")
-
-        aceito = self.client.post(url, {"value": "{n} cases em {programa}"})
-        self.assertEqual(aceito.status_code, 302)
-        self.texto.refresh_from_db()
-        self.assertEqual(self.texto.value, "{n} cases em {programa}")
-
-    def test_restore_action_goes_back_to_the_original_text(self):
-        SiteText.objects.filter(pk=self.texto.pk).update(value="{n} outro texto {programa}")
-
-        self.client.post("/admin/website/sitetext/", {
-            "action": "restaurar", "_selected_action": [self.texto.pk],
-        })
-
-        self.texto.refresh_from_db()
-        self.assertEqual(self.texto.value, "{programa}: {n} cases")
-
-
 class NavItemTests(TestCase):
     def test_migrations_create_exactly_the_default_menu_and_benefits(self):
         from website.conteudo_padrao import BENEFICIOS_PADRAO, NAV_ITEMS_PADRAO
@@ -832,11 +797,11 @@ class EditorsGroupTests(TestCase):
     def test_group_is_created_by_migrate_with_the_expected_permissions(self):
         codenames = self.codenames()
 
-        for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_sitetext",
+        for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_paginadosite",
                          "delete_projectimage", "view_position", "add_position"):
             self.assertIn(esperado, codenames)
         for proibido in ("delete_article", "delete_member", "delete_project", "add_siteconfig", "delete_siteconfig",
-                         "add_sitetext", "change_position", "delete_position", "view_user", "change_user", "view_group",
+                         "add_paginadosite", "delete_paginadosite", "change_position", "delete_position", "view_user", "change_user", "view_group",
                          "view_navitem", "change_navitem", "view_partnerbenefit", "change_partnerbenefit"):
             self.assertNotIn(proibido, codenames)
 
@@ -867,12 +832,26 @@ class EditorsGroupTests(TestCase):
         from website.editors_group import sincroniza_grupo_editores
 
         self.grupo.permissions.add(Permission.objects.get(codename="delete_article"))
-        self.grupo.permissions.remove(Permission.objects.get(codename="change_sitetext"))
+        self.grupo.permissions.remove(Permission.objects.get(codename="change_paginadosite"))
 
         self.assertFalse(sincroniza_grupo_editores(apps, apps.get_app_config("website")))
 
         self.assertIn("delete_article", self.codenames())
-        self.assertNotIn("change_sitetext", self.codenames())
+        self.assertNotIn("change_paginadosite", self.codenames())
+
+    def test_an_old_group_gets_the_permission_of_the_new_texts_screen(self):
+        from django.apps import apps
+        from django.contrib.auth.models import Permission
+        from website.editors_group import sincroniza_grupo_editores
+
+        # Um grupo de antes da tela nova: podia alterar textos pela lista antiga e não tem a permissão da página.
+        self.grupo.permissions.remove(*Permission.objects.filter(codename__in=["change_paginadosite", "view_paginadosite"]))
+        self.grupo.permissions.add(Permission.objects.get(codename="change_sitetext"))
+
+        self.assertFalse(sincroniza_grupo_editores(apps, apps.get_app_config("website")))
+
+        self.assertIn("change_paginadosite", self.codenames())
+        self.assertIn("view_paginadosite", self.codenames())
 
     def test_deleting_the_group_brings_back_the_default_on_the_next_migrate(self):
         from django.apps import apps
@@ -1407,19 +1386,20 @@ class ActionPermissionTests(TestCase):
 
     def test_a_read_only_user_cannot_archive_members_or_restore_texts(self):
         from django.contrib.auth.models import Permission
-        from website.models import SiteText
+        from website.models import PaginaDoSite, SiteText
 
         leitor = get_user_model().objects.create_user("leitor", "l@example.com", "senha-de-teste", is_staff=True)
-        leitor.user_permissions.add(*Permission.objects.filter(codename__in=["view_member", "view_project", "view_sitetext"]))
+        leitor.user_permissions.add(*Permission.objects.filter(codename__in=["view_member", "view_project", "view_paginadosite"]))
         self.client.force_login(leitor)
         membro = Member.objects.create(name="Ana")
         projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
         texto = SiteText.objects.get(key="equipe.titulo")
         SiteText.objects.filter(pk=texto.pk).update(value="Editado")
+        pagina = PaginaDoSite.objects.get(slug="equipe")
 
         self.client.post("/admin/website/member/", {"action": "arquivar", "_selected_action": [membro.pk]})
         self.client.post("/admin/website/project/", {"action": "arquivar", "_selected_action": [projeto.pk]})
-        self.client.post("/admin/website/sitetext/", {"action": "restaurar", "_selected_action": [texto.pk]})
+        self.client.post("/admin/website/paginadosite/", {"action": "restaurar_originais", "_selected_action": [pagina.pk]})
 
         membro.refresh_from_db(); projeto.refresh_from_db(); texto.refresh_from_db()
         self.assertTrue(membro.is_active)
@@ -2524,3 +2504,271 @@ class FrontendFallbackTests(TestCase):
         for campo in SiteConfig._meta.concrete_fields:
             if campo.name in ("site_name", "email", "home_hero_title", "mission", "footer_tagline"):
                 self.assertIn(f"{campo.name}: ", ts)
+
+
+class ContentRegistryTests(TestCase):
+    """O registro de conteúdo (website/conteudo/) é a fonte dos textos editáveis."""
+
+    def test_keys_and_page_slugs_are_unique_and_pages_are_not_empty(self):
+        from website.conteudo import PAGINAS
+
+        chaves = [t.chave for p in PAGINAS for t in p.textos]
+        self.assertEqual(len(chaves), len(set(chaves)))
+        self.assertEqual(len(chaves), 120)
+        self.assertEqual(len({p.slug for p in PAGINAS}), len(PAGINAS))
+        for pagina in PAGINAS:
+            self.assertTrue(pagina.textos, pagina.slug)
+            self.assertTrue(pagina.caminho.startswith("/"), pagina.slug)
+
+    def test_every_text_is_described_and_has_a_section(self):
+        from website.conteudo import PAGINAS
+
+        for pagina in PAGINAS:
+            for texto in pagina.textos:
+                self.assertTrue(texto.rotulo.strip() and texto.secao.strip() and texto.padrao.strip(), texto.chave)
+
+    def test_keys_start_with_the_name_the_frontend_uses_for_their_page(self):
+        from website.conteudo import PAGINAS
+
+        for pagina in PAGINAS:
+            for texto in pagina.textos:
+                self.assertRegex(texto.chave, r"^[a-z_]+\.[a-z_0-9]+$", texto.chave)
+
+    def test_compatibility_layer_keeps_the_old_shape_and_order(self):
+        from website.conteudo import PAGINAS
+        from website.site_texts import GRUPOS, PADRAO, TEXTOS
+
+        self.assertEqual([t[0] for t in TEXTOS], [t.chave for p in PAGINAS for t in p.textos])
+        self.assertEqual(GRUPOS, [p.titulo for p in PAGINAS])
+        self.assertEqual(PADRAO["equipe.titulo"], "Nossa Equipe")
+
+    def test_long_texts_get_a_multiline_field_and_short_ones_do_not(self):
+        from website.conteudo import POR_CHAVE
+
+        self.assertTrue(POR_CHAVE["privacidade.erro"][1].e_longo)
+        self.assertFalse(POR_CHAVE["equipe.titulo"][1].e_longo)
+
+    def test_every_key_the_frontend_asks_for_exists_in_the_registry(self):
+        import re
+        from pathlib import Path
+
+        from website.conteudo import POR_CHAVE
+
+        pasta = Path(__file__).resolve().parents[2] / "frontend" / "src"
+        pedidas = set()
+        for arquivo in pasta.rglob("*.tsx"):
+            pedidas |= set(re.findall(r'\bt\("([a-z_]+\.[a-z_0-9]+)"\)', arquivo.read_text(encoding="utf-8")))
+
+        self.assertGreater(len(pedidas), 100)
+        self.assertEqual(sorted(pedidas - set(POR_CHAVE)), [], "o frontend usa uma chave que o registro não tem")
+
+    def test_sync_creates_the_pages_in_site_order_and_removes_the_ones_that_left(self):
+        from website.conteudo import PAGINAS
+        from website.models import PaginaDoSite
+        from website.site_texts import sincroniza_paginas
+
+        PaginaDoSite.objects.create(slug="pagina-antiga", title="Antiga", path="/", order=99)
+        PaginaDoSite.objects.filter(slug="home").update(title="Nome velho", order=50)
+
+        sincroniza_paginas()
+
+        self.assertEqual(list(PaginaDoSite.objects.values_list("slug", flat=True)), [p.slug for p in PAGINAS])
+        self.assertEqual(PaginaDoSite.objects.get(slug="home").title, "Home")
+
+    def test_sync_moves_texts_to_the_renamed_page_without_touching_their_value(self):
+        SiteText.objects.filter(key="projetos.titulo").update(group="Projetos", value="Editado pelo ICC")
+
+        from website.site_texts import sincroniza_textos
+
+        sincroniza_textos()
+
+        texto = SiteText.objects.get(key="projetos.titulo")
+        self.assertEqual(texto.group, "Projetos (lista)")
+        self.assertEqual(texto.value, "Editado pelo ICC")
+
+
+@SEM_MANIFESTO
+class TextosDoSiteAdminTests(TestCase):
+    """A tela "Textos do site": uma página por vez, com as seções dela."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+
+        self.admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.editor = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste", is_staff=True)
+        self.editor.groups.add(Group.objects.get(name="Editores"))
+        self.client.force_login(self.admin)
+        self.home = PaginaDoSite.objects.get(slug="home")
+        self.url = f"/admin/website/paginadosite/{self.home.pk}/change/"
+
+    def dados(self, slug="home", **mudancas):
+        """O formulário completo de uma página, com o valor atual de cada texto e as mudanças pedidas (por chave)."""
+        from website.admin import nome_do_campo
+        from website.conteudo import POR_SLUG
+
+        valores = dict(SiteText.objects.values_list("key", "value"))
+        dados = {nome_do_campo(t.chave): valores[t.chave] for t in POR_SLUG[slug].textos}
+        dados.update({nome_do_campo(chave.replace("__", ".")): valor for chave, valor in mudancas.items()})
+        return dados
+
+    # --- a lista de páginas
+
+    def test_list_shows_the_pages_in_site_order_with_counts(self):
+        from website.conteudo import PAGINAS
+
+        resposta = self.client.get("/admin/website/paginadosite/")
+
+        self.assertEqual([p.slug for p in resposta.context["cl"].result_list], [p.slug for p in PAGINAS])
+        self.assertIn("Textos do site", resposta.content.decode())
+
+    def test_add_and_delete_are_blocked(self):
+        self.assertEqual(self.client.get("/admin/website/paginadosite/add/").status_code, 403)
+        self.assertEqual(self.client.get(f"/admin/website/paginadosite/{self.home.pk}/delete/").status_code, 403)
+
+    # --- o formulário de uma página
+
+    def test_page_form_groups_texts_by_section_with_plain_labels(self):
+        pagina = self.client.get(self.url).content.decode()
+
+        for secao in ("Apresentação", "Quem somos", "Missão", "Programas", "Chamada final"):
+            self.assertIn(secao, pagina)
+        self.assertIn("Botão principal, logo abaixo da frase de apresentação", pagina)
+        self.assertIn('name="t__home__hero_botao_principal"', pagina)
+        self.assertIn('value="Seja membro"', pagina)
+
+    def test_rare_messages_are_collapsed_in_their_own_block(self):
+        pagina = PaginaDoSite.objects.get(slug="equipe")
+
+        html = self.client.get(f"/admin/website/paginadosite/{pagina.pk}/change/").content.decode()
+
+        self.assertIn("Mensagens e estados raros (3)", html)
+        self.assertIn("<details", html)
+
+    def test_long_texts_use_a_textarea(self):
+        pagina = PaginaDoSite.objects.get(slug="privacidade")
+
+        html = self.client.get(f"/admin/website/paginadosite/{pagina.pk}/change/").content.decode()
+
+        self.assertIn("<textarea", html)
+        self.assertIn('name="t__privacidade__erro"', html)
+
+    def test_saving_changes_only_what_was_edited_and_the_api_follows(self):
+        resposta = self.client.post(self.url, self.dados(home__membros_titulo="Quem faz o clube"))
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Quem faz o clube")
+        self.assertEqual(SiteText.objects.get(key="home.parceiros_titulo").value, "Empresas que confiam no nosso trabalho")
+        self.assertEqual(APIClient().get("/api/site-config/").data["texts"]["home.membros_titulo"], "Quem faz o clube")
+
+    def test_a_text_cannot_be_left_empty(self):
+        resposta = self.client.post(self.url, self.dados(home__membros_titulo=""))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Quem constrói o clube")
+
+    def test_editing_must_keep_the_placeholders(self):
+        projeto = PaginaDoSite.objects.get(slug="projetos")
+        url = f"/admin/website/paginadosite/{projeto.pk}/change/"
+
+        recusado = self.client.post(url, self.dados("projetos", projetos__cases_titulo_varios="Cases do programa"))
+        self.assertEqual(recusado.status_code, 200)
+        self.assertIn("Mantenha no texto", recusado.content.decode())
+        self.assertEqual(SiteText.objects.get(key="projetos.cases_titulo_varios").value, "{programa}: {n} cases")
+
+        aceito = self.client.post(url, self.dados("projetos", projetos__cases_titulo_varios="{n} cases em {programa}"))
+        self.assertEqual(aceito.status_code, 302)
+        self.assertEqual(SiteText.objects.get(key="projetos.cases_titulo_varios").value, "{n} cases em {programa}")
+
+    # --- editado, original e restaurar
+
+    def test_an_edited_text_shows_the_mark_the_original_and_a_restore_button(self):
+        limpo = self.client.get(self.url).content.decode()
+        self.assertNotIn("texto-editado", limpo)
+
+        SiteText.objects.filter(key="home.membros_titulo").update(value="Quem faz o clube")
+        editado = self.client.get(self.url).content.decode()
+
+        self.assertEqual(editado.count('class="texto-editado"'), 1)
+        self.assertIn("Quem constrói o clube", editado)
+        self.assertIn("Restaurar o original", editado)
+
+    def test_restore_action_brings_every_text_of_the_selected_pages_back(self):
+        SiteText.objects.filter(key="home.membros_titulo").update(value="Editado 1")
+        SiteText.objects.filter(key="home.parceiros_titulo").update(value="Editado 2")
+        SiteText.objects.filter(key="equipe.titulo").update(value="Editado 3")
+
+        self.client.post("/admin/website/paginadosite/", {"action": "restaurar_originais", "_selected_action": [self.home.pk]})
+
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Quem constrói o clube")
+        self.assertEqual(SiteText.objects.get(key="home.parceiros_titulo").value, "Empresas que confiam no nosso trabalho")
+        self.assertEqual(SiteText.objects.get(key="equipe.titulo").value, "Editado 3")  # outra página: não foi marcada
+
+    def test_status_filter_separates_pages_with_edited_texts(self):
+        SiteText.objects.filter(key="equipe.titulo").update(value="Editado")
+
+        editadas = self.client.get("/admin/website/paginadosite/?situacao=editados").content.decode()
+        originais = self.client.get("/admin/website/paginadosite/?situacao=originais").content.decode()
+
+        self.assertIn("Equipe", editadas)
+        self.assertNotIn("Parceiros", editadas.split("Equipe")[-1][:50])
+        self.assertNotIn(">Equipe<", originais)
+        self.assertIn("Parceiros", originais)
+
+    # --- busca
+
+    def test_search_finds_pages_by_what_the_text_says_and_shows_the_matches(self):
+        resposta = self.client.get("/admin/website/paginadosite/?q=Quem+constr%C3%B3i+o+clube")
+
+        slugs = [p.slug for p in resposta.context["cl"].result_list]
+        self.assertIn("home", slugs)
+        self.assertNotIn("artigos", slugs)
+        self.assertIn("Textos encontrados", resposta.content.decode())
+
+    def test_search_ignores_accents_and_looks_at_the_description_and_the_edited_value(self):
+        achou_missao = self.client.get("/admin/website/paginadosite/?q=missao").content.decode()
+        self.assertIn("Home", achou_missao)
+
+        SiteText.objects.filter(key="rodape.admin").update(value="Painel interno")
+        achou_valor = self.client.get("/admin/website/paginadosite/?q=painel+interno").content.decode()
+        self.assertIn("Rodapé", achou_valor)
+
+    # --- permissões e ver no site
+
+    def test_an_editor_can_edit_texts_but_not_add_or_delete(self):
+        self.client.force_login(self.editor)
+
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        self.assertEqual(self.client.post(self.url, self.dados(home__membros_titulo="Quem faz o clube")).status_code, 302)
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Quem faz o clube")
+        self.assertEqual(self.client.get("/admin/website/paginadosite/add/").status_code, 403)
+
+    def test_a_viewer_cannot_change_texts(self):
+        from django.contrib.auth.models import Permission
+
+        leitor = get_user_model().objects.create_user("leitor", "l@example.com", "senha-de-teste", is_staff=True)
+        leitor.user_permissions.add(Permission.objects.get(codename="view_paginadosite"))
+        self.client.force_login(leitor)
+
+        self.client.post(self.url, self.dados(home__membros_titulo="Quem faz o clube"))
+
+        self.assertEqual(SiteText.objects.get(key="home.membros_titulo").value, "Quem constrói o clube")
+
+    def test_view_on_site_points_to_the_page_of_the_texts(self):
+        from django.contrib import admin
+
+        from website.admin import PaginaDoSiteAdmin
+
+        with self.settings(FRONTEND_URL="https://exemplo.com.br"):
+            modelo_admin = PaginaDoSiteAdmin(PaginaDoSite, admin.site)
+            self.assertEqual(modelo_admin.view_on_site(PaginaDoSite.objects.get(slug="equipe")), "https://exemplo.com.br/equipe")
+            self.assertEqual(modelo_admin.view_on_site(self.home), "https://exemplo.com.br/")
+
+    def test_menu_entry_is_textos_do_site_for_editors_too(self):
+        from config.navigation import navegacao
+
+        requisicao = mock.Mock(user=get_user_model().objects.get(pk=self.editor.pk))
+
+        itens = [i["title"] for g in navegacao(requisicao) for i in g["items"]]
+
+        self.assertIn("Textos do site", itens)
+

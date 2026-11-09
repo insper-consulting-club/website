@@ -275,11 +275,14 @@ As mudanças podem levar até um minuto para aparecer no site.
 
 ## Textos do site
 
-Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem constrói o clube", "Calendário", "Nenhum artigo cadastrado no momento") ficam em **Textos do site**. A lista traz a **página** onde cada texto aparece e uma descrição de **onde aparece**.
+Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem constrói o clube", "Calendário", "Nenhum artigo cadastrado no momento") ficam em **Textos do site**. A lista mostra uma linha por página do site, na ordem em que as páginas aparecem. Abra a página que quer ajustar.
 
-- Use o filtro **Página** (à direita) ou a busca para achar o texto. Edite direto na coluna **Texto** e clique em **Salvar**.
+- Dentro da página, os textos vêm agrupados por seção (Apresentação, Quem somos, Missão e assim por diante), cada um com uma descrição de onde aparece. Edite e clique em **Salvar**.
+- Mensagens raras (por exemplo, "página não encontrada" ou "lista vazia") ficam num bloco recolhido no fim da página.
+- Um texto alterado fica marcado como **Editado**, com o original logo abaixo e o botão **Restaurar o original**.
+- A busca na lista procura pelo que o texto diz, pela descrição ou pela seção, e mostra os textos encontrados. O filtro **Situação** separa as páginas com textos editados.
+- Para voltar uma página inteira ao original, marque a página e use a ação **Restaurar os textos originais das páginas selecionadas**.
 - Alguns textos têm trechos entre chaves, como `{n}`, `{data}` ou `{programa}`. O site preenche esses trechos, então eles precisam continuar no texto. O admin avisa se algum for apagado.
-- Para voltar ao texto original, marque os textos e use a ação **Restaurar texto original**.
 - Não há botão para adicionar ou excluir: os textos existentes são os que o site usa.
 - Os textos longos (missão, "Quem somos", Política de Privacidade) ficam em **Configuração do site**.
 

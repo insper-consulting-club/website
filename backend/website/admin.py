@@ -9,6 +9,7 @@ from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 import re
+import unicodedata
 
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -16,9 +17,10 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
-from unfold.widgets import UnfoldAdminSelectWidget
+from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget
 
-from .site_texts import PADRAO as PADRAO_TEXTOS
+from .conteudo import PADRAO as PADRAO_DOS_TEXTOS, PAGINAS, POR_CHAVE, POR_SLUG
+from .conteudo.base import Pagina
 from .widgets import MarkdownPreviewWidget
 from .models import (
     PartnerCategory, ProgramComponent,
@@ -29,7 +31,7 @@ from .models import (
     ProgramCase, ProgramCaseParticipant,
     SelectionProcess, SelectionProcessStage, SelectionProcessStep,
     SelectionProcessRequirement, PreparationMaterial, PreparationMaterialItem,
-    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem, MemberTrajectory,
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem, MemberTrajectory, PaginaDoSite,
 )
 
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
@@ -921,56 +923,226 @@ class SiteConfigAdmin(AdminDoSite):
 # Textos do site (títulos de seção, rótulos, botões e mensagens)
 # ---------------------------------------------------------------------------
 
-class SiteTextForm(forms.ModelForm):
+def nome_do_campo(chave):
+    """Nome do campo do formulário para uma chave de texto ("home.sobre_eyebrow" vira "t__home__sobre_eyebrow")."""
+    return 't__' + chave.replace('.', '__')
+
+
+def _rodape_do_original(original, valor, id_do_campo):
+    """Abaixo do campo: avisa que o texto foi editado e deixa voltar ao original com um clique."""
+    if (valor or '') == original:
+        return ''
+    return format_html(
+        '<div class="texto-original"><span class="texto-editado">editado</span> Original: <em>{}</em> '
+        '<button type="button" class="restaurar-texto" data-original="{}" '
+        'onclick="document.getElementById(\'{}\').value=this.dataset.original">Restaurar o original</button></div>',
+        original, original, id_do_campo,
+    )
+
+
+class CampoDeTextoComOriginal(UnfoldAdminTextInputWidget):
+    def __init__(self, original, attrs=None):
+        super().__init__(attrs)
+        self.original = original
+
+    def render(self, name, value, attrs=None, renderer=None):
+        campo = super().render(name, value, attrs, renderer)
+        return format_html('{}{}', campo, _rodape_do_original(self.original, value, (attrs or {}).get('id') or f'id_{name}'))
+
+
+class AreaDeTextoComOriginal(UnfoldAdminTextareaWidget):
+    def __init__(self, original, attrs=None):
+        super().__init__({'rows': 3, **(attrs or {})})
+        self.original = original
+
+    def render(self, name, value, attrs=None, renderer=None):
+        campo = super().render(name, value, attrs, renderer)
+        return format_html('{}{}', campo, _rodape_do_original(self.original, value, (attrs or {}).get('id') or f'id_{name}'))
+
+
+def _normaliza(texto):
+    """Minúsculas e sem acento, para a busca achar "missao" em "Missão"."""
+    return ''.join(c for c in unicodedata.normalize('NFKD', texto.lower()) if not unicodedata.combining(c))
+
+
+def _valores_dos_textos():
+    """O que está no banco, por chave. Texto que ainda não chegou ao banco vale o original."""
+    return {**PADRAO_DOS_TEXTOS, **dict(SiteText.objects.values_list('key', 'value'))}
+
+
+def _chaves_que_batem(termo):
+    """As chaves cujo rótulo, seção, página, valor atual ou original contêm o termo buscado."""
+    procurado = _normaliza(termo.strip())
+    valores = _valores_dos_textos()
+    achadas = []
+    for chave, (pagina, texto) in POR_CHAVE.items():
+        campos = (texto.rotulo, texto.secao, pagina.titulo, texto.padrao, valores.get(chave, texto.padrao))
+        if any(procurado in _normaliza(c) for c in campos):
+            achadas.append(chave)
+    return achadas
+
+
+def _editados_por_pagina():
+    """Quantos textos de cada página já foram editados (diferentes do original)."""
+    valores = _valores_dos_textos()
+    return {
+        pagina.slug: sum(1 for texto in pagina.textos if valores.get(texto.chave, texto.padrao) != texto.padrao)
+        for pagina in PAGINAS
+    }
+
+
+class FormDaPagina(forms.ModelForm):
+    """Base do formulário de uma página: os campos (um por texto) são acrescentados em PaginaDoSiteAdmin.get_form."""
+    _textos = {}
+
     class Meta:
-        model = SiteText
-        fields = ('value',)
+        model = PaginaDoSite
+        fields = []
 
-    def clean_value(self):
-        valor = self.cleaned_data['value']
-        original = PADRAO_TEXTOS.get(self.instance.key, '')
-        faltando = sorted(set(re.findall(r'\{\w+\}', original)) - set(re.findall(r'\{\w+\}', valor)))
-        if faltando:
-            raise forms.ValidationError(
-                'Mantenha no texto: ' + ', '.join(faltando) + '. O site preenche esses trechos.'
-            )
-        return valor
+    def clean(self):
+        dados = super().clean()
+        for nome, texto in self._textos.items():
+            valor = dados.get(nome)
+            if valor is None:
+                continue
+            faltando = sorted(set(re.findall(r'\{\w+\}', texto.padrao)) - set(re.findall(r'\{\w+\}', valor)))
+            if faltando:
+                self.add_error(nome, 'Mantenha no texto: ' + ', '.join(faltando) + '. O site preenche esses trechos.')
+        return dados
 
 
-@admin.register(SiteText)
-class SiteTextAdmin(AdminDoSite):
-    list_display = ('group', 'description', 'value')
-    list_display_links = ('description',)
-    list_editable = ('value',)
-    list_filter = ('group',)
-    search_fields = ('key', 'description', 'value')
-    list_per_page = 200
+class SituacaoDosTextosFilter(admin.SimpleListFilter):
+    title = 'situação'
+    parameter_name = 'situacao'
+
+    def lookups(self, request, model_admin):
+        return [('editados', 'Com textos editados'), ('originais', 'Só com os textos originais')]
+
+    def queryset(self, request, queryset):
+        if self.value() not in ('editados', 'originais'):
+            return queryset
+        editados = _editados_por_pagina()
+        com_edicao = [slug for slug, n in editados.items() if n]
+        if self.value() == 'editados':
+            return queryset.filter(slug__in=com_edicao)
+        return queryset.exclude(slug__in=com_edicao)
+
+
+@admin.register(PaginaDoSite)
+class PaginaDoSiteAdmin(AdminDoSite):
+    """
+    "Textos do site": uma linha por página. Cada página abre num formulário com as suas seções e os seus textos, vindos
+    do registro de conteúdo (website/conteudo/). As páginas e os textos nascem sozinhos; aqui só se edita o valor.
+    """
+    list_display = ('titulo', 'quantos', 'editados')
+    list_display_links = ('titulo',)
+    list_filter = (SituacaoDosTextosFilter,)
+    search_fields = ('title',)  # só para mostrar a caixa de busca; a busca de verdade está em get_search_results
     ordering = ('order',)
-    actions = ['restaurar']
-    readonly_fields = ('group', 'description', 'key')
-    fields = ('group', 'description', 'key', 'value')
+    actions = ['restaurar_originais']
 
-    def get_changelist_form(self, request, **kwargs):
-        return SiteTextForm
+    # --- lista de páginas
 
-    def get_form(self, request, obj=None, **kwargs):
-        kwargs['form'] = SiteTextForm
-        return super().get_form(request, obj, **kwargs)
+    @admin.display(description='Página', ordering='order')
+    def titulo(self, obj):
+        return obj.title
 
-    # As entradas vêm do catálogo no código: aqui só se edita o texto.
+    @admin.display(description='Textos')
+    def quantos(self, obj):
+        pagina = POR_SLUG.get(obj.slug)
+        return len(pagina.textos) if pagina else 0
+
+    @admin.display(description='Já editados')
+    def editados(self, obj):
+        return _editados_por_pagina().get(obj.slug, 0) or '-'
+
+    def get_list_display(self, request):
+        colunas = list(super().get_list_display(request))
+        termo = request.GET.get('q', '').strip()
+        if termo:
+            achadas = set(_chaves_que_batem(termo))
+
+            def encontrados(obj):
+                pagina = POR_SLUG.get(obj.slug)
+                if not pagina:
+                    return ''
+                nomes = [f'{t.secao}: {t.rotulo}' for t in pagina.textos if t.chave in achadas]
+                return '; '.join(nomes[:3]) + (f' (e mais {len(nomes) - 3})' if len(nomes) > 3 else '')
+
+            encontrados.short_description = 'Textos encontrados'
+            colunas.append(encontrados)
+        return colunas
+
+    def get_search_results(self, request, queryset, search_term):
+        if not search_term.strip():
+            return queryset, False
+        slugs = {POR_CHAVE[chave][0].slug for chave in _chaves_que_batem(search_term)}
+        slugs |= {p.slug for p in PAGINAS if _normaliza(search_term.strip()) in _normaliza(p.titulo)}
+        return queryset.filter(slug__in=slugs), False
+
+    def changelist_view(self, request, extra_context=None):
+        return super().changelist_view(request, {'title': 'Textos do site', **(extra_context or {})})
+
+    # As páginas vêm do registro: aqui só se edita o texto.
     def has_add_permission(self, request):
         return False
 
     def has_delete_permission(self, request, obj=None):
         return False
 
-    @admin.action(description='Restaurar texto original', permissions=['change'])
-    def restaurar(self, request, queryset):
+    def view_on_site(self, obj):
+        return url_do_site(obj.path)
+
+    # --- formulário de uma página
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        if obj is not None and obj.slug in POR_SLUG:
+            pagina = POR_SLUG[obj.slug]
+            valores = _valores_dos_textos()
+            campos = {}
+            for texto in pagina.textos:
+                widget = (AreaDeTextoComOriginal if texto.e_longo else CampoDeTextoComOriginal)(texto.padrao)
+                trechos = sorted(set(re.findall(r'\{\w+\}', texto.padrao)))
+                campos[nome_do_campo(texto.chave)] = forms.CharField(
+                    label=texto.rotulo, max_length=300, widget=widget,
+                    initial=valores.get(texto.chave, texto.padrao),
+                    help_text=f'O site preenche {", ".join(trechos)}: mantenha no texto.' if trechos else '',
+                )
+            kwargs['form'] = type('FormDaPaginaDoSite', (FormDaPagina,), {
+                **campos, '_textos': {nome_do_campo(t.chave): t for t in pagina.textos},
+            })
+        return super().get_form(request, obj, change=change, **kwargs)
+
+    def get_fieldsets(self, request, obj=None):
+        if obj is None or obj.slug not in POR_SLUG:
+            return [(None, {'fields': []})]
+        secoes = {}
+        raros = []
+        for texto in POR_SLUG[obj.slug].textos:
+            if texto.raro:
+                raros.append(nome_do_campo(texto.chave))
+            else:
+                secoes.setdefault(texto.secao, []).append(nome_do_campo(texto.chave))
+        conjuntos = [(secao, {'fields': campos}) for secao, campos in secoes.items()]
+        if raros:
+            conjuntos.append((f'Mensagens e estados raros ({len(raros)})', {
+                'classes': ['collapse'],
+                'description': 'Erros, páginas que não existem e formas no plural: quase nunca precisam de ajuste.',
+                'fields': raros,
+            }))
+        return conjuntos
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        for nome in form.changed_data:
+            texto = form._textos.get(nome)
+            if texto is not None:
+                SiteText.objects.filter(key=texto.chave).update(value=form.cleaned_data[nome])
+
+    @admin.action(description='Restaurar os textos originais das páginas selecionadas', permissions=['change'])
+    def restaurar_originais(self, request, queryset):
         n = 0
-        for texto in queryset:
-            original = PADRAO_TEXTOS.get(texto.key)
-            if original is not None and texto.value != original:
-                texto.value = original
-                texto.save(update_fields=['value'])
-                n += 1
+        for pagina in queryset:
+            for texto in POR_SLUG.get(pagina.slug, Pagina('', '', '', ())).textos:
+                n += SiteText.objects.filter(key=texto.chave).exclude(value=texto.padrao).update(value=texto.padrao)
         self.message_user(request, f'{n} texto(s) restaurado(s) ao original.', messages.SUCCESS)
