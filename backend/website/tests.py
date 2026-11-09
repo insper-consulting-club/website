@@ -14,7 +14,7 @@ from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from website.models import (
-    Article, Member, Partner, PartnerCategory, Program, ProgramCase,
+    Article, ArticleImage, Member, Partner, PartnerCategory, Program, ProgramCase,
     Directorate, NavItem, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig, SiteText,
 )
 
@@ -711,7 +711,7 @@ class AdminNavigationTests(TestCase):
             ["Artigos", "Equipe", "Parceiros", "Programas e projetos", "Processo seletivo", "Site", "Acesso"],
         )
         itens = [i["title"] for g in grupos for i in g["items"]]
-        self.assertEqual(len(itens), 17)  # 15 modelos do site, mais Usuários e Grupos
+        self.assertEqual(len(itens), 16)  # 14 modelos do site, mais Usuários e Grupos
         self.assertIn("Configuração do site", itens)
 
     def test_limited_user_only_sees_what_they_can_open(self):
@@ -2140,3 +2140,227 @@ class MemberActiveMigrationTests(TransactionTestCase):
         self.assertIsNotNone(Member.objects.get(name="Bruno").exit_date)
         self.assertIsNone(Member.objects.get(name="Ana").exit_date)
 
+
+def png_pequeno(nome="x.png"):
+    import io
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (4, 4), (200, 30, 30)).save(buffer, format="PNG")
+    return SimpleUploadedFile(nome, buffer.getvalue(), content_type="image/png")
+
+
+@SEM_MANIFESTO
+class AdminQuickWinsTests(TestCase):
+    """Melhorias de uso do admin: consultas, numeração das imagens, equipe, componentes, ambiente."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste")
+        self.client.force_login(self.admin)
+
+    # --- consultas repetidas
+
+    def test_partner_list_does_not_query_the_category_row_by_row(self):
+        categoria = PartnerCategory.objects.create(title="Tech")
+
+        def criar(n):
+            for i in range(n):
+                Partner.objects.create(name=f"P{n}-{i}", description="d", logo_url="l.png", category=categoria)
+
+        criar(2)
+        with CaptureQueriesContext(connection) as poucas:
+            self.client.get("/admin/website/partner/")
+        criar(8)
+        with CaptureQueriesContext(connection) as muitas:
+            self.client.get("/admin/website/partner/")
+
+        self.assertEqual(len(poucas), len(muitas))
+
+    # --- numeração das imagens do artigo
+
+    def test_image_without_number_gets_the_next_free_one_of_its_article(self):
+        artigo = Article.objects.create(title="A", description="d", slug="a")
+        outro = Article.objects.create(title="B", description="d", slug="b")
+
+        primeira = ArticleImage.objects.create(article=artigo, image="articles/1.png")
+        segunda = ArticleImage.objects.create(article=artigo, image="articles/2.png")
+        do_outro = ArticleImage.objects.create(article=outro, image="articles/3.png")
+
+        self.assertEqual((primeira.number, segunda.number, do_outro.number), (1, 2, 1))
+
+    def test_admin_numbers_new_blank_rows_without_repeating_a_typed_number(self):
+        import shutil
+        import tempfile
+
+        from django.forms.models import model_to_dict
+
+        # Os arquivos enviados vão para uma pasta temporária, nunca para a pasta de mídia do projeto.
+        pasta = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, pasta, ignore_errors=True)
+        configuracao = self.settings(MEDIA_ROOT=pasta)
+        configuracao.enable()
+        self.addCleanup(configuracao.disable)
+
+        artigo = Article.objects.create(title="A", description="d", slug="a", published=True, date=date(2026, 1, 1))
+        dados = {k: v for k, v in model_to_dict(artigo).items() if v is not None and k != "image"}
+        dados.update({
+            "images-TOTAL_FORMS": "3", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
+            "images-0-number": "", "images-0-image": png_pequeno("a.png"), "images-0-caption": "primeira",
+            "images-1-number": "", "images-1-image": png_pequeno("b.png"), "images-1-caption": "segunda",
+            "images-2-number": "2", "images-2-image": png_pequeno("c.png"), "images-2-caption": "digitada",
+        })
+
+        resposta = self.client.post(f"/admin/website/article/{artigo.pk}/change/", dados)
+
+        self.assertEqual(resposta.status_code, 302)
+        numeros = {i.caption: i.number for i in artigo.images.all()}
+        self.assertEqual(numeros["digitada"], 2)
+        self.assertEqual(sorted(numeros.values()), [2, 3, 4])
+
+    def test_each_saved_image_shows_a_snippet_to_copy(self):
+        artigo = Article.objects.create(title="A", description="d", slug="a")
+        ArticleImage.objects.create(article=artigo, image="articles/1.png")
+
+        pagina = self.client.get(f"/admin/website/article/{artigo.pk}/change/").content.decode()
+
+        self.assertIn("![](imagem-1)", pagina)
+        self.assertIn("copiar-trecho", pagina)
+        self.assertIn("Aparece depois de salvar", pagina)
+
+    # --- equipe do projeto
+
+    def test_project_team_is_edited_in_the_project_and_not_in_the_member(self):
+        projeto_pagina = self.client.get("/admin/website/project/add/").content.decode()
+        membro_pagina = self.client.get("/admin/website/member/add/").content.decode()
+
+        self.assertIn('name="members"', projeto_pagina)
+        self.assertNotIn('name="projects"', membro_pagina)
+
+    def test_saving_a_project_with_a_team_shows_it_in_the_api_and_in_the_member(self):
+        ana = Member.objects.create(name="Ana")
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
+        from django.forms.models import model_to_dict
+
+        dados = {k: v for k, v in model_to_dict(projeto).items() if v is not None}
+        dados.update({
+            "members": [ana.pk], "partners": [],
+            "images-TOTAL_FORMS": "0", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
+            "timeline_events-TOTAL_FORMS": "0", "timeline_events-INITIAL_FORMS": "0",
+            "timeline_events-MIN_NUM_FORMS": "0", "timeline_events-MAX_NUM_FORMS": "1000",
+            "content_blocks-TOTAL_FORMS": "0", "content_blocks-INITIAL_FORMS": "0",
+            "content_blocks-MIN_NUM_FORMS": "0", "content_blocks-MAX_NUM_FORMS": "1000",
+        })
+
+        resposta = self.client.post(f"/admin/website/project/{projeto.pk}/change/", dados)
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(list(ana.projects.all()), [projeto])
+        api = APIClient().get(f"/api/projects/{projeto.pk}/")
+        self.assertEqual([m["name"] for m in api.data["members"]], ["Ana"])
+
+    # --- componentes do programa
+
+    def test_components_are_a_tab_of_the_program_and_have_no_page_of_their_own(self):
+        programa = Program.objects.create(label="G", slug="g", description="d")
+
+        pagina = self.client.get(f"/admin/website/program/{programa.pk}/change/").content.decode()
+        sozinha = self.client.get("/admin/website/programcomponent/")
+        menu = self.client.get("/admin/").content.decode()
+
+        self.assertIn("components-TOTAL_FORMS", pagina)
+        self.assertEqual(sozinha.status_code, 404)
+        self.assertNotIn("Componentes dos programas", menu)
+
+    # --- programa em destaque
+
+    def test_featured_program_is_chosen_from_a_list_of_programs(self):
+        Program.objects.create(label="Jornada do Consultor", slug="jornada-do-consultor", description="d")
+        Program.objects.create(label="Pedagógico", slug="pedagogico", description="d")
+
+        pagina = self.client.get("/admin/website/siteconfig/1/change/").content.decode()
+
+        self.assertIn('<select name="featured_program_slug"', pagina)
+        self.assertIn('value="pedagogico"', pagina)
+        self.assertIn("Pedagógico", pagina)
+
+    def test_an_old_featured_slug_without_program_stays_visible(self):
+        SiteConfig.objects.filter(pk=1).update(featured_program_slug="programa-que-sumiu")
+
+        pagina = self.client.get("/admin/website/siteconfig/1/change/").content.decode()
+
+        self.assertIn("programa-que-sumiu (programa não encontrado)", pagina)
+
+    # --- código compartilhado
+
+    def test_ordered_tabs_share_the_same_drag_behaviour(self):
+        from django.contrib import admin
+        from website import admin as site_admin
+
+        for classe in (site_admin.ProjectImageInline, site_admin.ProgramContentBlockInline, site_admin.NavItemInline):
+            self.assertEqual(classe.ordering_field, "order")
+            self.assertTrue(classe.hide_ordering_field)
+            self.assertTrue(classe.tab)
+
+
+
+class TeamAndComponentsMigrationTests(TransactionTestCase):
+    """Migration 0027: a equipe passa para o projeto, e componente sem programa deixa de existir."""
+
+    ANTES = ("website", "0026_membro_ativo")
+    DEPOIS = ("website", "0027_equipe_no_projeto_e_componentes_no_programa")
+
+    def _estado(self, alvo):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        MigrationExecutor(connection).migrate([alvo])
+        return MigrationExecutor(connection).loader.project_state([alvo]).apps
+
+    def tearDown(self):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_teams_are_copied_to_the_project_side(self):
+        antigo = self._estado(self.ANTES)
+        Member, Project = antigo.get_model("website", "Member"), antigo.get_model("website", "Project")
+        ana, bia = Member.objects.create(name="Ana"), Member.objects.create(name="Bia")
+        p1 = Project.objects.create(title="P1", description="d", start_date=date(2025, 1, 1))
+        p2 = Project.objects.create(title="P2", description="d", start_date=date(2025, 1, 1))
+        ana.projects.add(p1, p2)
+        bia.projects.add(p1)
+
+        novo = self._estado(self.DEPOIS)
+        Project = novo.get_model("website", "Project")
+
+        self.assertEqual(sorted(m.name for m in Project.objects.get(title="P1").members.all()), ["Ana", "Bia"])
+        self.assertEqual([m.name for m in Project.objects.get(title="P2").members.all()], ["Ana"])
+
+    def test_teams_are_copied_back_when_the_migration_is_undone(self):
+        novo = self._estado(self.DEPOIS)
+        Member, Project = novo.get_model("website", "Member"), novo.get_model("website", "Project")
+        ana = Member.objects.create(name="Ana")
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2025, 1, 1))
+        projeto.members.add(ana)
+
+        antigo = self._estado(self.ANTES)
+        Member = antigo.get_model("website", "Member")
+
+        self.assertEqual([p.title for p in Member.objects.get(name="Ana").projects.all()], ["P"])
+
+    def test_components_without_a_program_are_removed_and_the_others_stay(self):
+        antigo = self._estado(self.ANTES)
+        Program = antigo.get_model("website", "Program")
+        Componente = antigo.get_model("website", "ProgramComponent")
+        programa = Program.objects.create(label="G", slug="g", description="d")
+        Componente.objects.create(title="Com programa", description="d", program=programa)
+        Componente.objects.create(title="Órfão", description="d", program=None)
+
+        novo = self._estado(self.DEPOIS)
+        Componente = novo.get_model("website", "ProgramComponent")
+
+        self.assertEqual([c.title for c in Componente.objects.all()], ["Com programa"])

@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import BaseInlineFormSet
 from django.conf import settings
 from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import UploadedFile
@@ -14,6 +15,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
+from unfold.widgets import UnfoldAdminSelectWidget
 
 from .site_texts import PADRAO as PADRAO_TEXTOS
 from .widgets import MarkdownPreviewWidget
@@ -151,6 +153,22 @@ def secao_avancada(*campos):
     })
 
 
+class AbaOrdenavelTabular(TabularInline):
+    """Aba do formulário (lista dentro do registro) cujas linhas se reordenam arrastando."""
+    ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
+
+
+class AbaOrdenavelEmpilhada(StackedInline):
+    """Igual a AbaOrdenavelTabular, para linhas com muitos campos (cada uma vira um bloco)."""
+    ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    tab = True
+
+
 class AdminDoSite(AvisoDeAtrasoMixin, TextoCompactoMixin, ModelAdmin):
     """Base dos admins de conteúdo do site (não vale para Usuários e Grupos)."""
 
@@ -170,6 +188,7 @@ class PartnerAdmin(AdminDoSite):
     list_display = ('logo', 'name', 'category', 'is_active')
     list_display_links = ('logo', 'name')
     list_editable = ('is_active',)
+    list_select_related = ('category',)
     ordering_field = 'order'
     hide_ordering_field = True
     list_filter = ('is_active', 'category')
@@ -217,15 +236,11 @@ class DirectorateMembershipForm(forms.ModelForm):
         labels = {'directorate': 'Diretoria'}
 
 
-class DirectorateMembershipInline(TabularInline):
+class DirectorateMembershipInline(AbaOrdenavelTabular):
     model = DirectorateMembership
     form = DirectorateMembershipForm
     extra = 1
     fields = ('directorate', 'cargo', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
-    tab = True
 
 
 class MemberTrajectoryInline(TabularInline):
@@ -276,18 +291,13 @@ class MemberAdmin(AdminDoSite):
     list_display_links = ('foto', 'name')
     list_editable = ('is_active',)
     list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position')
-    # Exigido pelo autocomplete de participantes dos cases, e útil por si só
-    # quando a lista acumula alumni além dos membros ativos.
+    # Exigido pelo autocomplete da equipe do projeto e dos participantes dos cases, e útil
+    # por si só quando a lista acumula alumni além dos membros ativos.
     search_fields = ('name', 'linkedin')
     list_select_related = ('position',)
-    # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
-    autocomplete_fields = ('projects',)
     list_per_page = 50
     actions = ['arquivar', 'reativar']
-    fieldsets = (
-        (None, {'fields': ('name', 'photo', 'position', 'linkedin')}),
-        ('No ICC', {'fields': ('is_active', 'projects')}),
-    )
+    fields = ('name', 'photo', 'position', 'linkedin', 'is_active')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -320,14 +330,10 @@ class MemberAdmin(AdminDoSite):
 # Projetos
 # ---------------------------------------------------------------------------
 
-class ProjectImageInline(TabularInline):
+class ProjectImageInline(AbaOrdenavelTabular):
     model = ProjectImage
     extra = 1
     fields = ('image', 'caption', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
-    tab = True
 
 
 class ProjectTimelineEventInline(TextoCompactoMixin, TabularInline):
@@ -339,15 +345,11 @@ class ProjectTimelineEventInline(TextoCompactoMixin, TabularInline):
     tab = True
 
 
-class ProjectContentBlockInline(TextoCompactoMixin, StackedInline):
+class ProjectContentBlockInline(TextoCompactoMixin, AbaOrdenavelEmpilhada):
     model = ProjectContentBlock
     extra = 1
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
     linhas_dos_campos = {'text': 6}
-    tab = True
 
 
 @admin.register(Project)
@@ -359,7 +361,7 @@ class ProjectAdmin(AdminDoSite):
     search_fields = ('title', 'description')
     list_select_related = ('program',)
     # Busca com seleção, em vez do seletor duplo, que não cabe na largura do formulário.
-    autocomplete_fields = ('partners',)
+    autocomplete_fields = ('partners', 'members')
     linhas_dos_campos = {'description': 4}
 
     def get_queryset(self, request):
@@ -371,7 +373,9 @@ class ProjectAdmin(AdminDoSite):
         primeira = next(iter(obj.images.all()), None)
         return miniatura(primeira.image if primeira else None)
     fieldsets = (
-        (None, {'fields': ('title', 'description', 'program', 'partners', 'start_date', 'end_date', 'is_active')}),
+        (None, {'fields': (
+            'title', 'description', 'program', 'partners', 'members', 'start_date', 'end_date', 'is_active',
+        )}),
     )
     date_hierarchy = 'start_date'
     list_select_related = ('program',)
@@ -395,23 +399,19 @@ class ProjectAdmin(AdminDoSite):
 # Programas e componentes
 # ---------------------------------------------------------------------------
 
-@admin.register(ProgramComponent)
-class ProgramComponentAdmin(AdminDoSite):
+class ProgramComponentInline(TextoCompactoMixin, TabularInline):
+    """Os passos de "Como funciona" da página do programa."""
+    model = ProgramComponent
+    extra = 0
+    fields = ('title', 'description')
     linhas_dos_campos = {'description': 3}
-    list_display = ('title', 'program')
-    list_filter = ('program',)
-    search_fields = ('title', 'description')
-    list_select_related = ('program',)
+    tab = True
 
 
-class ProgramContentBlockInline(TextoCompactoMixin, StackedInline):
+class ProgramContentBlockInline(TextoCompactoMixin, AbaOrdenavelEmpilhada):
     model = ProgramContentBlock
     extra = 0
     fields = ('title', 'text', 'image', 'image_caption', 'image_align', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
-    tab = True
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'text':
@@ -421,7 +421,7 @@ class ProgramContentBlockInline(TextoCompactoMixin, StackedInline):
 
 @admin.register(Program)
 class ProgramAdmin(AdminDoSite):
-    inlines = [ProgramContentBlockInline]
+    inlines = [ProgramComponentInline, ProgramContentBlockInline]
     linhas_dos_campos = {'description': 4, 'highlights': 4}
     fieldsets = (
         (None, {'fields': ('label', 'slug', 'subtitle', 'description', 'highlights', 'icon')}),
@@ -458,12 +458,45 @@ class StatisticAdmin(AdminDoSite):
     ordering = ('order',)
 
 
+class ImagemDoArtigoFormSet(BaseInlineFormSet):
+    """Numera sozinho as imagens novas que ficaram sem número, sem repetir um número já usado."""
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        usados = [
+            f.cleaned_data.get('number') for f in self.forms
+            if f.cleaned_data and not f.cleaned_data.get('DELETE')
+        ]
+        proximo = max([n for n in usados if n] or [0]) + 1
+        for form in self.forms:
+            dados = form.cleaned_data
+            if not dados or dados.get('DELETE') or dados.get('number') or not form.has_changed():
+                continue
+            form.instance.number = dados['number'] = proximo
+            proximo += 1
+
+
 class ArticleImageInline(TabularInline):
     model = ArticleImage
+    formset = ImagemDoArtigoFormSet
     extra = 1
-    fields = ('number', 'image', 'caption')
+    fields = ('number', 'image', 'caption', 'trecho')
+    readonly_fields = ('trecho',)
     ordering = ('number',)
     tab = True
+
+    @admin.display(description='Para colar no texto')
+    def trecho(self, obj):
+        if not obj or not obj.pk:
+            return 'Aparece depois de salvar'
+        codigo = f'![](imagem-{obj.number})'
+        return format_html(
+            '<code>{}</code> <button type="button" class="copiar-trecho" data-trecho="{}" '
+            'onclick="navigator.clipboard.writeText(this.dataset.trecho);this.textContent=\'Copiado\'">Copiar</button>',
+            codigo, codigo,
+        )
 
 
 @admin.register(Article)
@@ -561,35 +594,23 @@ class ProgramCaseAdmin(AdminDoSite):
 # Processo seletivo (página /processo)
 # ---------------------------------------------------------------------------
 
-class SelectionProcessStageInline(TabularInline):
+class SelectionProcessStageInline(AbaOrdenavelTabular):
     model = SelectionProcessStage
     extra = 1
     fields = ('label', 'date', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
-    tab = True
 
 
-class SelectionProcessStepInline(TextoCompactoMixin, StackedInline):
+class SelectionProcessStepInline(TextoCompactoMixin, AbaOrdenavelEmpilhada):
     model = SelectionProcessStep
     extra = 0
     fields = ('number', 'title', 'description', 'image', 'duration', 'tips', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
     linhas_dos_campos = {'description': 3, 'tips': 4}
-    tab = True
 
 
-class SelectionProcessRequirementInline(TabularInline):
+class SelectionProcessRequirementInline(AbaOrdenavelTabular):
     model = SelectionProcessRequirement
     extra = 1
     fields = ('text', 'icon', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
-    tab = True
 
 
 @admin.register(SelectionProcess)
@@ -657,23 +678,34 @@ class PreparationMaterialAdmin(AdminDoSite):
 # Configuração do site (textos e contatos que não pertencem a outro cadastro)
 # ---------------------------------------------------------------------------
 
-class PartnerBenefitInline(TextoCompactoMixin, TabularInline):
+class PartnerBenefitInline(TextoCompactoMixin, AbaOrdenavelTabular):
     model = PartnerBenefit
     extra = 0
     fields = ('title', 'description', 'order')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
     linhas_dos_campos = {'description': 2}
-    tab = True
 
 
 class SiteConfigForm(forms.ModelForm):
-    """Confere o formato das imagens de marca no momento do envio."""
+    """Confere o formato das imagens de marca no momento do envio e lista os programas para escolha."""
 
     class Meta:
         model = SiteConfig
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        campo = self.fields.get('featured_program_slug')
+        if campo is None:  # quem não vê a aba Páginas (a configuração do formulário esconde o campo)
+            return
+        opcoes = [('', '---------')] + [(p.slug, p.label) for p in Program.objects.order_by('order', 'label')]
+        atual = self.instance.featured_program_slug
+        if atual and atual not in dict(opcoes):
+            # Um valor antigo que não corresponde mais a nenhum programa continua visível, para não sumir calado.
+            opcoes.append((atual, f'{atual} (programa não encontrado)'))
+        self.fields['featured_program_slug'] = forms.ChoiceField(
+            choices=opcoes, required=False, label=campo.label, help_text=campo.help_text,
+            initial=atual, widget=UnfoldAdminSelectWidget,
+        )
 
     @staticmethod
     def _medidas(arquivo):
@@ -719,14 +751,10 @@ class SiteConfigForm(forms.ModelForm):
         return arquivo
 
 
-class NavItemInline(TabularInline):
+class NavItemInline(AbaOrdenavelTabular):
     model = NavItem
     extra = 0
     fields = ('label', 'area', 'page', 'url', 'order', 'is_active')
-    ordering = ('order',)
-    ordering_field = 'order'
-    hide_ordering_field = True
-    tab = True
 
 
 @admin.register(SiteConfig)

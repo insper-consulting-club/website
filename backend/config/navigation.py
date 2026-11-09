@@ -25,7 +25,6 @@ GRUPOS = [
         ("website", "project", "Projetos", "folder_open"),
         ("website", "program", "Programas", "school"),
         ("website", "programcase", "Cases dos programas", "emoji_events"),
-        ("website", "programcomponent", "Componentes dos programas", "extension"),
     ]),
     ("Processo seletivo", [
         ("website", "selectionprocess", "Processos seletivos", "how_to_reg"),

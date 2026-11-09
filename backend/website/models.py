@@ -137,6 +137,10 @@ class Project(models.Model):
                   '"Outros projetos" no site.'
     )
     partners = models.ManyToManyField(Partner, blank=True, verbose_name='Parceiros envolvidos', related_name='projects')
+    members = models.ManyToManyField(
+        'Member', blank=True, verbose_name='Equipe', related_name='projects',
+        help_text='Membros que participaram do projeto. Aparecem na página do projeto e no perfil de cada pessoa.'
+    )
     start_date = models.DateField(verbose_name='Data de início')
     end_date = models.DateField(null=True, blank=True, verbose_name='Data de conclusão')
     is_active = models.BooleanField(
@@ -212,7 +216,6 @@ class Member(models.Model):
                   'os projetos, os cases e a trajetória continuam guardados.'
     )
     linkedin = models.URLField(null=True, blank=True, verbose_name='LinkedIn')
-    projects = models.ManyToManyField(Project, blank=True, verbose_name='Projetos participados', related_name='members')
 
     class Meta:
         verbose_name = 'Membro'
@@ -279,14 +282,12 @@ class DirectorateMembership(models.Model):
 class ProgramComponent(models.Model):
     title = models.CharField(max_length=200, verbose_name='Título')
     description = models.TextField(verbose_name='Descrição')
-    program = models.ForeignKey(
-        Program, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name='Programa', related_name='components'
-    )
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, verbose_name='Programa', related_name='components')
 
     class Meta:
         verbose_name = 'Componente do programa'
         verbose_name_plural = 'Componentes dos programas'
+        ordering = ['id']
 
     def __str__(self):
         return self.title
@@ -376,8 +377,8 @@ class ArticleImage(models.Model):
     """
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='images', verbose_name='Artigo')
     number = models.PositiveIntegerField(
-        verbose_name='Número',
-        help_text='No texto, escreva ![](imagem-1) para a imagem de número 1.'
+        blank=True, verbose_name='Número',
+        help_text='Deixe vazio para numerar sozinho. No texto, escreva ![](imagem-1) para a imagem de número 1.'
     )
     image = LimitedImageField(upload_to='articles/', verbose_name='Imagem')
     caption = models.CharField(
@@ -392,6 +393,13 @@ class ArticleImage(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['article', 'number'], name='numero_unico_por_artigo'),
         ]
+
+    def save(self, *args, **kwargs):
+        # Sem número (por exemplo, criada fora do admin), usa o próximo livre do artigo.
+        if self.number is None:
+            ultimo = ArticleImage.objects.filter(article=self.article_id).aggregate(maior=models.Max('number'))['maior']
+            self.number = (ultimo or 0) + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'imagem-{self.number}'
@@ -807,8 +815,8 @@ class SiteConfig(models.Model):
     featured_program_slug = models.CharField(
         max_length=50, blank=True, default='jornada-do-consultor',
         verbose_name='Programa dos cases em destaque',
-        help_text='Identificador (slug) do programa para onde o botão "Ver os cases" da página Projetos leva. '
-                  'Precisa ser igual ao slug de um programa cadastrado. Deixe vazio para esconder a seção.'
+        help_text='Programa para onde o botão "Ver os cases" da página Projetos leva. '
+                  'Deixe vazio para esconder a seção.'
     )
     articles_lead = models.CharField(
         max_length=300, default='Artigos e publicações produzidos por membros do ICC',
