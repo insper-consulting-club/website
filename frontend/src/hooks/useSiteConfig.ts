@@ -1,24 +1,37 @@
 import { useEffect, useState } from "react"
 import { api } from "../api"
-import { SITE_CONFIG_PADRAO } from "../siteConfigPadrao"
-import { TEXTOS_PADRAO } from "../textosPadrao"
 import type { SiteConfig } from "../types"
 
 declare global {
   interface Window {
     // Cópia da Configuração do site gravada no HTML durante o build (ver
     // plugins/siteConfig.ts). Faz a primeira tela já sair com os textos do
-    // admin, sem esperar a API. Pode faltar (build sem acesso à API).
+    // admin, sem esperar a API. Só falta no servidor de desenvolvimento.
     __SITE_CONFIG__?: Partial<SiteConfig>
   }
 }
 
+// Sem cópia do build e sem API ainda: tudo vazio. O site não guarda textos próprios;
+// quem manda neles é o admin. Em produção a cópia do build sempre existe, porque o
+// build falha quando não consegue lê-la. Só o servidor de desenvolvimento passa
+// pelo estado vazio, por alguns instantes.
+const VAZIA: SiteConfig = {
+  site_name: "", site_description: "", logo_url: null, favicon_url: null, og_image_url: null,
+  email: "", instagram_url: "", instagram_label: "", linkedin_url: "", linkedin_label: "",
+  github_url: "", github_label: "", home_hero_title: "", home_statement: "", home_about_title: "",
+  home_about_title_highlight: "", home_about_text: "", home_about_photo_url: null, home_about_photo_alt: "",
+  mission: "", mission_how: "", mission_goal: "", home_cta_title: "", footer_tagline: "",
+  team_lead: "", partners_lead: "", partners_benefits_title: "", projects_lead: "",
+  featured_program_slug: "", articles_lead: "", contact_lead: "", process_lead: "",
+  process_closed_message: "", privacy_updated: "", privacy_text: "",
+  partner_benefits: [], texts: {}, nav_items: [],
+}
+
 function inicial(): SiteConfig {
   const copia = typeof window !== "undefined" ? window.__SITE_CONFIG__ : undefined
-  if (!copia || typeof copia.email !== "string") return SITE_CONFIG_PADRAO
-  // Campos que a cópia não tem (por exemplo, a Política, que sai por ser longa)
-  // ficam com o valor de reserva.
-  return { ...SITE_CONFIG_PADRAO, ...copia, texts: { ...TEXTOS_PADRAO, ...copia.texts } }
+  if (!copia || typeof copia.email !== "string") return VAZIA
+  // Campos que a cópia não tem (a Política de Privacidade sai por ser longa) ficam vazios.
+  return { ...VAZIA, ...copia }
 }
 
 // Header, Footer e várias páginas usam a mesma configuração. Como em
@@ -54,7 +67,7 @@ export default function useSiteConfig(): SiteConfig {
         if (ativo) setConfig(dados)
       })
       .catch(() => {
-        // Sem a API, o site segue com a cópia do build ou com os textos de reserva.
+        // Sem a API, o site segue com a cópia do build.
       })
     return () => {
       ativo = false

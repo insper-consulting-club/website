@@ -285,7 +285,7 @@ export interface SiteConfig {
   privacy_updated: string
   privacy_text: string
   partner_benefits: PartnerBenefit[]
-  // Textos curtos (títulos, rótulos, botões), por chave. Ver textosPadrao.ts.
+  // Textos curtos (títulos, rótulos, botões), por chave. Declarados em backend/website/conteudo/.
   texts: Record<string, string>
   nav_items: NavItem[]
 }

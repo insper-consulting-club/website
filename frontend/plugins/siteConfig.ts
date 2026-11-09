@@ -8,8 +8,8 @@ import type { Plugin } from "vite"
 // plugin também grava uma cópia da configuração em window.__SITE_CONFIG__,
 // para a primeira tela já sair com os textos e o logo certos, sem esperar a API.
 //
-// Se a API não responder, o build segue com o index.html como está (valores
-// originais) e avisa no log. Para pular a consulta: SKIP_SITE_CONFIG=1.
+// O site não guarda textos próprios: se a API não responder, o build falha. Assim
+// o deploy anterior continua no ar, em vez de publicar um site sem textos.
 
 type Dados = Record<string, unknown> & {
   site_name?: string
@@ -92,12 +92,9 @@ export default function siteConfig(apiUrl: string | undefined): Plugin {
     name: "icc-site-config",
     apply: "build",
     async buildStart() {
-      if (process.env.SKIP_SITE_CONFIG === "1" || !apiUrl) {
-        console.warn("[site-config] consulta à API ignorada: o HTML usa os valores originais.")
-        return
-      }
+      if (!apiUrl) throw new Error("[site-config] VITE_API_URL não está definida: sem ela o build não tem de onde ler os textos.")
       dados = await busca(apiUrl)
-      if (!dados) console.warn("[site-config] sem resposta da API: o HTML usa os valores originais.")
+      if (!dados) throw new Error(`[site-config] a API não respondeu em ${apiUrl}: build interrompido para não publicar um site sem textos.`)
     },
     transformIndexHtml(html) {
       return dados ? aplicaNoHtml(html, dados) : html

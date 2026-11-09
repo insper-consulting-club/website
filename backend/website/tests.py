@@ -517,17 +517,6 @@ class SiteTextTests(TestCase):
         self.assertEqual(texts["home.membros_titulo"], "Editado pelo ICC")
         self.assertEqual(texts["equipe.titulo"], "Nossa Equipe")
 
-    def test_frontend_fallback_file_matches_the_catalog(self):
-        from website.management.commands.export_site_texts import gera_arquivo_ts
-
-        arquivo = Path(__file__).resolve().parents[2] / "frontend" / "src" / "textosPadrao.ts"
-        if not arquivo.exists():
-            self.skipTest("Pasta do frontend indisponível neste ambiente.")
-        self.assertEqual(
-            arquivo.read_text(encoding="utf-8"), gera_arquivo_ts(),
-            "frontend/src/textosPadrao.ts está desatualizado. Rode: python manage.py export_site_texts --saida ../frontend/src/textosPadrao.ts",
-        )
-
 
 @SEM_MANIFESTO
 class NavItemTests(TestCase):
@@ -538,7 +527,7 @@ class NavItemTests(TestCase):
         itens = list(NavItem.objects.values_list("label", "area", "page", "order"))
         beneficios = list(PartnerBenefit.objects.values_list("title", "description", "order"))
 
-        # A fonte do arquivo de reserva do frontend (conteudo_padrao.py) tem de ser o que um banco novo recebe.
+        # conteudo_padrao.py tem de ser o que um banco novo recebe.
         self.assertEqual(itens, NAV_ITEMS_PADRAO)
         self.assertEqual(beneficios, BENEFICIOS_PADRAO)
 
@@ -2469,41 +2458,6 @@ class AdminSmallImprovementsTests(TestCase):
         self.assertEqual([p["name"] for p in api[0]["participants"]], ["Zélia", "Ana", "Luiz"])
         self.assertEqual(site_admin.ProgramCaseParticipantInline.ordering_field, "order")
         self.assertTrue(site_admin.ProgramCaseParticipantInline.hide_ordering_field)
-
-
-class FrontendFallbackTests(TestCase):
-    """O arquivo de reserva do frontend (siteConfigPadrao.ts) é gerado do backend, e não escrito à mão."""
-
-    def test_frontend_config_fallback_matches_the_generator(self):
-        from pathlib import Path
-
-        from website.management.commands.export_site_config_padrao import gera_arquivo_ts
-
-        arquivo = Path(__file__).resolve().parents[2] / "frontend" / "src" / "siteConfigPadrao.ts"
-
-        self.assertEqual(
-            arquivo.read_text(encoding="utf-8"), gera_arquivo_ts(),
-            "frontend/src/siteConfigPadrao.ts está desatualizado. Rode: "
-            "python manage.py export_site_config_padrao --saida ../frontend/src/siteConfigPadrao.ts",
-        )
-
-    def test_generated_fallback_has_the_expected_sections(self):
-        from website.management.commands.export_site_config_padrao import gera_arquivo_ts
-
-        ts = gera_arquivo_ts()
-
-        for trecho in ('privacy_text: ""', "logo_url: null", 'area: "botao"', "texts: TEXTOS_PADRAO",
-                       'title: "Acesso a talentos"'):
-            self.assertIn(trecho, ts)
-
-    def test_generated_fallback_uses_the_model_defaults_for_every_text_field(self):
-        from website.management.commands.export_site_config_padrao import gera_arquivo_ts
-
-        ts = gera_arquivo_ts()
-
-        for campo in SiteConfig._meta.concrete_fields:
-            if campo.name in ("site_name", "email", "home_hero_title", "mission", "footer_tagline"):
-                self.assertIn(f"{campo.name}: ", ts)
 
 
 class ContentRegistryTests(TestCase):

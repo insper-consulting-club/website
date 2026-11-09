@@ -2,10 +2,9 @@
 Conteúdo padrão da Configuração do site que não é texto de campo: os itens de navegação e os
 benefícios para parceiros que um banco novo recebe.
 
-É a fonte do arquivo de reserva do frontend (`siteConfigPadrao.ts`, gerado por
-`python manage.py export_site_config_padrao`), e um teste confere que os dados que as migrations
-criam são iguais a esta lista. Os textos de campo (Home, rodapé, páginas) têm o valor padrão no
-próprio campo, em `models.py`, e os textos curtos ficam em `site_texts.py`.
+Um teste confere que os dados que as migrations criam são iguais a esta lista. Os textos de campo
+(Home, rodapé, páginas) têm o valor padrão no próprio campo, em `models.py`, e os textos curtos
+ficam em `website/conteudo/`.
 
 Para mudar o padrão de um banco novo, mude aqui e crie uma migration; os bancos que já existem
 guardam o que o editor escolheu.
