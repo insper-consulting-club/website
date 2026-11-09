@@ -153,24 +153,33 @@ export interface Statistic {
   order: number
 }
 
+// Um autor do artigo. Com membro vinculado, o nome leva à lista dos artigos dele; has_profile diz se ele tem perfil
+// na página Equipe (só membros ativos têm).
+export interface ArticleAuthor {
+  name: string
+  member_id: number | null
+  has_profile: boolean
+}
+
 export interface Article {
   id: number
   slug: string | null
   title: string
   description: string
-  link: string
   image_url: string | null
-  source: string
   date: string | null
   order: number
-  authors: string
+  authors: ArticleAuthor[]
   topics: string
   content: string
   images: ArticleImage[]
+  // Referências para citar o artigo, com o marcador __DATA_DE_ACESSO__ no lugar da data de quem copia.
+  bibtex: string
+  biblatex: string
 }
 
-// Item da lista de artigos: o texto e as imagens do corpo só vêm no artigo completo.
-export type ArticleSummary = Omit<Article, "content" | "images">
+// Item da lista de artigos: o texto, as imagens do corpo e as referências só vêm no artigo completo.
+export type ArticleSummary = Omit<Article, "content" | "images" | "bibtex" | "biblatex">
 
 // Imagem chamada no texto do artigo como ![](imagem-<number>).
 export interface ArticleImage {

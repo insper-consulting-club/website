@@ -3,8 +3,9 @@ import { Link, useParams } from "react-router-dom"
 import { api } from "../../api"
 import type { Article } from "../../types"
 import ArtigoMarkdown from "../../components/ArtigoMarkdown"
+import AutoresDoArtigo from "../../components/AutoresDoArtigo"
 import PageHero from "../../components/PageHero"
-import { ArrowLeftIcon, ExternalIcon, LinkedInIcon } from "../../components/Icons"
+import { ArrowLeftIcon, LinkedInIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useTextos from "../../hooks/useTextos"
 import "./index.css"
@@ -15,12 +16,24 @@ function formatDate(date: string) {
   return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
 }
 
+type Formato = "bibtex" | "biblatex"
+
+// A API entrega as referências com este marcador no lugar da data de acesso, que é a de quem copia.
+const DATA_DE_ACESSO = "__DATA_DE_ACESSO__"
+
+function hoje() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
 export default function Artigo() {
   const t = useTextos()
   const { slugOrId } = useParams<{ slugOrId: string }>()
   const [artigo, setArtigo] = useState<Article | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
   const [copiado, setCopiado] = useState(false)
+  // A referência aberta, ou nenhuma. Começa fechada: é longa, e quase ninguém precisa dela.
+  const [formato, setFormato] = useState<Formato | null>(null)
   const loading = loadedId !== slugOrId
   const artigoDaRota = artigo && (artigo.slug === slugOrId || String(artigo.id) === slugOrId) ? artigo : null
   usePageTitle(loading ? undefined : artigoDaRota?.title, loading ? undefined : artigoDaRota?.description)
@@ -55,14 +68,18 @@ export default function Artigo() {
 
   const temas = artigo.topics.split(",").map((t) => t.trim()).filter(Boolean)
   const url = window.location.href
-  const ano = artigo.date?.slice(0, 4)
-  const citacao = `${artigo.authors ? `${artigo.authors}. ` : ""}${artigo.title}. Insper Consulting Club${ano ? `, ${ano}` : ""}. Disponível em: ${url}.`
+  const referencia = formato ? artigo[formato].split(DATA_DE_ACESSO).join(hoje()) : ""
 
-  function copiarCitacao() {
-    navigator.clipboard.writeText(citacao).then(() => {
+  function copiarReferencia() {
+    navigator.clipboard.writeText(referencia).then(() => {
       setCopiado(true)
       setTimeout(() => setCopiado(false), 2000)
     })
+  }
+
+  function alterna(novo: Formato) {
+    setCopiado(false)
+    setFormato(formato === novo ? null : novo)
   }
 
   return (
@@ -71,11 +88,46 @@ export default function Artigo() {
         back={{ to: "/artigos", label: t("artigo.voltar") }}
         eyebrow={artigo.date ? formatDate(artigo.date) : undefined}
         title={artigo.title}
-        lead={artigo.authors}
+        lead={<AutoresDoArtigo autores={artigo.authors} links />}
       />
 
       <section className="section">
         <article className="container artigo">
+          {/* As ações ficam no começo: não faz sentido só aparecerem para quem leu o texto inteiro. */}
+          <div className="artigo__acoes">
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--secondary"
+            >
+              <LinkedInIcon size={16} />
+              {t("artigo.compartilhar")}
+            </a>
+            {(["bibtex", "biblatex"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`btn btn--secondary${formato === f ? " is-aberto" : ""}`}
+                aria-expanded={formato === f}
+                aria-controls="artigo-referencia"
+                onClick={() => alterna(f)}
+              >
+                {t(f === "bibtex" ? "artigo.exportar_bibtex" : "artigo.exportar_biblatex")}
+              </button>
+            ))}
+          </div>
+          {formato && (
+            <div className="artigo__referencia" id="artigo-referencia">
+              <pre tabIndex={0}>
+                <code>{referencia}</code>
+              </pre>
+              <button type="button" className="btn btn--secondary" onClick={copiarReferencia}>
+                {copiado ? t("artigo.copiado") : t("artigo.copiar")}
+              </button>
+            </div>
+          )}
+
           {temas.length > 0 && (
             <ul className="artigo__temas">
               {temas.map((tema) => (
@@ -96,31 +148,6 @@ export default function Artigo() {
               <ArtigoMarkdown texto={artigo.content} imagens={artigo.images ?? []} />
             </div>
           )}
-
-          <div className="artigo__rodape">
-            <h2>{t("artigo.como_citar")}</h2>
-            <p className="artigo__citacao">{citacao}</p>
-            <div className="artigo__acoes">
-              <button type="button" className="btn btn--secondary" onClick={copiarCitacao}>
-                {copiado ? t("artigo.copiado") : t("artigo.copiar")}
-              </button>
-              <a
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn--secondary"
-              >
-                <LinkedInIcon size={16} />
-                {t("artigo.compartilhar")}
-              </a>
-              {artigo.link && (
-                <a href={artigo.link} target="_blank" rel="noopener noreferrer" className="btn btn--secondary">
-                  {t("artigo.link_original")}
-                  <ExternalIcon />
-                </a>
-              )}
-            </div>
-          </div>
         </article>
       </section>
     </div>

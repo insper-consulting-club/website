@@ -75,3 +75,53 @@
   font-size: var(--fs-small);
   color: var(--cinza-500);
 }
+
+/* Filtro por autor, acima da lista. */
+.artigos-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.artigos-filtro label {
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.artigos-filtro select {
+  min-width: 16rem;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--cinza-300);
+  border-radius: var(--radius-sm);
+  background: var(--branco);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.artigos-filtro select:focus-visible {
+  outline: 2px solid var(--vermelho-icc);
+  outline-offset: 2px;
+}
+
+.artigos-filtro__resumo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 1.5rem;
+}
+
+.artigos-filtro__resumo h2 {
+  font-size: var(--fs-h3);
+}
+
+.artigos-filtro__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}

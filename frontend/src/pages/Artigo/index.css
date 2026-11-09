@@ -43,8 +43,7 @@
   margin-bottom: 0;
 }
 
-.artigo__resumo h2,
-.artigo__rodape h2 {
+.artigo__resumo h2 {
   font-size: var(--fs-h3);
   margin-bottom: 0.75rem;
 }
@@ -148,20 +147,37 @@
   line-height: 1.5;
 }
 
-.artigo__rodape {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--cinza-bordas);
-}
-
-.artigo__citacao {
-  font-size: var(--fs-small);
-  color: var(--cinza-descricoes);
-  overflow-wrap: anywhere;
-}
-
+/* Ações no começo do artigo: compartilhar e exportar a referência. */
 .artigo__acoes {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.artigo__acoes .is-aberto {
+  border-color: var(--vermelho-icc);
+  color: var(--vermelho-icc);
+}
+
+/* A referência em BibTeX ou BibLaTeX, com o botão de copiar. */
+.artigo__referencia {
+  margin-bottom: 2rem;
+}
+
+.artigo__referencia pre {
+  margin: 0 0 12px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--cinza-bordas);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-fundos);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+}
+
+.artigo__referencia code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
 }
