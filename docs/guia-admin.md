@@ -14,14 +14,14 @@ Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site a
 
 ## Como a tela está organizada
 
-O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários e grupos). Quem tem um login limitado vê só os grupos que pode usar. A busca no topo do menu acha qualquer tela pelo nome. Na página inicial, o conteúdo também aparece no quadro **"Conteúdo do site"**. Em todas as telas o padrão é o mesmo:
+O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários, grupos e, só para administradores, a atividade recente). Quem tem um login limitado vê só os grupos que pode usar. A busca no topo do menu acha qualquer tela pelo nome. Na página inicial, o conteúdo também aparece no quadro **"Conteúdo do site"**. Em todas as telas o padrão é o mesmo:
 
 - **Adicionar** (botão no canto superior direito da lista) cria um registro novo.
 - Clicar no nome de um registro abre a edição.
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
 - **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
-- **Menu lateral:** vem com o que se edita com mais frequência primeiro (Artigos, Equipe, Parceiros, Programas e projetos, Processo seletivo), e deixa **Site** (configuração, textos e estatísticas) e **Acesso** (usuários e grupos) no fim.
+- **Menu lateral:** vem com o que se edita com mais frequência primeiro (Artigos, Equipe, Parceiros, Programas e projetos, Processo seletivo), e deixa **Site** (configuração, textos e estatísticas) e **Acesso** (usuários, grupos e atividade recente) no fim.
 - **Seção Avançado:** nos formulários de artigo, parceiro, programa e case, os campos que quase nunca mudam (ordem de exibição, link externo e publicação do artigo) ficam numa seção recolhida chamada **Avançado**, no fim da página. Clique nela para abrir. Se um desses campos tiver erro ao salvar, ela abre sozinha.
 - **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
@@ -66,10 +66,12 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
 **O que o grupo Editores pode e não pode:**
 - Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (Home, Rodapé, Páginas), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
 - **Não** vê as abas **Marca e compartilhamento** e **Política de Privacidade** da configuração, nem o menu do site e os benefícios para parceiros. Isso fica com os administradores.
-- **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Cargos aparecem só para consulta, porque definem quem é liderança na Home.
+- **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Pode **criar um cargo novo** (pelo botão ao lado do campo **Cargo principal** do membro), que entra como membro comum; não escolhe a prioridade nem altera os cargos existentes, porque a prioridade define quem é liderança na Home. Um administrador ajusta isso em **Cargos**.
 - O menu mostra só o que a pessoa pode usar.
 
 O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, apague o grupo **Editores** em **Grupos**: ele é recriado com as permissões originais no próximo deploy (as pessoas que estavam nele precisam ser colocadas de novo). As permissões aparecem agrupadas por assunto, como "Pode ver", "Pode alterar", "Pode adicionar" e "Pode excluir".
+
+**Quem mudou o quê:** em **Acesso > Atividade recente** (só administradores) fica a lista das alterações feitas no admin, com data, usuário, cadastro, registro e o que mudou. Cada registro também tem o botão **Histórico**.
 
 **Quando alguém sai da gestão:** abra o usuário dela e desmarque **"Ativo"**. Ela perde o acesso na hora.
 
@@ -90,7 +92,7 @@ O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo 
    - **Vínculos com diretorias:** uma linha por diretoria da pessoa, com o cargo nela. Arraste a linha para mudar a ordem dentro da diretoria.
 4. Salvar.
 
-O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança.
+O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança. Um cargo criado por um editor entra com prioridade 4 (membro comum); só administradores veem e mudam a prioridade.
 
 ### Quando alguém sai do clube
 
@@ -154,7 +156,7 @@ Na aba **Componentes dos programas**, dentro do próprio programa, ficam as part
 **Cases dos programas > Adicionar:**
 
 1. **Programa** a que o case pertence, **Semestre** (no formato `2025.1`), **Área**, **Tema**, **Banca avaliadora** (uma firma por linha), **Premiação** e **Link da publicação**, se houver. O **Título** só é necessário quando o semestre tem mais de um case, por exemplo "1º Case".
-2. Embaixo, em **Participantes do Case**, adicione os membros e o papel de cada um (integrante ou mentor). Comece a digitar o nome para buscar.
+2. Embaixo, em **Participantes do Case**, adicione os membros e o papel de cada um (integrante ou mentor). Comece a digitar o nome para buscar. Arraste a linha para mudar a ordem em que as pessoas aparecem no case; o site mostra primeiro os integrantes e depois os mentores.
 3. Salvar.
 
 A página **Projetos** do site mostra os programas, e a página de cada programa mostra os cases dele.
