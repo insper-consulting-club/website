@@ -64,7 +64,7 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
    - **Administrador:** marque "Status de superusuário". Dá acesso total, incluindo criar outros logins, apagar qualquer registro e mexer na estrutura do site. Deixe isso para duas pessoas (por exemplo, o Diretor Tech e alguém da presidência), para nunca depender de uma só.
 
 **O que o grupo Editores pode e não pode:**
-- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (Home, Rodapé, Páginas), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
+- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (**Textos do site** e **Configuração do site**), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
 - **Não** vê as abas **Marca e compartilhamento** e **Política de Privacidade** da configuração, nem o menu do site e os benefícios para parceiros. Isso fica com os administradores.
 - **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Pode **criar um cargo novo** (pelo botão ao lado do campo **Cargo principal** do membro), que entra como membro comum; não escolhe a prioridade nem altera os cargos existentes, porque a prioridade define quem é liderança na Home. Um administrador ajusta isso em **Cargos**.
 - O menu mostra só o que a pessoa pode usar.
@@ -255,9 +255,8 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de preparação
 
 - **Marca e compartilhamento:** o **Nome do site** (aba do navegador, rodapé e prévia dos links), a **Descrição do site** e três imagens opcionais: o **Logo** em versão clara (usado no topo, no rodapé e na Home), o **Ícone da aba** (PNG quadrado, de preferência 256 x 256) e a **Imagem de compartilhamento** (1200 x 630, a que aparece no WhatsApp e no LinkedIn). Sem imagem enviada, o site usa a original. O admin confere o formato ao enviar: o **ícone** precisa ser **quadrado** (pelo menos 32 x 32), e a **imagem de compartilhamento** precisa ter pelo menos 600 pixels de largura e proporção parecida com 1200 x 630, senão o WhatsApp e o LinkedIn a cortariam. O logo não tem exigência de tamanho. Só administradores veem esta aba. Como o site é estático, essas mudanças só aparecem depois que o frontend é publicado de novo: no Render, serviço do frontend, **Manual Deploy** (o admin avisa ao salvar).
 - **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
-- **Home:** título do topo, frase de destaque, o bloco "Quem somos" (com a foto, que é opcional), a missão, "como preparamos", "onde queremos chegar" e a chamada final.
-- **Rodapé:** a frase de apresentação.
-- **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** é uma lista dos programas cadastrados e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
+- **Home:** a foto de "Quem somos" (opcional) e a descrição dela, lida por leitores de tela. Os textos da Home (título do topo, frase de destaque, "Quem somos", missão, chamada final) ficam em **Textos do site**, na página Home.
+- **Páginas:** o campo **"Programa dos cases em destaque"** é uma lista dos programas cadastrados e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção. O texto que aparece logo abaixo do título de cada página, a frase do rodapé e a mensagem de inscrições encerradas também ficam em **Textos do site**.
 - **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
 - **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
   - **Texto exibido**. A ordem é a das linhas (arraste para mudar).
@@ -284,7 +283,8 @@ Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem
 - Para voltar uma página inteira ao original, marque a página e use a ação **Restaurar os textos originais das páginas selecionadas**.
 - Alguns textos têm trechos entre chaves, como `{n}`, `{data}` ou `{programa}`. O site preenche esses trechos, então eles precisam continuar no texto. O admin avisa se algum for apagado.
 - Não há botão para adicionar ou excluir: os textos existentes são os que o site usa.
-- Os textos longos (missão, "Quem somos", Política de Privacidade) ficam em **Configuração do site**.
+- Os textos longos (missão, "Quem somos") ficam nas páginas deles, com uma caixa de várias linhas. A Política de Privacidade continua em **Configuração do site**, só para administradores.
+- Um texto marcado como opcional (por exemplo, o final do título de "Quem somos", em vermelho) pode ficar vazio. Os demais não.
 
 ---
 

@@ -5,9 +5,11 @@ PAGINA = Pagina(
     textos=(
         Texto("processo.eyebrow", "Cabeçalho da página", "Palavra pequena acima do título", "Seja membro"),
         Texto("processo.titulo", "Cabeçalho da página", "Título quando não há processo ativo", "Processo Seletivo"),
+        Texto("processo.abertura", "Cabeçalho da página", "Texto logo abaixo do título", "Participe do processo seletivo e faça parte da Liga Insper Consulting Club", campo_da_api="process_lead"),
         Texto("processo.abertas", "Inscrições", "Chamada quando as inscrições estão abertas", "Inscrições abertas!"),
         Texto("processo.botao_inscricao", "Inscrições", "Botão de inscrição", "Inscreva-se"),
         Texto("processo.botao_instagram", "Inscrições", "Botão quando as inscrições estão encerradas", "Seguir no Instagram"),
+        Texto("processo.inscricoes_encerradas", "Inscrições", "Mensagem quando as inscrições estão encerradas", "Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.", campo_da_api="process_closed_message"),
         Texto("processo.sem_processo_titulo", "Quando não há processo ativo", "Título", "Nenhum processo seletivo ativo no momento."),
         Texto("processo.sem_processo_texto", "Quando não há processo ativo", "Texto", "Assim que abrirmos novas vagas, as inscrições aparecem aqui."),
         Texto("processo.calendario", "Seções da página", "Título do calendário", "Calendário"),

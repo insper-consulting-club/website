@@ -18,6 +18,9 @@ class Texto:
              como {n} ou {data}, são preenchidos pelo site e precisam ser mantidos pelo editor.
     tipo     "curto" (uma linha) ou "longo" (várias linhas). Sem informar, vale "longo" para textos originais compridos.
     raro     True para mensagens que quase ninguém edita (erros, "não existe", formas no plural): ficam recolhidas.
+    opcional True quando o texto pode ficar vazio (o site simplesmente não o mostra).
+    campo_da_api  só para os textos que vieram da Configuração do site: o nome que a resposta da API ainda usa para
+             eles (por exemplo "home_hero_title"). Sai quando o frontend passar a ler tudo por chave.
     """
     chave: str
     secao: str
@@ -25,6 +28,8 @@ class Texto:
     padrao: str
     tipo: str = ""
     raro: bool = False
+    opcional: bool = False
+    campo_da_api: str = ""
 
     @property
     def e_longo(self):

@@ -1458,9 +1458,9 @@ class SeedDataTests(TestCase):
         self.assertTrue(Program.objects.filter(slug="jornada-do-consultor", is_active=True).exists())
 
     def test_site_configuration_texts_are_not_touched(self):
-        padrao = SiteConfig._meta.get_field("home_hero_title").default
+        from website.conteudo import PADRAO
 
-        self.assertEqual(SiteConfig.get_solo().home_hero_title, padrao)
+        self.assertEqual(SiteText.objects.get(key="home.hero_titulo").value, PADRAO["home.hero_titulo"])
         self.assertEqual(NavItem.objects.filter(label="Nossa Equipe", area="menu").count(), 1)
 
     # --- idempotência
@@ -1705,7 +1705,7 @@ class PermissionLevelsTests(TestCase):
     def test_the_administrator_sees_every_tab_and_the_menu_and_benefits_lists(self):
         pagina = self.pagina(self.admin)
 
-        for campo in ("site_name", "logo", "privacy_text", "email", "home_hero_title"):
+        for campo in ("site_name", "logo", "privacy_text", "email", "home_about_photo_alt"):
             self.assertIn(f'name="{campo}"', pagina, campo)
         self.assertIn("nav_items-TOTAL_FORMS", pagina)
         self.assertIn("partner_benefits-TOTAL_FORMS", pagina)
@@ -1718,7 +1718,7 @@ class PermissionLevelsTests(TestCase):
         self.assertNotIn("nav_items-TOTAL_FORMS", pagina)
         self.assertNotIn("partner_benefits-TOTAL_FORMS", pagina)
         # O que é conteúdo continua editável.
-        for campo in ("email", "home_hero_title", "mission", "team_lead"):
+        for campo in ("email", "home_about_photo_alt", "featured_program_slug"):
             self.assertIn(f'name="{campo}"', pagina, campo)
 
     def test_an_editor_cannot_change_the_brand_even_by_sending_the_fields(self):
@@ -2468,7 +2468,7 @@ class ContentRegistryTests(TestCase):
 
         chaves = [t.chave for p in PAGINAS for t in p.textos]
         self.assertEqual(len(chaves), len(set(chaves)))
-        self.assertEqual(len(chaves), 120)
+        self.assertEqual(len(chaves), 138)
         self.assertEqual(len({p.slug for p in PAGINAS}), len(PAGINAS))
         for pagina in PAGINAS:
             self.assertTrue(pagina.textos, pagina.slug)
@@ -2725,4 +2725,131 @@ class TextosDoSiteAdminTests(TestCase):
         itens = [i["title"] for g in navegacao(requisicao) for i in g["items"]]
 
         self.assertIn("Textos do site", itens)
+
+
+@SEM_MANIFESTO
+class PageTextsMovedFromConfigTests(TestCase):
+    """Etapa B: os textos de página saíram dos campos da Configuração do site e vivem no registro."""
+
+    def test_the_site_configuration_no_longer_has_the_page_texts(self):
+        from website.conteudo import CAMPOS_DA_API
+
+        campos = {c.name for c in SiteConfig._meta.get_fields()}
+
+        self.assertEqual(len(CAMPOS_DA_API), 18)
+        self.assertEqual(sorted(set(CAMPOS_DA_API) & campos), [])
+        self.assertTrue({"email", "home_about_photo", "home_about_photo_alt", "featured_program_slug",
+                         "privacy_text", "privacy_updated"} <= campos)
+
+    def test_every_old_api_field_still_comes_out_with_the_value_of_its_text(self):
+        from website.conteudo import CAMPOS_DA_API, PADRAO
+
+        SiteText.objects.filter(key="home.hero_titulo").update(value="Editado pelo ICC")
+        dados = APIClient().get("/api/site-config/").data
+
+        self.assertEqual(dados["home_hero_title"], "Editado pelo ICC")
+        for campo, chave in CAMPOS_DA_API.items():
+            self.assertEqual(dados[campo], dados["texts"][chave], campo)
+        self.assertEqual(dados["mission"], PADRAO["home.missao_texto"])
+
+    def test_default_texts_are_what_the_site_always_had(self):
+        from website.conteudo import PADRAO
+
+        self.assertEqual(PADRAO["home.hero_titulo"], "O futuro consultor começa no ICC")
+        self.assertEqual(PADRAO["rodape.frase"], "Mais do que um clube, somos um ambiente de formação para futuros consultores.")
+        self.assertTrue(PADRAO["home.sobre_texto"].startswith("A Liga Insper Consulting Club é uma organização"))
+
+    def test_the_moved_texts_appear_in_the_page_forms_and_long_ones_use_a_textarea(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste"))
+        home = PaginaDoSite.objects.get(slug="home")
+
+        html = self.client.get(f"/admin/website/paginadosite/{home.pk}/change/").content.decode()
+
+        self.assertIn('name="t__home__hero_titulo"', html)
+        self.assertIn('<textarea name="t__home__sobre_texto"', html)
+        self.assertIn('<textarea name="t__home__missao_texto"', html)
+
+    def test_the_optional_text_can_be_left_empty_and_a_required_one_cannot(self):
+        from website.admin import nome_do_campo
+        from website.conteudo import POR_SLUG
+
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste"))
+        home = PaginaDoSite.objects.get(slug="home")
+        url = f"/admin/website/paginadosite/{home.pk}/change/"
+        valores = dict(SiteText.objects.values_list("key", "value"))
+        dados = {nome_do_campo(t.chave): valores[t.chave] for t in POR_SLUG["home"].textos}
+
+        dados[nome_do_campo("home.sobre_titulo_destaque")] = ""
+        self.assertEqual(self.client.post(url, dados).status_code, 302)
+        self.assertEqual(SiteText.objects.get(key="home.sobre_titulo_destaque").value, "")
+
+        dados[nome_do_campo("home.hero_titulo")] = ""
+        self.assertEqual(self.client.post(url, dados).status_code, 200)
+
+    def test_the_editor_edits_the_page_texts_in_the_texts_screen(self):
+        from django.contrib.auth.models import Group
+
+        editor = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste", is_staff=True)
+        editor.groups.add(Group.objects.get(name="Editores"))
+        self.client.force_login(editor)
+        home = PaginaDoSite.objects.get(slug="home")
+
+        self.assertContains(self.client.get(f"/admin/website/paginadosite/{home.pk}/change/"), "t__home__hero_titulo")
+
+
+class PageTextsMigrationTests(TransactionTestCase):
+    """Migration 0030: os campos da Configuração do site viram textos, e o caminho de volta funciona."""
+
+    ANTES = ("website", "0029_paginas_de_textos")
+    DEPOIS = ("website", "0030_textos_das_paginas_no_registro")
+
+    def _estado(self, alvo):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        MigrationExecutor(connection).migrate([alvo])
+        return MigrationExecutor(connection).loader.project_state([alvo]).apps
+
+    def tearDown(self):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_edited_values_move_to_the_texts_and_the_untouched_ones_keep_the_original(self):
+        antigo = self._estado(self.ANTES)
+        SiteConfig = antigo.get_model("website", "SiteConfig")
+        SiteConfig.objects.get_or_create(pk=1)  # um teste de transação anterior pode ter esvaziado o banco
+        SiteConfig.objects.filter(pk=1).update(
+            home_hero_title="Título do ICC", mission="Missão nova, bem mais longa " * 20, footer_tagline="",
+        )
+
+        novo = self._estado(self.DEPOIS)
+        SiteText = novo.get_model("website", "SiteText")
+
+        self.assertEqual(SiteText.objects.get(key="home.hero_titulo").value, "Título do ICC")
+        self.assertEqual(SiteText.objects.get(key="home.missao_texto").value, "Missão nova, bem mais longa " * 20)
+        self.assertEqual(SiteText.objects.get(key="rodape.frase").value, "")
+        self.assertEqual(SiteText.objects.get(key="equipe.abertura").value,
+                         "Conheça os membros que fazem parte da Liga Insper Consulting Club")
+        self.assertFalse(hasattr(novo.get_model("website", "SiteConfig"), "home_hero_title"))
+
+    def test_undoing_the_migration_puts_the_texts_back_in_the_fields(self):
+        novo = self._estado(self.DEPOIS)
+        novo.get_model("website", "SiteConfig").objects.get_or_create(pk=1)
+        SiteText = novo.get_model("website", "SiteText")
+        SiteText.objects.update_or_create(key="home.hero_titulo", defaults={"value": "Voltou", "group": "Home", "description": "x"})
+        SiteText.objects.update_or_create(key="home.sobre_texto", defaults={"value": "Texto " * 100, "group": "Home", "description": "x"})
+        SiteText.objects.update_or_create(key="equipe.titulo", defaults={"value": "Outro texto", "group": "Equipe", "description": "x"})
+
+        antigo = self._estado(self.ANTES)
+        config = antigo.get_model("website", "SiteConfig").objects.get(pk=1)
+
+        self.assertEqual(config.home_hero_title, "Voltou")
+        self.assertEqual(config.home_about_text, "Texto " * 100)
+        self.assertEqual(config.team_lead, "Conheça os membros que fazem parte da Liga Insper Consulting Club")
+        SiteText = antigo.get_model("website", "SiteText")
+        self.assertFalse(SiteText.objects.filter(key="home.hero_titulo").exists())
+        self.assertEqual(SiteText.objects.get(key="equipe.titulo").value, "Outro texto")
 

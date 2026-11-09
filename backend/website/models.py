@@ -689,10 +689,10 @@ class ProgramCaseParticipant(models.Model):
 
 class SiteConfig(models.Model):
     """
-    Textos e contatos do site que ficam fora dos demais cadastros:
-    a Home, o rodapé, a abertura de cada página, os canais de contato e a
-    Política de Privacidade. Existe um único registro (pk=1), criado pela
-    migration com os textos que o site já tinha.
+    Contatos, marca e imagens do site, o programa em destaque e a Política de
+    Privacidade. Os textos de cada página (Home, rodapé, abertura das páginas)
+    ficam em SiteText, no registro de conteúdo. Existe um único registro
+    (pk=1), criado pela migration.
     """
     # Campos que o frontend grava no HTML durante o build (ver plugins/siteConfig.ts).
     site_name = models.CharField(
@@ -740,31 +740,7 @@ class SiteConfig(models.Model):
     )
     github_label = models.CharField(max_length=100, default='insper-consulting-club', verbose_name='Nome exibido do GitHub')
 
-    # Home
-    home_hero_title = models.CharField(
-        max_length=200, default='O futuro consultor começa no ICC', verbose_name='Título do topo'
-    )
-    home_statement = models.CharField(
-        max_length=300,
-        default='Preparamos nossos membros para os processos seletivos mais exigentes do mercado.',
-        verbose_name='Frase de destaque'
-    )
-    home_about_title = models.CharField(
-        max_length=200, default='Mais do que um clube, somos um ambiente de formação',
-        verbose_name='Título de "Quem somos"'
-    )
-    home_about_title_highlight = models.CharField(
-        max_length=200, blank=True, default='para futuros consultores.',
-        verbose_name='Final do título, em destaque',
-        help_text='Opcional. Aparece em vermelho, logo depois do título.'
-    )
-    home_about_text = models.TextField(
-        default='A Liga Insper Consulting Club é uma organização estudantil fundada em 2020, '
-                'dedicada ao desenvolvimento de futuros consultores. Ao longo do semestre, '
-                'promovemos capacitações, resolução de cases, visitas corporativas e iniciativas '
-                'que aproximam nossos membros da realidade das principais empresas do mercado.',
-        verbose_name='Texto de "Quem somos"'
-    )
+    # Foto de "Quem somos" (o texto da Home fica em SiteText)
     home_about_photo = LimitedImageField(
         upload_to='site/', null=True, blank=True, verbose_name='Foto de "Quem somos"',
         help_text='Opcional. Sem foto enviada, o site usa a foto da reunião inaugural.'
@@ -774,78 +750,13 @@ class SiteConfig(models.Model):
         verbose_name='Descrição da foto',
         help_text='Lida por leitores de tela. Descreva o que aparece na foto.'
     )
-    mission = models.TextField(
-        default='Conectar alunos do Insper ao mercado de consultoria, desenvolvendo as competências '
-                'técnicas e comportamentais exigidas pelas principais firmas do setor.',
-        verbose_name='Missão'
-    )
-    mission_how = models.TextField(
-        default='Treinamento para processos seletivos (GMAT, Verbal, Data e Fit Interview) e '
-                'capacitação prática na resolução de cases reais de negócio.',
-        verbose_name='Como preparamos'
-    )
-    mission_goal = models.TextField(
-        default='Consolidar o ICC como referência em consultoria entre os clubes estudantis do Brasil '
-                'e expandir a atuação para tecnologia e empreendedorismo.',
-        verbose_name='Onde queremos chegar'
-    )
-    home_cta_title = models.CharField(
-        max_length=200, default='Pronto para dar o próximo passo na sua carreira?',
-        verbose_name='Chamada final'
-    )
 
-    # Rodapé
-    footer_tagline = models.CharField(
-        max_length=300,
-        default='Mais do que um clube, somos um ambiente de formação para futuros consultores.',
-        verbose_name='Frase do rodapé'
-    )
-
-    # Abertura de cada página (o texto abaixo do título)
-    team_lead = models.CharField(
-        max_length=300, default='Conheça os membros que fazem parte da Liga Insper Consulting Club',
-        verbose_name='Página Equipe'
-    )
-    partners_lead = models.CharField(
-        max_length=300,
-        default='Conheça as empresas que apoiam o Insper Consulting Club e contribuem para a '
-                'formação dos futuros líderes em consultoria.',
-        verbose_name='Página Parceiros'
-    )
-    partners_benefits_title = models.CharField(
-        max_length=200, default='O que sua empresa ganha ao apoiar o Insper Consulting Club',
-        verbose_name='Título de "Por que ser parceiro"',
-        help_text='Os benefícios em si ficam na aba Parceiros.'
-    )
-    projects_lead = models.CharField(
-        max_length=300,
-        default='Como formamos consultores, do primeiro semestre na entidade aos cases reais '
-                'resolvidos ao longo da Jornada do Consultor.',
-        verbose_name='Página Projetos'
-    )
+    # Página Projetos
     featured_program_slug = models.CharField(
         max_length=50, blank=True, default='jornada-do-consultor',
         verbose_name='Programa dos cases em destaque',
         help_text='Programa para onde o botão "Ver os cases" da página Projetos leva. '
                   'Deixe vazio para esconder a seção.'
-    )
-    articles_lead = models.CharField(
-        max_length=300, default='Artigos e publicações produzidos por membros do ICC',
-        verbose_name='Página Artigos'
-    )
-    contact_lead = models.CharField(
-        max_length=300, default='Entre em contato com o Insper Consulting Club',
-        verbose_name='Página Contato'
-    )
-    process_lead = models.CharField(
-        max_length=300,
-        default='Participe do processo seletivo e faça parte da Liga Insper Consulting Club',
-        verbose_name='Página Processo Seletivo'
-    )
-    process_closed_message = models.CharField(
-        max_length=300,
-        default='Inscrições encerradas. Acompanhe nosso Instagram para saber quando abrirmos o próximo processo.',
-        verbose_name='Mensagem de inscrições encerradas'
     )
 
     # Política de Privacidade (o texto inicial é criado pela migration)
@@ -910,8 +821,8 @@ class SiteText(models.Model):
     key = models.CharField(max_length=100, unique=True, verbose_name='Chave')
     group = models.CharField(max_length=100, verbose_name='Página')
     description = models.CharField(max_length=200, verbose_name='Onde aparece')
-    value = models.CharField(
-        max_length=300, verbose_name='Texto',
+    value = models.TextField(
+        verbose_name='Texto',
         help_text='Mantenha os trechos entre chaves, como {n} ou {data}: o site os preenche.'
     )
     order = models.IntegerField(default=0, verbose_name='Ordem')

@@ -827,7 +827,6 @@ class SiteConfigAdmin(AdminDoSite):
     SO_ADMINISTRADORES = ('Marca e compartilhamento', 'Política de Privacidade')
     # Campos que entram no HTML do site durante o build do frontend.
     CAMPOS_DA_MARCA = ('site_name', 'site_description', 'logo', 'favicon', 'og_image')
-    linhas_dos_campos = {'home_about_text': 4, 'mission': 3, 'mission_how': 3, 'mission_goal': 3}
     inlines = [NavItemInline, PartnerBenefitInline]
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
@@ -858,29 +857,15 @@ class SiteConfigAdmin(AdminDoSite):
         }),
         ('Home', {
             'classes': ['tab'],
-            'description': 'Textos da página inicial. As estatísticas ficam em Estatísticas, e os programas, '
-                           'os membros e os parceiros vêm dos próprios cadastros.',
-            'fields': (
-                'home_hero_title', 'home_statement',
-                'home_about_title', 'home_about_title_highlight', 'home_about_text',
-                'home_about_photo', 'home_about_photo_alt',
-                'mission', 'mission_how', 'mission_goal',
-                'home_cta_title',
-            ),
-        }),
-        ('Rodapé', {
-            'classes': ['tab'],
-            'fields': ('footer_tagline',),
+            'description': 'A foto de "Quem somos". Os textos da Home ficam em Textos do site, na página Home. '
+                           'As estatísticas ficam em Estatísticas, e os programas, os membros e os parceiros '
+                           'vêm dos próprios cadastros.',
+            'fields': ('home_about_photo', 'home_about_photo_alt'),
         }),
         ('Páginas', {
             'classes': ['tab'],
-            'description': 'O texto que aparece logo abaixo do título de cada página.',
-            'fields': (
-                'team_lead', 'partners_lead', 'partners_benefits_title',
-                'projects_lead', 'featured_program_slug',
-                'articles_lead', 'contact_lead',
-                'process_lead', 'process_closed_message',
-            ),
+            'description': 'O texto que aparece abaixo do título de cada página fica em Textos do site.',
+            'fields': ('featured_program_slug',),
         }),
         ('Política de Privacidade', {
             'classes': ['tab'],
@@ -1104,7 +1089,8 @@ class PaginaDoSiteAdmin(AdminDoSite):
                 widget = (AreaDeTextoComOriginal if texto.e_longo else CampoDeTextoComOriginal)(texto.padrao)
                 trechos = sorted(set(re.findall(r'\{\w+\}', texto.padrao)))
                 campos[nome_do_campo(texto.chave)] = forms.CharField(
-                    label=texto.rotulo, max_length=300, widget=widget,
+                    label=texto.rotulo, max_length=2000 if texto.e_longo else 300, widget=widget,
+                    required=not texto.opcional,
                     initial=valores.get(texto.chave, texto.padrao),
                     help_text=f'O site preenche {", ".join(trechos)}: mantenha no texto.' if trechos else '',
                 )
