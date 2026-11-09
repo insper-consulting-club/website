@@ -37,6 +37,7 @@ PERMISSOES = {
     # para parceiros são só dos administradores (ver SiteConfigAdmin).
     "siteconfig": ALTERACAO,
     "paginadosite": ALTERACAO,
+    "secaodahome": ALTERACAO,
     # Itens que vivem dentro de outro registro (tabelas do formulário):
     # precisam de todas as ações, senão o botão de remover linha não funciona.
     "directoratemembership": COMPLETO,
@@ -60,17 +61,26 @@ def codenames():
     return {f"{acao}_{modelo}" for modelo, acoes in PERMISSOES.items() for acao in acoes}
 
 
+# (permissão que o grupo já tinha, permissões da tela nova que ganha junto)
+TELAS_NOVAS = (
+    # "Textos do site" substituiu a lista antiga de textos: quem podia alterar textos continua podendo.
+    ("change_sitetext", ("change_paginadosite", "view_paginadosite")),
+    # Quem cuida dos textos das páginas cuida também de quais seções a Home mostra.
+    ("change_paginadosite", ("change_secaodahome", "view_secaodahome")),
+)
+
+
 def _acrescenta_permissoes_novas(grupo, Permission):
     """
-    Um grupo que já existe não é refeito, mas ganha as permissões de telas que nasceram depois dele. Hoje, a de
-    "Textos do site" (PaginaDoSite), que substituiu a lista antiga de textos: quem podia alterar textos continua podendo.
+    Um grupo que já existe não é refeito, mas ganha as permissões de telas que nasceram depois dele, desde que já
+    tivesse a da tela que elas continuam. Um grupo ajustado no admin sem essa permissão não ganha nada.
     """
-    novas = Permission.objects.filter(
-        content_type__app_label="website", codename__in=("change_paginadosite", "view_paginadosite"),
-    )
-    if novas.exists() and not grupo.permissions.filter(codename__in=("change_paginadosite", "view_paginadosite")).exists() \
-            and grupo.permissions.filter(codename="change_sitetext").exists():
-        grupo.permissions.add(*novas)
+    for existente, novas in TELAS_NOVAS:
+        if not grupo.permissions.filter(codename=existente).exists():
+            continue
+        faltam = Permission.objects.filter(content_type__app_label="website", codename__in=novas)
+        if faltam.exists() and not grupo.permissions.filter(codename__in=novas).exists():
+            grupo.permissions.add(*faltam)
 
 
 def sincroniza_grupo_editores(apps, app_config=None):

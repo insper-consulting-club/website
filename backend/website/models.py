@@ -935,3 +935,50 @@ class NavItem(models.Model):
             raise ValidationError({
                 'url': 'O link precisa começar com https://, http://, mailto: ou / (caminho do site).'
             })
+
+
+class SecaoDaHome(models.Model):
+    """
+    Uma seção da Home que o editor mostra, esconde e reordena. As linhas nascem do registro de conteúdo
+    (website/conteudo/secoes.py) a cada migração e não se criam nem se excluem à mão. O Topo e a Apresentação ficam
+    sempre no começo e não têm linha. Os campos do botão só valem para o aviso.
+    """
+    key = models.SlugField(max_length=40, unique=True, verbose_name='Identificador')
+    title = models.CharField(max_length=100, verbose_name='Seção')
+    visible = models.BooleanField(
+        default=True, verbose_name='Mostrar no site', help_text='Desmarque para esconder a seção da Home.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+    button_page = models.CharField(
+        max_length=40, choices=NavItem.PAGE_CHOICES, blank=True, verbose_name='Página do site',
+        help_text='Para onde o botão leva. Escolha uma página do site, ou deixe vazio e preencha "Link livre". '
+                  'Sem texto do botão (em Textos do site), nenhum botão aparece.'
+    )
+    button_url = models.CharField(
+        max_length=300, blank=True, verbose_name='Link livre',
+        help_text='Endereço completo (https://...) ou um caminho do site (/equipe). Use só se não houver página na lista.'
+    )
+
+    class Meta:
+        verbose_name = 'Seção da Home'
+        verbose_name_plural = 'Seções da Home'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def button_path(self):
+        return NavItem.PAGINAS[self.button_page] if self.button_page else self.button_url
+
+    @property
+    def button_external(self):
+        return self.button_path.startswith(('http://', 'https://', 'mailto:'))
+
+    def clean(self):
+        if self.button_page and self.button_url:
+            raise ValidationError('Preencha a página do site ou o link livre, não os dois.')
+        if self.button_url and not self.button_url.startswith(('/', 'http://', 'https://', 'mailto:')):
+            raise ValidationError({
+                'button_url': 'O link precisa começar com https://, http://, mailto: ou / (caminho do site).'
+            })

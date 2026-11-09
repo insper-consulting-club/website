@@ -58,7 +58,7 @@ O frontend é um site estático: o nome, a descrição, a imagem de compartilham
 
 Textos, contatos, menu e as demais imagens são lidos pela API a cada visita e aparecem em até um minuto, sem deploy.
 
-Se a API estiver fora do ar durante o build, ele **falha** e avisa no log (`[site-config]`): o site não guarda textos próprios, então o deploy anterior continua no ar em vez de publicar um site sem textos. O backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera por isso. Se acontecer, abra a API no navegador para acordá-la e refaça o deploy. Não há mais `SKIP_SITE_CONFIG`; num build local, deixe o backend rodando.
+O build também falha se a resposta da API não trouxer `home_sections`, o que indica um backend ainda sem as seções da Home: **publique o backend antes do frontend**. Se a API estiver fora do ar durante o build, ele **falha** e avisa no log (`[site-config]`): o site não guarda textos próprios, então o deploy anterior continua no ar em vez de publicar um site sem textos. O backend gratuito pode levar cerca de 30 segundos para acordar, e o build espera por isso. Se acontecer, abra a API no navegador para acordá-la e refaça o deploy. Não há mais `SKIP_SITE_CONFIG`; num build local, deixe o backend rodando.
 
 ### Configuração do backend (`icc-backend`)
 

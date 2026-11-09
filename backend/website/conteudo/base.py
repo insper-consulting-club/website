@@ -40,3 +40,19 @@ class Pagina:
     titulo: str
     caminho: str  # endereço no site, para o botão "Ver no site"
     textos: tuple
+
+
+@dataclass(frozen=True)
+class Secao:
+    """
+    Uma seção da Home que o editor pode mostrar, esconder e reordenar. O Topo e a Apresentação não entram aqui: ficam
+    sempre no começo. A ordem desta lista é a de um banco novo; depois, vale a que o editor definir.
+
+    chave    o que o frontend usa para escolher o componente da seção. Não mude uma chave que já existe.
+    titulo   o nome da seção na lista do admin.
+    visivel  se aparece num banco novo.
+    """
+    chave: str
+    titulo: str
+    visivel: bool = True
+

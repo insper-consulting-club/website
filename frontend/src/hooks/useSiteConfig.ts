@@ -20,7 +20,7 @@ const VAZIA: SiteConfig = {
   email: "", instagram_url: "", instagram_label: "", linkedin_url: "", linkedin_label: "",
   github_url: "", github_label: "", home_about_photo_url: null, home_about_photo_alt: "",
   featured_program_slug: "", privacy_updated: "", privacy_text: "",
-  partner_benefits: [], texts: {}, nav_items: [],
+  partner_benefits: [], home_sections: [], texts: {}, nav_items: [],
 }
 
 function inicial(): SiteConfig {
@@ -47,7 +47,9 @@ export default function useSiteConfig(): SiteConfig {
       pedido = api.getSiteConfig().then((dados: SiteConfig) => {
         // Resposta sem os campos esperados (erro do servidor, por exemplo)
         // não pode substituir o que já temos.
-        if (!dados || typeof dados.email !== "string") throw new Error("Configuração inválida")
+        if (!dados || typeof dados.email !== "string" || !Array.isArray(dados.home_sections)) {
+          throw new Error("Configuração inválida")
+        }
         return dados
       })
       // Falha: libera uma nova tentativa na próxima montagem.

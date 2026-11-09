@@ -10,7 +10,7 @@ from .models import (
     SelectionProcessStage, SelectionProcessStep,
     PreparationMaterial, PreparationMaterialItem,
     ProgramCase, ProgramCaseParticipant,
-    SiteConfig, PartnerBenefit, ProgramContentBlock, SiteText, NavItem
+    SiteConfig, PartnerBenefit, ProgramContentBlock, SecaoDaHome, SiteText, NavItem
 )
 
 
@@ -410,6 +410,7 @@ class SiteConfigSerializer(serializers.ModelSerializer):
     partner_benefits = PartnerBenefitSerializer(many=True, read_only=True)
     texts = serializers.SerializerMethodField()
     nav_items = serializers.SerializerMethodField()
+    home_sections = serializers.SerializerMethodField()
 
     class Meta:
         model = SiteConfig
@@ -420,6 +421,22 @@ class SiteConfigSerializer(serializers.ModelSerializer):
         # Item escondido no admin não chega ao site.
         ativos = [item for item in obj.nav_items.all() if item.is_active]
         return NavItemSerializer(ativos, many=True).data
+
+    def get_home_sections(self, obj):
+        # As seções visíveis da Home, na ordem do editor (o Topo e a Apresentação ficam fora: são sempre os primeiros).
+        # O aviso só sai quando tem texto; o botão, quando tem destino.
+        aviso = SiteText.objects.filter(key="home.aviso_texto").values_list("value", flat=True).first() or ""
+        secoes = []
+        for secao in SecaoDaHome.objects.filter(visible=True):
+            if secao.key != "aviso":
+                secoes.append({"key": secao.key})
+            elif aviso.strip():
+                secoes.append({
+                    "key": secao.key,
+                    "button_path": secao.button_path or None,
+                    "button_external": secao.button_external,
+                })
+        return secoes
 
     def get_texts(self, obj):
         # Parte do catálogo: um texto que ainda não chegou ao banco sai com o

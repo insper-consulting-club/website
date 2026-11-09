@@ -33,6 +33,7 @@ GRUPOS = [
     ("Site", [
         ("website", "siteconfig", "Configuração do site", "tune"),
         ("website", "paginadosite", "Textos do site", "text_fields"),
+        ("website", "secaodahome", "Seções da Home", "view_agenda"),
         ("website", "statistic", "Estatísticas", "bar_chart"),
     ]),
     ("Acesso", [

@@ -15,8 +15,8 @@ from rest_framework.test import APIClient
 
 from website.models import (
     Article, ArticleImage, Member, Partner, PartnerCategory, Program, ProgramCase,
-    Directorate, NavItem, PaginaDoSite, ProgramComponent, ProgramContentBlock, Project, SelectionProcess, SiteConfig,
-    SiteText,
+    Directorate, NavItem, PaginaDoSite, ProgramComponent, ProgramContentBlock, Project, SecaoDaHome, SelectionProcess,
+    SiteConfig, SiteText,
 )
 
 
@@ -663,7 +663,7 @@ class AdminNavigationTests(TestCase):
             ["Artigos", "Equipe", "Parceiros", "Programas e projetos", "Processo seletivo", "Site", "Acesso"],
         )
         itens = [i["title"] for g in grupos for i in g["items"]]
-        self.assertEqual(len(itens), 17)  # 14 modelos do site, mais Usuários, Grupos e Atividade recente
+        self.assertEqual(len(itens), 18)  # 15 modelos do site, mais Usuários, Grupos e Atividade recente
         self.assertIn("Configuração do site", itens)
 
     def test_limited_user_only_sees_what_they_can_open(self):
@@ -786,11 +786,11 @@ class EditorsGroupTests(TestCase):
     def test_group_is_created_by_migrate_with_the_expected_permissions(self):
         codenames = self.codenames()
 
-        for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_paginadosite",
+        for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_paginadosite", "change_secaodahome",
                          "delete_projectimage", "view_position", "add_position"):
             self.assertIn(esperado, codenames)
         for proibido in ("delete_article", "delete_member", "delete_project", "add_siteconfig", "delete_siteconfig",
-                         "add_paginadosite", "delete_paginadosite", "change_position", "delete_position", "view_user", "change_user", "view_group",
+                         "add_paginadosite", "delete_paginadosite", "add_secaodahome", "delete_secaodahome", "change_position", "delete_position", "view_user", "change_user", "view_group",
                          "view_navitem", "change_navitem", "view_partnerbenefit", "change_partnerbenefit"):
             self.assertNotIn(proibido, codenames)
 
@@ -2468,7 +2468,7 @@ class ContentRegistryTests(TestCase):
 
         chaves = [t.chave for p in PAGINAS for t in p.textos]
         self.assertEqual(len(chaves), len(set(chaves)))
-        self.assertEqual(len(chaves), 138)
+        self.assertEqual(len(chaves), 141)
         self.assertEqual(len({p.slug for p in PAGINAS}), len(PAGINAS))
         for pagina in PAGINAS:
             self.assertTrue(pagina.textos, pagina.slug)
@@ -2479,7 +2479,9 @@ class ContentRegistryTests(TestCase):
 
         for pagina in PAGINAS:
             for texto in pagina.textos:
-                self.assertTrue(texto.rotulo.strip() and texto.secao.strip() and texto.padrao.strip(), texto.chave)
+                self.assertTrue(texto.rotulo.strip() and texto.secao.strip(), texto.chave)
+                # Só um texto opcional pode ter o original vazio (o aviso da Home começa sem nada).
+                self.assertTrue(texto.padrao.strip() or texto.opcional, texto.chave)
 
     def test_keys_start_with_the_name_the_frontend_uses_for_their_page(self):
         from website.conteudo import PAGINAS
@@ -2853,4 +2855,219 @@ class PageTextsMigrationTests(TransactionTestCase):
         SiteText = antigo.get_model("website", "SiteText")
         self.assertFalse(SiteText.objects.filter(key="home.hero_titulo").exists())
         self.assertEqual(SiteText.objects.get(key="equipe.titulo").value, "Outro texto")
+
+
+class HomeSectionsRegistryTests(TestCase):
+    """As seções da Home que o editor mostra, esconde e reordena (SecaoDaHome)."""
+
+    def test_a_new_database_has_every_section_in_the_registry_order_with_the_notice_hidden_first(self):
+        from website.conteudo import SECOES_DA_HOME
+
+        linhas = list(SecaoDaHome.objects.values_list("key", "visible"))
+
+        self.assertEqual([k for k, _ in linhas], [s.chave for s in SECOES_DA_HOME])
+        self.assertEqual(linhas[0], ("aviso", False))
+        self.assertTrue(all(v for k, v in linhas if k != "aviso"))
+
+    def test_registry_keys_are_unique(self):
+        from website.conteudo import SECOES_DA_HOME
+
+        chaves = [s.chave for s in SECOES_DA_HOME]
+
+        self.assertEqual(len(chaves), len(set(chaves)))
+        self.assertNotIn("topo", chaves)
+        self.assertNotIn("apresentacao", chaves)
+
+    def test_sync_keeps_what_the_editor_chose_and_puts_a_new_section_last(self):
+        from website.site_texts import sincroniza_secoes
+        import website.site_texts as modulo
+        from website.conteudo.base import Secao
+
+        SecaoDaHome.objects.filter(key="missao").update(visible=False, order=50)
+        SecaoDaHome.objects.filter(key="programas").update(title="Nome velho")
+        SecaoDaHome.objects.filter(key="aviso").update(button_url="https://exemplo.com.br")
+        SecaoDaHome.objects.filter(key="parceiros").delete()
+        original = modulo.SECOES_DA_HOME
+        try:
+            modulo.SECOES_DA_HOME = original + (Secao("novidade", "Novidade"),)
+            sincroniza_secoes()
+        finally:
+            modulo.SECOES_DA_HOME = original
+
+        missao = SecaoDaHome.objects.get(key="missao")
+        self.assertEqual((missao.visible, missao.order), (False, 50))
+        self.assertEqual(SecaoDaHome.objects.get(key="programas").title, "Programas")
+        self.assertEqual(SecaoDaHome.objects.get(key="aviso").button_url, "https://exemplo.com.br")
+        self.assertEqual(list(SecaoDaHome.objects.order_by("-order").values_list("key", flat=True))[:2], ["novidade", "parceiros"])
+        self.assertTrue(SecaoDaHome.objects.get(key="parceiros").visible)
+
+    def test_sync_removes_a_section_that_left_the_registry(self):
+        SecaoDaHome.objects.create(key="antiga", title="Antiga", order=99)
+
+        from website.site_texts import sincroniza_secoes
+
+        sincroniza_secoes()
+
+        self.assertFalse(SecaoDaHome.objects.filter(key="antiga").exists())
+
+    # --- botão do aviso
+
+    def test_the_button_goes_to_a_site_page_or_a_free_link_but_not_both(self):
+        from django.core.exceptions import ValidationError
+
+        secao = SecaoDaHome.objects.get(key="aviso")
+        secao.button_page = "processo"
+        secao.full_clean()
+        self.assertEqual((secao.button_path, secao.button_external), ("/processo", False))
+
+        secao.button_page, secao.button_url = "", "https://exemplo.com.br/edital"
+        secao.full_clean()
+        self.assertEqual((secao.button_path, secao.button_external), ("https://exemplo.com.br/edital", True))
+
+        secao.button_page = "processo"
+        with self.assertRaises(ValidationError):
+            secao.full_clean()
+
+        secao.button_page, secao.button_url = "", "edital"
+        with self.assertRaises(ValidationError):
+            secao.full_clean()
+
+    # --- API
+
+    def secoes_da_api(self):
+        return APIClient().get("/api/site-config/").data["home_sections"]
+
+    def test_api_lists_the_visible_sections_in_the_editor_order_without_the_hidden_notice(self):
+        chaves = [s["key"] for s in self.secoes_da_api()]
+
+        self.assertEqual(chaves, ["quem_somos", "estatisticas", "missao", "programas", "equipe", "parceiros", "chamada_final"])
+
+    def test_hidden_sections_and_the_new_order_reach_the_api(self):
+        SecaoDaHome.objects.filter(key="missao").update(visible=False)
+        SecaoDaHome.objects.filter(key="chamada_final").update(order=0)
+
+        chaves = [s["key"] for s in self.secoes_da_api()]
+
+        self.assertEqual(chaves[0], "chamada_final")
+        self.assertNotIn("missao", chaves)
+
+    def test_the_notice_needs_to_be_on_and_to_have_text(self):
+        SecaoDaHome.objects.filter(key="aviso").update(visible=True)
+        self.assertNotIn("aviso", [s["key"] for s in self.secoes_da_api()])  # ligado, mas sem texto
+
+        SiteText.objects.filter(key="home.aviso_texto").update(value="Inscrições abertas até sexta.")
+        secoes = self.secoes_da_api()
+
+        self.assertEqual(secoes[0], {"key": "aviso", "button_path": None, "button_external": False})
+
+    def test_the_notice_button_comes_with_its_destination(self):
+        SiteText.objects.filter(key="home.aviso_texto").update(value="Inscrições abertas.")
+        SecaoDaHome.objects.filter(key="aviso").update(visible=True, button_page="processo")
+        self.assertEqual(self.secoes_da_api()[0]["button_path"], "/processo")
+
+        SecaoDaHome.objects.filter(key="aviso").update(button_page="", button_url="https://exemplo.com.br/edital")
+        aviso = self.secoes_da_api()[0]
+
+        self.assertEqual((aviso["button_path"], aviso["button_external"]), ("https://exemplo.com.br/edital", True))
+
+    def test_the_notice_texts_start_empty(self):
+        textos = APIClient().get("/api/site-config/").data["texts"]
+
+        self.assertEqual((textos["home.aviso_titulo"], textos["home.aviso_texto"], textos["home.aviso_botao"]), ("", "", ""))
+
+
+@SEM_MANIFESTO
+class HomeSectionsAdminTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import Group
+
+        self.admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.editor = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste", is_staff=True)
+        self.editor.groups.add(Group.objects.get(name="Editores"))
+        self.client.force_login(self.admin)
+        self.aviso = SecaoDaHome.objects.get(key="aviso")
+        self.missao = SecaoDaHome.objects.get(key="missao")
+
+    def test_list_shows_the_sections_in_order_and_has_no_add_or_delete(self):
+        resposta = self.client.get("/admin/website/secaodahome/")
+
+        self.assertEqual([s.key for s in resposta.context["cl"].result_list], [s.key for s in SecaoDaHome.objects.all()])
+        self.assertEqual(self.client.get("/admin/website/secaodahome/add/").status_code, 403)
+        self.assertEqual(self.client.get(f"/admin/website/secaodahome/{self.missao.pk}/delete/").status_code, 403)
+
+    def test_only_the_notice_form_has_the_button_fields(self):
+        aviso = self.client.get(f"/admin/website/secaodahome/{self.aviso.pk}/change/").content.decode()
+        missao = self.client.get(f"/admin/website/secaodahome/{self.missao.pk}/change/").content.decode()
+
+        self.assertIn('name="button_page"', aviso)
+        self.assertIn('name="button_url"', aviso)
+        self.assertIn("Textos do site", aviso)
+        self.assertNotIn('name="button_page"', missao)
+        self.assertIn('name="visible"', missao)
+
+    def test_hiding_a_section_in_the_form_reaches_the_api(self):
+        self.client.post(f"/admin/website/secaodahome/{self.missao.pk}/change/", {})  # desmarcado: o campo não vem
+
+        self.assertFalse(SecaoDaHome.objects.get(pk=self.missao.pk).visible)
+        self.assertNotIn("missao", [s["key"] for s in APIClient().get("/api/site-config/").data["home_sections"]])
+
+    def test_the_notice_form_saves_the_button_and_refuses_two_destinations(self):
+        url = f"/admin/website/secaodahome/{self.aviso.pk}/change/"
+
+        recusado = self.client.post(url, {"visible": "on", "button_page": "processo", "button_url": "https://x.com"})
+        self.assertEqual(recusado.status_code, 200)
+        self.assertFalse(SecaoDaHome.objects.get(pk=self.aviso.pk).visible)
+
+        aceito = self.client.post(url, {"visible": "on", "button_page": "processo", "button_url": ""})
+        self.assertEqual(aceito.status_code, 302)
+        aviso = SecaoDaHome.objects.get(pk=self.aviso.pk)
+        self.assertEqual((aviso.visible, aviso.button_page), (True, "processo"))
+
+    def test_the_notice_texts_are_edited_in_the_home_texts_page_and_may_stay_empty(self):
+        home = PaginaDoSite.objects.get(slug="home")
+
+        html = self.client.get(f"/admin/website/paginadosite/{home.pk}/change/").content.decode()
+
+        for chave in ("aviso_titulo", "aviso_texto", "aviso_botao"):
+            self.assertIn(f'name="t__home__{chave}"', html)
+        self.assertIn('<textarea name="t__home__aviso_texto"', html)
+
+    def test_an_editor_can_change_the_sections_but_not_add_or_delete(self):
+        self.client.force_login(self.editor)
+
+        self.assertEqual(self.client.get("/admin/website/secaodahome/").status_code, 200)
+        self.assertEqual(self.client.post(f"/admin/website/secaodahome/{self.missao.pk}/change/", {"visible": "on"}).status_code, 302)
+        self.assertEqual(self.client.get("/admin/website/secaodahome/add/").status_code, 403)
+
+    def test_an_old_editors_group_with_the_texts_permission_gets_the_sections_permission(self):
+        from django.apps import apps
+        from django.contrib.auth.models import Group, Permission
+        from website.editors_group import sincroniza_grupo_editores
+
+        grupo = Group.objects.get(name="Editores")
+        grupo.permissions.remove(*Permission.objects.filter(codename__in=["change_secaodahome", "view_secaodahome"]))
+
+        sincroniza_grupo_editores(apps, apps.get_app_config("website"))
+
+        self.assertTrue(grupo.permissions.filter(codename="change_secaodahome").exists())
+
+    def test_a_group_without_the_texts_permission_is_left_alone(self):
+        from django.apps import apps
+        from django.contrib.auth.models import Group, Permission
+        from website.editors_group import sincroniza_grupo_editores
+
+        grupo = Group.objects.get(name="Editores")
+        grupo.permissions.remove(*Permission.objects.filter(codename__in=["change_paginadosite", "change_secaodahome", "view_secaodahome"]))
+
+        sincroniza_grupo_editores(apps, apps.get_app_config("website"))
+
+        self.assertFalse(grupo.permissions.filter(codename="change_secaodahome").exists())
+
+    def test_original_of_an_empty_text_is_shown_as_empty(self):
+        SiteText.objects.filter(key="home.aviso_titulo").update(value="Edital novo")
+        home = PaginaDoSite.objects.get(slug="home")
+
+        html = self.client.get(f"/admin/website/paginadosite/{home.pk}/change/").content.decode()
+
+        self.assertIn("Original: <em>vazio</em>", html)
 

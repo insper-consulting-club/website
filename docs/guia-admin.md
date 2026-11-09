@@ -64,7 +64,7 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
    - **Administrador:** marque "Status de superusuário". Dá acesso total, incluindo criar outros logins, apagar qualquer registro e mexer na estrutura do site. Deixe isso para duas pessoas (por exemplo, o Diretor Tech e alguém da presidência), para nunca depender de uma só.
 
 **O que o grupo Editores pode e não pode:**
-- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (**Textos do site** e **Configuração do site**), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
+- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (**Textos do site**, **Seções da Home** e **Configuração do site**), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
 - **Não** vê as abas **Marca e compartilhamento** e **Política de Privacidade** da configuração, nem o menu do site e os benefícios para parceiros. Isso fica com os administradores.
 - **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Pode **criar um cargo novo** (pelo botão ao lado do campo **Cargo principal** do membro), que entra como membro comum; não escolhe a prioridade nem altera os cargos existentes, porque a prioridade define quem é liderança na Home. Um administrador ajusta isso em **Cargos**.
 - O menu mostra só o que a pessoa pode usar.
@@ -285,6 +285,19 @@ Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem
 - Não há botão para adicionar ou excluir: os textos existentes são os que o site usa.
 - Os textos longos (missão, "Quem somos") ficam nas páginas deles, com uma caixa de várias linhas. A Política de Privacidade continua em **Configuração do site**, só para administradores.
 - Um texto marcado como opcional (por exemplo, o final do título de "Quem somos", em vermelho) pode ficar vazio. Os demais não.
+
+---
+
+## Seções da Home
+
+**Seções da Home** (menu Site) controla o que aparece na página inicial depois da Apresentação. O Topo e a Apresentação ficam sempre no começo e não aparecem na lista.
+
+- **Mostrar ou esconder:** marque ou desmarque **Mostrar no site** na própria lista e salve. Uma seção escondida some da Home, mas nada é apagado.
+- **Mudar a ordem:** arraste as linhas. O fundo das seções alterna entre claro e cinza pela posição, então mover uma seção não deixa duas iguais lado a lado. Estatísticas e Chamada final têm estilo próprio e não entram nessa alternância.
+- **Aviso:** é a primeira linha, escondida por padrão. Para usar, escreva o texto em **Textos do site > Home > Aviso** (o título e o texto do botão são opcionais; sem texto, o aviso não aparece, mesmo ligado), depois abra o **Aviso** em Seções da Home, marque **Mostrar no site** e, se quiser um botão, escolha uma página do site ou um link livre. Por padrão ele fica logo depois da Apresentação, mas pode ser arrastado como as outras seções. Não há escolha de cores: o visual segue o guia de marca.
+- Estatísticas e parceiros sem nada cadastrado não aparecem, mesmo ligados.
+- Não há botão de adicionar nem de excluir: as seções existentes são as que o site sabe desenhar.
+- As mudanças levam até um minuto para aparecer, como os textos.
 
 ---
 

@@ -23,7 +23,7 @@ from .conteudo import PADRAO as PADRAO_DOS_TEXTOS, PAGINAS, POR_CHAVE, POR_SLUG
 from .conteudo.base import Pagina
 from .widgets import MarkdownPreviewWidget
 from .models import (
-    PartnerCategory, ProgramComponent,
+    PartnerCategory, ProgramComponent, SecaoDaHome,
     Partner, Member, Article, ArticleImage, Position, Directorate,
     DirectorateMembership, Statistic,
     Project, ProjectImage, ProjectTimelineEvent, ProjectContentBlock,
@@ -921,7 +921,7 @@ def _rodape_do_original(original, valor, id_do_campo):
         '<div class="texto-original"><span class="texto-editado">editado</span> Original: <em>{}</em> '
         '<button type="button" class="restaurar-texto" data-original="{}" '
         'onclick="document.getElementById(\'{}\').value=this.dataset.original">Restaurar o original</button></div>',
-        original, original, id_do_campo,
+        original or 'vazio', original, id_do_campo,
     )
 
 
@@ -1132,3 +1132,43 @@ class PaginaDoSiteAdmin(AdminDoSite):
             for texto in POR_SLUG.get(pagina.slug, Pagina('', '', '', ())).textos:
                 n += SiteText.objects.filter(key=texto.chave).exclude(value=texto.padrao).update(value=texto.padrao)
         self.message_user(request, f'{n} texto(s) restaurado(s) ao original.', messages.SUCCESS)
+
+
+@admin.register(SecaoDaHome)
+class SecaoDaHomeAdmin(AdminDoSite):
+    """
+    "Seções da Home": mostrar, esconder e reordenar (arrastando) as seções depois da Apresentação. As linhas nascem do
+    registro de conteúdo e não se criam nem se excluem aqui. O aviso tem também o destino do botão.
+    """
+    list_display = ('title', 'visible')
+    list_display_links = ('title',)
+    list_editable = ('visible',)
+    ordering_field = 'order'
+    hide_ordering_field = True
+    ordering = ('order',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        return super().changelist_view(request, {'title': 'Seções da Home', **(extra_context or {})})
+
+    def get_fieldsets(self, request, obj=None):
+        if obj is not None and obj.key == 'aviso':
+            return [
+                (None, {'fields': ('visible',)}),
+                ('Botão do aviso', {
+                    'description': 'O título, o texto e o texto do botão ficam em Textos do site, na página Home, '
+                                   'seção Aviso. Sem texto, o aviso não aparece, mesmo ligado.',
+                    'fields': ('button_page', 'button_url'),
+                }),
+            ]
+        return [(None, {'fields': ('visible',)})]
+
+    def view_on_site(self, obj):
+        base = settings.FRONTEND_URL.rstrip('/')
+        return f'{base}/' if base else None
+

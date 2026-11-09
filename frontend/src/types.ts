@@ -248,6 +248,13 @@ export interface NavItem {
 }
 
 // Textos e contatos editáveis no admin (Configuração do site).
+// Uma seção da Home. Só o aviso traz o destino do botão.
+export interface HomeSection {
+  key: string
+  button_path?: string | null
+  button_external?: boolean
+}
+
 export interface SiteConfig {
   site_name: string
   site_description: string
@@ -267,6 +274,8 @@ export interface SiteConfig {
   privacy_updated: string
   privacy_text: string
   partner_benefits: PartnerBenefit[]
+  // Seções da Home que o editor deixou visíveis, na ordem dele (depois do Topo e da Apresentação).
+  home_sections: HomeSection[]
   // Todos os textos das páginas (títulos, rótulos, botões, frases), por chave. Declarados em backend/website/conteudo/.
   texts: Record<string, string>
   nav_items: NavItem[]

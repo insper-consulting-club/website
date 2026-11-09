@@ -32,7 +32,10 @@ async function busca(apiUrl: string): Promise<Dados | null> {
       })
       if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`)
       const dados = (await resposta.json()) as Dados
-      if (typeof dados?.email !== "string") throw new Error("resposta sem os campos esperados")
+      // home_sections falta quando o backend ainda não foi publicado com as seções da Home: melhor falhar o build.
+      if (typeof dados?.email !== "string" || !Array.isArray(dados?.home_sections)) {
+        throw new Error("resposta sem os campos esperados (o backend está publicado e atualizado?)")
+      }
       return dados
     } catch (erro) {
       const motivo = erro instanceof Error ? erro.message : String(erro)

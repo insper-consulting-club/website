@@ -12,6 +12,7 @@ O texto nasce no banco na próxima migração, com o valor padrão, sem mexer no
 
 Para acrescentar uma página, crie o módulo em `paginas/` e inclua-o na lista abaixo, na posição em que ela deve aparecer.
 """
+from .secoes import SECAO_POR_CHAVE, SECOES_DA_HOME  # noqa: F401
 from .paginas import (
     artigos, contato, equipe, home, membro, nao_encontrada, parceiro, parceiros, privacidade, processo, programa,
     projeto, projetos, rodape,
