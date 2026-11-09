@@ -49,3 +49,8 @@ fieldset.module {
   color: inherit;
   font-size: .75rem;
 }
+
+/* Participantes do case: o nome já está no campo logo abaixo, então o rótulo da linha só repetia. */
+#participants-group p[class~="group/title"] {
+  display: none;
+}

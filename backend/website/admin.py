@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.files.images import get_image_dimensions
 from django.core.files.uploadedfile import UploadedFile
 from django.contrib import admin, messages
+from django.contrib.admin.models import LogEntry
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
@@ -80,6 +81,54 @@ class UserAdmin(RotulosDePermissaoMixin, BaseUserAdmin, ModelAdmin):
 @admin.register(Group)
 class GroupAdmin(RotulosDePermissaoMixin, BaseGroupAdmin, ModelAdmin):
     pass
+
+
+# Nomes em português para a página e para as permissões (o padrão do Django é "entrada de log").
+LogEntry._meta.verbose_name = 'atividade'
+LogEntry._meta.verbose_name_plural = 'atividades'
+
+
+@admin.register(LogEntry)
+class AtividadeRecenteAdmin(ModelAdmin):
+    """Quem mudou o quê no admin, só para consulta. Só administradores veem esta página."""
+    list_display = ('action_time', 'user', 'tipo', 'cadastro', 'registro', 'o_que_mudou')
+    list_display_links = None
+    list_filter = ('user', 'action_flag')
+    search_fields = ('object_repr',)
+    date_hierarchy = 'action_time'
+    list_select_related = ('user', 'content_type')
+    list_per_page = 50
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def changelist_view(self, request, extra_context=None):
+        return super().changelist_view(request, {'title': 'Atividade recente', **(extra_context or {})})
+
+    @admin.display(description='Ação')
+    def tipo(self, obj):
+        return obj.get_action_flag_display()
+
+    @admin.display(description='Cadastro')
+    def cadastro(self, obj):
+        return str(obj.content_type.name).capitalize() if obj.content_type else '-'
+
+    @admin.display(description='Registro')
+    def registro(self, obj):
+        return obj.object_repr
+
+    @admin.display(description='O que mudou')
+    def o_que_mudou(self, obj):
+        return obj.get_change_message()
 
 
 def url_do_site(caminho):
@@ -219,6 +268,11 @@ class PositionAdmin(AdminDoSite):
     search_fields = ('title',)
     ordering = ('power', 'title')
 
+    def get_fields(self, request, obj=None):
+        # A prioridade decide quem aparece como liderança na Home. Só administradores a escolhem:
+        # um cargo criado por um editor entra como membro comum (valor padrão do modelo).
+        return ('title', 'power') if request.user.is_superuser else ('title',)
+
 
 @admin.register(Directorate)
 class DirectorateAdmin(AdminDoSite):
@@ -295,6 +349,8 @@ class MemberAdmin(AdminDoSite):
     # por si só quando a lista acumula alumni além dos membros ativos.
     search_fields = ('name', 'linkedin')
     list_select_related = ('position',)
+    # Quem está na equipe primeiro, e por ordem alfabética (o cadastro antigo ficava no fim).
+    ordering = ('-is_active', 'name')
     list_per_page = 50
     actions = ['arquivar', 'reativar']
     fields = ('name', 'photo', 'position', 'linkedin', 'is_active')
@@ -566,10 +622,14 @@ class ArticleAdmin(AdminDoSite):
 # ---------------------------------------------------------------------------
 
 class ProgramCaseParticipantInline(TabularInline):
+    # A ordem em que as pessoas aparecem no case se muda arrastando a linha (o site mostra primeiro
+    # os integrantes e depois os mentores, e respeita a ordem dentro de cada papel).
     model = ProgramCaseParticipant
     extra = 1
     fields = ('member', 'role', 'order')
-    ordering = ('role', 'order')
+    ordering = ('order',)
+    ordering_field = 'order'
+    hide_ordering_field = True
     autocomplete_fields = ('member',)
 
 

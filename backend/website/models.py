@@ -5,6 +5,10 @@ from django.utils.text import slugify
 
 from .fields import LimitedImageField
 
+# Semestre no formato usado em todo o site: "2026.1" (janeiro a junho) e "2026.2" (julho a dezembro).
+SEMESTRE_VALIDATOR = RegexValidator(r'^\d{4}\.[12]$', 'Use o formato AAAA.S, por exemplo 2026.1.')
+
+
 class PartnerCategory(models.Model):
     title = models.CharField(max_length=200, verbose_name='Título')
 
@@ -39,7 +43,7 @@ class Directorate(models.Model):
 class Position(models.Model):
     title = models.CharField(max_length=200, verbose_name='Cargo')
     power = models.IntegerField(
-        verbose_name='Prioridade para exibição',
+        default=4, verbose_name='Prioridade para exibição',
         help_text='0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, '
                   '4 = Membro/Mentor, 5 = Trainee. Cargos com valor até 2 aparecem na Home como liderança.'
     )
@@ -153,6 +157,10 @@ class Project(models.Model):
         verbose_name_plural = 'Projetos'
         ordering = ['-start_date']
 
+    def clean(self):
+        if self.end_date and self.start_date and self.end_date < self.start_date:
+            raise ValidationError({'end_date': 'A data de conclusão não pode ser anterior à data de início.'})
+
     def __str__(self):
         return self.title
 
@@ -233,7 +241,7 @@ class MemberTrajectory(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='trajectory_steps', verbose_name='Membro')
     semester = models.CharField(
         max_length=10, verbose_name='Semestre',
-        validators=[RegexValidator(r'^\d{4}\.[12]$', 'Use o formato AAAA.S, por exemplo 2026.1.')],
+        validators=[SEMESTRE_VALIDATOR],
         help_text='No formato AAAA.S, por exemplo 2026.1.'
     )
     role = models.CharField(max_length=200, verbose_name='Cargo nesse semestre', help_text='Por exemplo: Trainee, Membro, Diretor de Projetos.')
@@ -601,7 +609,10 @@ class ProgramCase(models.Model):
         related_name='cases',
         verbose_name='Programa'
     )
-    semester = models.CharField(max_length=10, verbose_name='Semestre', help_text='No formato AAAA.S, por exemplo 2025.1.')
+    semester = models.CharField(
+        max_length=10, verbose_name='Semestre', validators=[SEMESTRE_VALIDATOR],
+        help_text='No formato AAAA.S, por exemplo 2025.1.'
+    )
     title = models.CharField(
         max_length=100, blank=True, verbose_name='Título',
         help_text='Só é necessário quando o semestre tem mais de um case, por exemplo "1º Case".'

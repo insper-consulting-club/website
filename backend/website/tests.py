@@ -711,7 +711,7 @@ class AdminNavigationTests(TestCase):
             ["Artigos", "Equipe", "Parceiros", "Programas e projetos", "Processo seletivo", "Site", "Acesso"],
         )
         itens = [i["title"] for g in grupos for i in g["items"]]
-        self.assertEqual(len(itens), 16)  # 14 modelos do site, mais Usuários e Grupos
+        self.assertEqual(len(itens), 17)  # 14 modelos do site, mais Usuários, Grupos e Atividade recente
         self.assertIn("Configuração do site", itens)
 
     def test_limited_user_only_sees_what_they_can_open(self):
@@ -810,8 +810,8 @@ class AdminReorderTests(TestCase):
             for inline in getattr(modelo_admin, "inlines", [])
             if any(campo.name == "order" for campo in inline.model._meta.get_fields())
         }
-        # O cronograma do projeto é ordenado por data, e os participantes do case, por papel.
-        fora = {"ProjectTimelineEventInline", "ProgramCaseParticipantInline"}
+        # O cronograma do projeto é ordenado por data (os participantes do case, por papel e nome, não têm campo de ordem).
+        fora = {"ProjectTimelineEventInline"}
         for inline in classes:
             if inline.__name__ in fora:
                 continue
@@ -835,10 +835,10 @@ class EditorsGroupTests(TestCase):
         codenames = self.codenames()
 
         for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_sitetext",
-                         "delete_projectimage", "view_position"):
+                         "delete_projectimage", "view_position", "add_position"):
             self.assertIn(esperado, codenames)
         for proibido in ("delete_article", "delete_member", "delete_project", "add_siteconfig", "delete_siteconfig",
-                         "add_sitetext", "add_position", "change_position", "view_user", "change_user", "view_group",
+                         "add_sitetext", "change_position", "delete_position", "view_user", "change_user", "view_group",
                          "view_navitem", "change_navitem", "view_partnerbenefit", "change_partnerbenefit"):
             self.assertNotIn(proibido, codenames)
 
@@ -2364,3 +2364,130 @@ class TeamAndComponentsMigrationTests(TransactionTestCase):
         Componente = novo.get_model("website", "ProgramComponent")
 
         self.assertEqual([c.title for c in Componente.objects.all()], ["Com programa"])
+
+
+@SEM_MANIFESTO
+class AdminSmallImprovementsTests(TestCase):
+    """Ordem da lista de membros, cargo criado por editor, validações, atividade recente e participantes."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+
+        self.admin = get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste")
+        self.editor = get_user_model().objects.create_user("editora", "e@example.com", "senha-de-teste", is_staff=True)
+        self.editor.groups.add(Group.objects.get(name="Editores"))
+
+    # --- 1: ordem da lista de membros
+
+    def test_member_list_shows_the_team_first_and_in_alphabetical_order(self):
+        Member.objects.create(name="Zélia")
+        Member.objects.create(name="Bruno", is_active=False)
+        Member.objects.create(name="Ana")
+        self.client.force_login(self.admin)
+
+        pagina = self.client.get("/admin/website/member/").content.decode()
+
+        ordem = [pagina.index(nome) for nome in ("Ana", "Zélia", "Bruno")]
+        self.assertEqual(ordem, sorted(ordem))
+
+    # --- 2: cargo criado por um editor
+
+    def test_editor_can_create_a_position_but_not_choose_its_priority(self):
+        from website.models import Position
+
+        self.client.force_login(self.editor)
+        pagina = self.client.get("/admin/website/position/add/").content.decode()
+        self.assertIn('name="title"', pagina)
+        self.assertNotIn('name="power"', pagina)
+
+        resposta = self.client.post("/admin/website/position/add/", {"title": "Analista de Dados", "power": "0"})
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(Position.objects.get(title="Analista de Dados").power, 4)
+
+    def test_editor_cannot_change_an_existing_position_and_administrator_chooses_priority(self):
+        from website.models import Position
+
+        cargo = Position.objects.create(title="Presidente", power=0)
+        self.client.force_login(self.editor)
+
+        self.assertEqual(self.client.post(f"/admin/website/position/{cargo.pk}/change/", {"title": "X"}).status_code, 403)
+
+        self.client.force_login(self.admin)
+        self.assertIn('name="power"', self.client.get("/admin/website/position/add/").content.decode())
+
+    def test_migration_gives_the_existing_editors_group_the_new_permission(self):
+        import importlib
+
+        from django.apps import apps
+        from django.contrib.auth.models import Group, Permission
+
+        grupo = Group.objects.get(name="Editores")
+        permissao = Permission.objects.get(codename="add_position", content_type__app_label="website")
+        grupo.permissions.remove(permissao)
+
+        importlib.import_module("website.migrations.0028_cargo_novo_e_semestre_do_case") \
+            .permitir_criar_cargo_aos_editores(apps, None)
+
+        self.assertIn(permissao, grupo.permissions.all())
+
+    # --- 3: validações
+
+    def test_case_semester_must_follow_the_pattern(self):
+        from django.core.exceptions import ValidationError
+
+        programa = Program.objects.create(label="G", slug="g", description="d")
+        for invalido in ("2026", "2026.3", "26.1", "primeiro"):
+            caso = ProgramCase(program=programa, semester=invalido, area="a", theme="t")
+            with self.assertRaises(ValidationError, msg=invalido):
+                caso.full_clean()
+        ProgramCase(program=programa, semester="2026.1", area="a", theme="t").full_clean()
+
+    def test_project_cannot_end_before_it_starts(self):
+        from django.core.exceptions import ValidationError
+
+        with self.assertRaises(ValidationError) as erro:
+            Project(title="P", description="d", start_date=date(2026, 5, 1), end_date=date(2026, 4, 30)).full_clean()
+
+        self.assertIn("end_date", erro.exception.message_dict)
+        Project(title="P", description="d", start_date=date(2026, 5, 1), end_date=date(2026, 5, 1)).full_clean()
+
+    # --- 4: atividade recente
+
+    def test_administrator_sees_who_changed_what_and_editor_does_not(self):
+        self.client.force_login(self.editor)
+        self.client.post("/admin/website/position/add/", {"title": "Analista de Dados"})
+
+        self.assertEqual(self.client.get("/admin/admin/logentry/").status_code, 403)
+
+        self.client.force_login(self.admin)
+        pagina = self.client.get("/admin/admin/logentry/").content.decode()
+
+        self.assertIn("Atividade recente", pagina)
+        self.assertIn("Analista de Dados", pagina)
+        self.assertIn("editora", pagina)
+
+    def test_activity_page_is_read_only(self):
+        self.client.force_login(self.admin)
+
+        self.assertEqual(self.client.get("/admin/admin/logentry/add/").status_code, 403)
+
+    # --- 5: participantes do case
+
+    def test_case_participants_keep_their_saved_order_and_can_be_dragged(self):
+        from website import admin as site_admin
+        from website.models import ProgramCaseParticipant
+
+        programa = Program.objects.create(label="G", slug="g", description="d")
+        caso = ProgramCase.objects.create(program=programa, semester="2026.1", area="a", theme="t")
+        for nome, papel, ordem in (("Zélia", "integrante", 1), ("Ana", "integrante", 2), ("Luiz", "mentor", 1)):
+            ProgramCaseParticipant.objects.create(
+                case=caso, member=Member.objects.create(name=nome), role=papel, order=ordem,
+            )
+
+        api = APIClient().get("/api/program-cases/").data
+
+        # A ordem cadastrada é respeitada (Zélia antes de Ana), com os mentores depois dos integrantes.
+        self.assertEqual([p["name"] for p in api[0]["participants"]], ["Zélia", "Ana", "Luiz"])
+        self.assertEqual(site_admin.ProgramCaseParticipantInline.ordering_field, "order")
+        self.assertTrue(site_admin.ProgramCaseParticipantInline.hide_ordering_field)

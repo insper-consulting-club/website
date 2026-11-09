@@ -38,6 +38,7 @@ GRUPOS = [
     ("Acesso", [
         ("auth", "user", "Usuários", "person"),
         ("auth", "group", "Grupos", "admin_panel_settings"),
+        ("admin", "logentry", "Atividade recente", "history"),
     ]),
 ]
 

@@ -29,8 +29,9 @@ PERMISSOES = {
     "project": EDICAO,
     "article": EDICAO,
     "selectionprocess": EDICAO,
-    # Cargos definem quem aparece como liderança na Home: só consulta.
-    "position": LEITURA,
+    # Cargos: o editor cria um cargo novo (sempre como membro comum, a prioridade fica com os
+    # administradores) mas não altera os existentes, porque a prioridade decide a liderança da Home.
+    "position": ("add", "view"),
     # Registro único e textos fixos: só alteram, não criam nem apagam. As abas Marca e
     # compartilhamento e Política de Privacidade da configuração, o menu e os benefícios
     # para parceiros são só dos administradores (ver SiteConfigAdmin).
