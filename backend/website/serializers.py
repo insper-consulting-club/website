@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from . import citacao
 from .site_texts import PADRAO as PADRAO_TEXTOS
 from .models import (
     Member, Partner, Statistic, Project, ProjectImage,
@@ -284,13 +285,25 @@ class ArticleSerializer(serializers.ModelSerializer):
     # Imagens chamadas no texto como ![](imagem-1); o site troca pelo endereço.
     images = ArticleImageSerializer(many=True, read_only=True)
     authors = serializers.SerializerMethodField()
+    # As referências para citar o artigo. Trazem o marcador DATA_DE_ACESSO, que o site troca pela data de hoje.
+    bibtex = serializers.SerializerMethodField()
+    biblatex = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ["id", "slug", "title", "authors", "topics", "description", "content", "images", "image_url", "date", "order"]
+        fields = [
+            "id", "slug", "title", "authors", "topics", "description", "content", "images", "image_url", "date", "order",
+            "bibtex", "biblatex",
+        ]
 
     def get_authors(self, obj):
         return autores_do_artigo(obj)
+
+    def get_bibtex(self, obj):
+        return citacao.bibtex(obj)
+
+    def get_biblatex(self, obj):
+        return citacao.biblatex(obj)
 
     def get_image_url(self, obj):
         request = self.context.get("request")

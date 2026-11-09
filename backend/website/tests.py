@@ -3404,3 +3404,158 @@ class ArticleAuthorsMigrationTests(TransactionTestCase):
         self.assertEqual(Article.objects.get(pk=institucional.pk).authors, "Insper Consulting Club")
         self.assertEqual(Article.objects.get(title="T").link, "")
 
+
+class CitationTests(TestCase):
+    """As referências em BibTeX e em BibLaTeX."""
+
+    def artigo(self, titulo="Precificação dinâmica no varejo", autores=("Maria da Silva",), **dados):
+        dados.setdefault("date", date(2026, 3, 12))
+        dados.setdefault("slug", "precificacao")
+        artigo = Article.objects.create(title=titulo, description="d", published=True, **dados)
+        for ordem, nome in enumerate(autores):
+            ArticleAuthor.objects.create(article=artigo, name=nome, order=ordem)
+        return Article.objects.prefetch_related("article_authors").get(pk=artigo.pk)
+
+    # --- o sobrenome (só serve para a chave)
+
+    def test_surname_follows_the_bibtex_rules(self):
+        from website.citacao import sobrenome_bibtex
+
+        casos = {
+            "Maria da Silva": "Silva",
+            "Maria da Silva Lima": "Silva Lima",
+            "Robert {Lucas Jr}": "Lucas Jr",
+            "{Maria Clara} {Souza Lima}": "Souza Lima",
+            "Lucas, Jr., Robert": "Lucas",
+            "Silva Lima, Maria": "Silva Lima",
+            "da Silva, Maria": "Silva",
+            "Ana Paula Souza Lima": "Lima",
+            "Ana de la Fuente": "Fuente",
+            "Madonna": "Madonna",
+        }
+        for nome, esperado in casos.items():
+            self.assertEqual(sobrenome_bibtex(nome), esperado, nome)
+
+    # --- a chave
+
+    def test_key_is_the_first_authors_surname_the_year_and_the_first_meaningful_title_word(self):
+        from website.citacao import chave_da_citacao
+
+        self.assertEqual(chave_da_citacao(self.artigo()), "silva2026precificacao")
+        self.assertEqual(chave_da_citacao(self.artigo("Uma análise: o que é Estratégia?", ["Robert {Lucas Jr}"], slug="x")), "lucasjr2026analise")
+        self.assertEqual(chave_da_citacao(self.artigo("Ação e reação", ["José Ávila"], slug="y")), "avila2026acao")
+        self.assertEqual(chave_da_citacao(self.artigo("100% de ganho com precificação", ["Ana Souza"], slug="n")), "souza2026ganho")  # número não serve
+
+    def test_institutional_article_and_article_without_a_date(self):
+        from website.citacao import chave_da_citacao
+
+        self.assertEqual(chave_da_citacao(self.artigo(institutional=True, autores=(), slug="i")), "icc2026precificacao")
+        self.assertEqual(chave_da_citacao(self.artigo(autores=["Ana Souza"], date=None, slug="sd")), "souzaprecificacao")
+
+    def test_key_has_only_ascii_letters_and_digits(self):
+        import re
+        from website.citacao import chave_da_citacao
+
+        chave = chave_da_citacao(self.artigo("¿Çürioso & _novo?", ["Zoë D’Ávila-Pérez"], slug="z"))
+
+        self.assertRegex(chave, r"^[a-z0-9]+$")
+
+    # --- escape
+
+    def test_title_special_characters_are_escaped_in_one_pass(self):
+        from website.citacao import escapa_latex
+
+        self.assertEqual(escapa_latex("R&D 100% a_b #1 $5"), r"R\&D 100\% a\_b \#1 \$5")
+        self.assertEqual(escapa_latex("{x} ~ ^"), r"\{x\} \textasciitilde{} \textasciicircum{}")
+        self.assertEqual(escapa_latex("a\\b"), r"a\textbackslash{}b")  # as chaves que o escape cria não são escapadas de novo
+
+    # --- as entradas
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_biblatex_entry(self):
+        from website.citacao import biblatex
+
+        artigo = self.artigo("Preço & valor", ["Maria da Silva", "Robert {Lucas Jr}"])
+
+        self.assertEqual(biblatex(artigo), (
+            "@online{silva2026preco,\n"
+            "  author       = {Maria da Silva and Robert {Lucas Jr}},\n"
+            "  title        = {Preço \\& valor},\n"
+            "  organization = {Insper Consulting Club},\n"
+            "  date         = {2026-03-12},\n"
+            "  url          = {https://icc.example.com/artigos/precificacao},\n"
+            "  urldate      = {__DATA_DE_ACESSO__},\n"
+            "  langid       = {brazilian},\n"
+            "}"
+        ))
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_bibtex_entry(self):
+        from website.citacao import bibtex
+
+        artigo = self.artigo("PMEs e tecnologia", ["Maria da Silva"])
+
+        self.assertEqual(bibtex(artigo), (
+            "@misc{silva2026pmes,\n"
+            "  author       = {Maria da Silva},\n"
+            "  title        = {{PMEs e tecnologia}},\n"
+            "  organization = {Insper Consulting Club},\n"
+            "  year         = {2026},\n"
+            "  month        = mar,\n"
+            "  howpublished = {\\url{https://icc.example.com/artigos/precificacao}},\n"
+            "  note         = {Acesso em: __DATA_DE_ACESSO__},\n"
+            "}"
+        ))
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_institutional_author_uses_double_braces_so_it_is_not_split_into_a_surname(self):
+        from website.citacao import biblatex, bibtex
+
+        artigo = self.artigo(institutional=True, autores=(), slug="i")
+
+        for texto in (biblatex(artigo), bibtex(artigo)):
+            self.assertIn("author       = {{Insper Consulting Club}},", texto)
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_an_article_without_authors_or_date_still_produces_a_valid_entry(self):
+        from website.citacao import biblatex, bibtex
+
+        artigo = self.artigo(autores=(), date=None, slug="r")
+
+        self.assertIn("{{Insper Consulting Club}}", biblatex(artigo))
+        self.assertNotRegex(biblatex(artigo), r"\n  date ")
+        self.assertNotRegex(bibtex(artigo), r"\n  year ")
+        self.assertNotRegex(bibtex(artigo), r"\n  month ")
+
+    @override_settings(FRONTEND_URL="")
+    def test_without_the_site_address_the_url_and_access_date_are_left_out(self):
+        from website.citacao import biblatex, bibtex
+
+        artigo = self.artigo()
+
+        for texto in (biblatex(artigo), bibtex(artigo)):
+            self.assertNotIn("url", texto.replace("urldate", "url"))
+            self.assertNotIn("DATA_DE_ACESSO", texto)
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_a_slugless_article_is_cited_by_its_id(self):
+        from website.citacao import biblatex
+
+        artigo = self.artigo(slug=None)
+
+        self.assertIn(f"https://icc.example.com/artigos/{artigo.pk}", biblatex(artigo))
+
+    # --- API
+
+    @override_settings(FRONTEND_URL="https://icc.example.com")
+    def test_the_detail_has_both_references_and_the_list_does_not(self):
+        artigo = self.artigo()
+
+        detalhe = APIClient().get(f"/api/articles/{artigo.slug}/").data
+        lista = APIClient().get("/api/articles/").data[0]
+
+        self.assertTrue(detalhe["biblatex"].startswith("@online{silva2026precificacao,"))
+        self.assertTrue(detalhe["bibtex"].startswith("@misc{silva2026precificacao,"))
+        self.assertNotIn("biblatex", lista)
+        self.assertNotIn("bibtex", lista)
+
