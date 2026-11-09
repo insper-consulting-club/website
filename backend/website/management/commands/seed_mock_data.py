@@ -11,7 +11,7 @@ from django.utils.text import slugify
 from PIL import Image, ImageDraw, ImageFont
 
 from website.models import (
-    Article, ArticleImage, Directorate, DirectorateMembership, Member, MemberTrajectory, NavItem,
+    Article, ArticleAuthor, ArticleImage, Directorate, DirectorateMembership, Member, MemberTrajectory, NavItem,
     Partner, PartnerCategory, Position, PreparationMaterial, PreparationMaterialItem, Program,
     ProgramCase, ProgramCaseParticipant, ProgramComponent, ProgramContentBlock, Project,
     ProjectContentBlock, ProjectImage, ProjectTimelineEvent, SelectionProcess,
@@ -310,17 +310,21 @@ class Command(BaseCommand):
                 title=item["titulo"],
                 defaults={
                     "slug": item["slug"] or None,
-                    "authors": item["autores"],
+                    "institutional": item.get("institucional", False),
                     "topics": item["temas"],
                     "description": item["resumo"],
                     "content": item["conteudo"],
-                    "link": item["link"],
-                    "source": item["fonte"],
                     "date": item["data"],
                     "order": item["ordem"],
                     "published": item["publicado"],
                 },
             )
+            # Os autores: o nome que bate com um membro fica vinculado a ele, como no admin.
+            artigo.article_authors.all().delete()
+            for ordem, nome in enumerate(item["autores"]):
+                autor = ArticleAuthor(article=artigo, name=nome, order=ordem)
+                autor.clean()
+                autor.save()
             if item["capa"]:
                 self._anexar(artigo, "image", item["titulo"], (1200, 630))
             else:

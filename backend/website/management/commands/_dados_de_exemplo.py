@@ -408,54 +408,55 @@ TEXTO_LONGO_DO_ARTIGO = (
 # publicado False é rascunho. data None deixa o artigo sem data.
 ARTIGOS = [
     {"titulo": "Precificação dinâmica no varejo brasileiro: um estudo de caso", "slug": "precificacao-dinamica-no-varejo",
-     "autores": "Helena Prado, Camila Duarte", "temas": "Varejo, Precificação", "data": date(2026, 3, 12), "ordem": 1,
+     "autores": ["Helena Prado", "Camila Duarte", "Robert {Lucas Jr}"], "temas": "Varejo, Precificação", "data": date(2026, 3, 12), "ordem": 1,
      "resumo": "Análise de estratégias de precificação em redes varejistas e do impacto delas na margem.",
-     "conteudo": TEXTO_LONGO_DO_ARTIGO, "link": "https://example.com/artigos/precificacao", "fonte": "Revista Exemplo de Administração",
+     "conteudo": TEXTO_LONGO_DO_ARTIGO,
      "capa": True, "imagens": ["Margem por formato de loja", "Ruptura de estoque antes e depois da automação"], "publicado": True},
     {"titulo": "Transformação digital em PMEs: barreiras e alavancas", "slug": "",
-     "autores": "Thiago Marques", "temas": "Tecnologia, PMEs", "data": date(2026, 4, 8), "ordem": 2,
+     "autores": ["Thiago Marques", "Maria da Silva"], "temas": "Tecnologia, PMEs", "data": date(2026, 4, 8), "ordem": 2,
      "resumo": "Levantamento com pequenas e médias empresas sobre a adoção de tecnologia. Artigo sem slug, aberto pelo número.",
      "conteudo": "O que trava a adoção de tecnologia em pequenas e médias empresas.\n\nAs alavancas que funcionaram nos casos analisados.",
-     "link": "", "fonte": "", "capa": False, "imagens": [], "publicado": True},
+     "capa": False, "imagens": [], "publicado": True},
     {"titulo": "Como escolher a ferramenta certa para priorizar projetos", "slug": "priorizacao-de-projetos",
-     "autores": "Lucas Tavares, Beatriz Salgado, Rafael Moura", "temas": "Estratégia", "data": date(2026, 5, 20), "ordem": 3,
+     "autores": ["Lucas Tavares", "Beatriz Salgado", "Rafael Moura"], "temas": "Estratégia", "data": date(2026, 5, 20), "ordem": 3,
      "resumo": "Comparação de matrizes de priorização usadas em projetos de estratégia.",
      "conteudo": "## Matrizes mais usadas\n\nImpacto por esforço, atratividade por capacidade e custo do atraso.\n\n"
                  "| Matriz | Quando usar |\n|---|---|\n| Impacto x esforço | Primeira triagem |\n| Custo do atraso | Projetos com prazo |\n\n"
                  "![](imagem-1)\n\n## Quando usar cada uma\n\nCada matriz responde a uma pergunta diferente.",
-     "link": "", "fonte": "", "capa": True, "imagens": ["Matriz de impacto por esforço"], "publicado": True},
+     "capa": True, "imagens": ["Matriz de impacto por esforço"], "publicado": True},
     {
-        # Só o resumo e um link externo: sem texto completo.
+        # Artigo institucional: o autor é o ICC, sem autores individuais.
         "titulo": "Entrevista com uma mentora do ICC", "slug": "entrevista-com-uma-mentora",
-        "autores": "Isabela Fontes", "temas": "Carreira", "data": date(2026, 6, 2), "ordem": 4,
-        "resumo": "Resumo curto de um artigo publicado fora do site, sem texto completo.",
-        "conteudo": "", "link": "https://example.com/entrevista", "fonte": "Newsletter Exemplo",
-        "capa": False, "imagens": [], "publicado": True,
+        "autores": [], "institucional": True, "temas": "Carreira", "data": date(2026, 6, 2), "ordem": 4,
+        "resumo": "Artigo institucional, assinado pelo Insper Consulting Club.",
+        "conteudo": "Uma conversa com uma mentora do ICC sobre carreira em consultoria.",
+     "capa": False, "imagens": [], "publicado": True,
     },
     {
         # Título muito longo, para testar a quebra no card, na página e na citação.
         "titulo": "Um título propositalmente muito longo para verificar como o card, a página do artigo e a citação lidam com "
                   "textos extensos que ocupam várias linhas em telas pequenas",
-        "slug": "titulo-muito-longo", "autores": "Pedro Henrique Cavalcanti Albuquerque de Vasconcelos Neto",
+        "slug": "titulo-muito-longo", "autores": ["Pedro Henrique Cavalcanti Albuquerque de Vasconcelos Neto"],
         "temas": "Teste de layout, Textos longos, Quebra de linha", "data": date(2026, 6, 15), "ordem": 5,
         "resumo": "Artigo de teste para o layout.",
         "conteudo": "Texto curto de um artigo cujo único objetivo é ter um título muito longo.",
-        "link": "", "fonte": "", "capa": True, "imagens": [], "publicado": True,
+     "capa": True, "imagens": [], "publicado": True,
     },
     {
         # Mais antigo, com tabela e sem imagens.
         "titulo": "Estimativas de mercado em cinco passos", "slug": "estimativas-de-mercado",
-        "autores": "Rafael Moura", "temas": "Case interview", "data": date(2025, 11, 3), "ordem": 6,
+        "autores": ["Rafael Moura"], "temas": "Case interview", "data": date(2025, 11, 3), "ordem": 6,
         "resumo": "Roteiro para estimar o tamanho de um mercado sem dados prontos.",
         "conteudo": "## Passo a passo\n\n1. Defina o mercado\n2. Segmente\n3. Estime cada segmento\n4. Some\n5. Teste a ordem de grandeza",
-        "link": "", "fonte": "", "capa": False, "imagens": [], "publicado": True,
+     "capa": False, "imagens": [], "publicado": True,
     },
     {
         # Rascunho sem data: aparece no admin, não no site nem na API.
         "titulo": "Rascunho ainda não publicado", "slug": "rascunho-nao-publicado",
-        "autores": "Mateus Ribeiro", "temas": "Rascunho", "data": None, "ordem": 7,
+        "autores": ["Mateus Ribeiro"], "temas": "Rascunho", "data": None, "ordem": 7,
         "resumo": "Está com \"Publicado\" desmarcado: aparece no admin, mas não no site.",
-        "conteudo": "Texto em construção.", "link": "", "fonte": "", "capa": False, "imagens": [], "publicado": False,
+        "conteudo": "Texto em construção.",
+     "capa": False, "imagens": [], "publicado": False,
     },
 ]
 

@@ -14,7 +14,7 @@ from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from website.models import (
-    Article, ArticleImage, Member, Partner, PartnerCategory, Program, ProgramCase,
+    Article, ArticleAuthor, ArticleImage, Member, Partner, PartnerCategory, Program, ProgramCase,
     Directorate, NavItem, PaginaDoSite, ProgramComponent, ProgramContentBlock, Project, SecaoDaHome, SelectionProcess,
     SiteConfig, SiteText,
 )
@@ -35,7 +35,6 @@ class ArticleDetailSlugTests(TestCase):
         self.article = Article.objects.create(
             title="Artigo de teste",
             description="Resumo de teste",
-            link="",
             published=True,
             slug="artigo-de-teste",
         )
@@ -1170,8 +1169,8 @@ class AdminBulkActionsTests(TestCase):
         return self.client.post(f"/admin/website/{modelo}/", {"action": nome, "_selected_action": ids}, follow=True)
 
     def test_publish_and_unpublish_articles_in_bulk(self):
-        a = Article.objects.create(title="A", description="d", published=False, date=date(2026, 1, 1))
-        b = Article.objects.create(title="B", description="d", published=False)
+        a = Article.objects.create(title="A", description="d", published=False, date=date(2026, 1, 1), institutional=True)
+        b = Article.objects.create(title="B", description="d", published=False, institutional=True)
 
         resposta = self.acao("article", "publicar", [a.pk, b.pk])
 
@@ -1516,7 +1515,7 @@ class SeedDataTests(TestCase):
 
         self.assertFalse(Article.objects.get(title="Rascunho ainda não publicado").published)
         self.assertIsNone(Article.objects.get(title="Transformação digital em PMEs: barreiras e alavancas").slug)
-        self.assertEqual(Article.objects.get(slug="entrevista-com-uma-mentora").content, "")
+        self.assertTrue(Article.objects.get(slug="entrevista-com-uma-mentora").institutional)
         self.assertGreater(max(len(a.title) for a in Article.objects.all()), 120)
 
         self.assertFalse(Project.objects.get(title="Projeto piloto descontinuado").is_active)
@@ -1569,7 +1568,7 @@ class SeedDataTests(TestCase):
                 self.assertIn("example.com", membro.linkedin, membro.name)
         enderecos = (
             [p.site for p in Partner.objects.all()] + [p.signup_url for p in Program.objects.all()]
-            + [a.link for a in Article.objects.all()] + [c.publication_url for c in ProgramCase.objects.all()]
+            + [c.publication_url for c in ProgramCase.objects.all()]
             + [s.registration_url for s in SelectionProcess.objects.all()]
         )
         for endereco in filter(None, enderecos):
@@ -1990,8 +1989,8 @@ class AdminAdvancedSectionTests(TestCase):
     def test_article_form_keeps_only_daily_fields_visible(self):
         self.posicoes(
             "/admin/website/article/add/",
-            visiveis=["title", "slug", "authors", "topics", "description", "content", "published", "date", "image"],
-            avancados=["order", "source", "link"],
+            visiveis=["title", "slug", "institutional", "topics", "description", "content", "published", "date", "image"],
+            avancados=["order"],
         )
 
     def test_partner_program_and_case_forms(self):
@@ -2004,10 +2003,10 @@ class AdminAdvancedSectionTests(TestCase):
 
         com_erro = self.client.post(
             "/admin/website/article/add/",
-            {"title": "T", "description": "d", "link": "isto-nao-e-um-link", "order": "0"},
+            {"title": "T", "description": "d", "order": "abc"},
         ).content.decode()
 
-        self.assertIn("URL válid", com_erro)
+        self.assertIn("número inteiro", com_erro)
         self.assertLess(com_erro.count("<details"), sem_erro.count("<details"))
 
 
@@ -2170,9 +2169,13 @@ class AdminQuickWinsTests(TestCase):
         configuracao.enable()
         self.addCleanup(configuracao.disable)
 
-        artigo = Article.objects.create(title="A", description="d", slug="a", published=True, date=date(2026, 1, 1))
+        artigo = Article.objects.create(
+            title="A", description="d", slug="a", published=True, date=date(2026, 1, 1), institutional=True,
+        )
         dados = {k: v for k, v in model_to_dict(artigo).items() if v is not None and k != "image"}
         dados.update({
+            "article_authors-TOTAL_FORMS": "0", "article_authors-INITIAL_FORMS": "0",
+            "article_authors-MIN_NUM_FORMS": "0", "article_authors-MAX_NUM_FORMS": "1000",
             "images-TOTAL_FORMS": "3", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
             "images-0-number": "", "images-0-image": png_pequeno("a.png"), "images-0-caption": "primeira",
             "images-1-number": "", "images-1-image": png_pequeno("b.png"), "images-1-caption": "segunda",
@@ -3070,4 +3073,334 @@ class HomeSectionsAdminTests(TestCase):
         html = self.client.get(f"/admin/website/paginadosite/{home.pk}/change/").content.decode()
 
         self.assertIn("Original: <em>vazio</em>", html)
+
+
+class ArticleAuthorModelTests(TestCase):
+    """O autor é um nome, vinculado a um membro quando o nome é o dele."""
+
+    def setUp(self):
+        self.artigo = Article.objects.create(title="A", description="d")
+        self.ana = Member.objects.create(name="Ana Silva")
+        self.robert = Member.objects.create(name="Robert Lucas Jr", citation_name="Robert {Lucas Jr}")
+
+    def autor(self, **dados):
+        autor = ArticleAuthor(article=self.artigo, **dados)
+        autor.clean()
+        return autor
+
+    def test_a_member_name_links_ignoring_accents_and_case(self):
+        autor = self.autor(name="  ana SILVA ")
+
+        self.assertEqual(autor.member, self.ana)
+        self.assertEqual(autor.name, "Ana Silva")  # com vínculo, vale o nome do cadastro
+
+    def test_the_citation_name_of_the_member_is_used_when_the_name_matches(self):
+        for escrito in ("Robert Lucas Jr", "robert lucas jr", "Robert {Lucas Jr}"):
+            autor = self.autor(name=escrito)
+            self.assertEqual(autor.member, self.robert, escrito)
+            self.assertEqual(autor.name, "Robert {Lucas Jr}", escrito)
+            self.assertEqual(autor.display_name, "Robert Lucas Jr", escrito)
+
+    def test_choosing_the_member_without_a_name_fills_the_name(self):
+        self.assertEqual(self.autor(member=self.ana).name, "Ana Silva")
+        self.assertEqual(self.autor(member=self.robert).name, "Robert {Lucas Jr}")
+
+    def test_an_outside_author_stays_without_a_member_and_keeps_the_braces(self):
+        autor = self.autor(name="Maria {da Silva}")
+
+        self.assertIsNone(autor.member)
+        self.assertEqual((autor.name, autor.display_name), ("Maria {da Silva}", "Maria da Silva"))
+
+    def test_a_different_name_for_a_chosen_member_is_kept(self):
+        autor = self.autor(member=self.ana, name="A. Silva")
+
+        self.assertEqual((autor.member, autor.name), (self.ana, "A. Silva"))
+
+    def test_a_blank_author_is_refused(self):
+        from django.core.exceptions import ValidationError
+
+        with self.assertRaises(ValidationError):
+            self.autor(name="  ")
+
+    def test_two_members_with_the_same_name_are_not_guessed(self):
+        from django.core.exceptions import ValidationError
+
+        Member.objects.create(name="ana silva")
+
+        with self.assertRaises(ValidationError) as erro:
+            self.autor(name="Ana Silva")
+        self.assertIn("mais de um membro", str(erro.exception))
+        self.assertEqual(self.autor(member=self.ana).member, self.ana)  # escolhendo, não há dúvida
+
+    def test_unbalanced_braces_are_refused(self):
+        from django.core.exceptions import ValidationError
+
+        for nome in ("Robert {Lucas Jr", "Robert Lucas} Jr", "}{"):
+            with self.assertRaises(ValidationError, msg=nome):
+                self.autor(name=nome)
+
+    def test_deleting_the_member_keeps_the_author_as_a_plain_name(self):
+        autor = self.autor(name="Ana Silva")
+        autor.save()
+
+        self.ana.delete()
+        autor.refresh_from_db()
+
+        self.assertIsNone(autor.member)
+        self.assertEqual(autor.name, "Ana Silva")
+
+
+class ArticleAuthorsApiTests(TestCase):
+    def setUp(self):
+        self.ana = Member.objects.create(name="Ana Silva")
+        self.antigo = Member.objects.create(name="Beto Souza", is_active=False)
+        self.artigo = Article.objects.create(title="A", description="d", slug="a", published=True)
+        for ordem, (nome, membro) in enumerate([("Beto Souza", self.antigo), ("Convidado {de Fora}", None), ("Ana Silva", self.ana)]):
+            ArticleAuthor.objects.create(article=self.artigo, name=nome, member=membro, order=ordem)
+
+    def test_list_and_detail_return_the_authors_in_order_with_member_and_profile(self):
+        esperado = [
+            {"name": "Beto Souza", "member_id": self.antigo.pk, "has_profile": False},  # arquivado: sem perfil
+            {"name": "Convidado de Fora", "member_id": None, "has_profile": False},  # sem as chaves
+            {"name": "Ana Silva", "member_id": self.ana.pk, "has_profile": True},
+        ]
+
+        self.assertEqual(APIClient().get("/api/articles/").data[0]["authors"], esperado)
+        self.assertEqual(APIClient().get("/api/articles/a/").data["authors"], esperado)
+
+    def test_an_institutional_article_has_a_single_author_the_club(self):
+        Article.objects.filter(pk=self.artigo.pk).update(institutional=True)
+
+        autores = APIClient().get("/api/articles/a/").data["authors"]
+
+        self.assertEqual(autores, [{"name": "Insper Consulting Club", "member_id": None, "has_profile": False}])
+
+    def test_the_old_fields_are_gone(self):
+        dados = APIClient().get("/api/articles/a/").data
+
+        self.assertNotIn("link", dados)
+        self.assertNotIn("source", dados)
+
+    def test_the_list_does_not_make_one_query_per_author(self):
+        for i in range(5):
+            artigo = Article.objects.create(title=f"B{i}", description="d", published=True)
+            ArticleAuthor.objects.create(article=artigo, name="Ana Silva", member=self.ana)
+
+        with self.assertNumQueries(3):  # artigos, autores e seus membros
+            APIClient().get("/api/articles/")
+
+
+@SEM_MANIFESTO
+class ArticleAuthorsAdminTests(TestCase):
+    def setUp(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste"))
+        self.ana = Member.objects.create(name="Ana Silva")
+        self.artigo = Article.objects.create(title="A", description="d", slug="a")
+        self.url = f"/admin/website/article/{self.artigo.pk}/change/"
+
+    def dados(self, autores=(), **extra):
+        dados = {
+            "title": "A", "slug": "a", "description": "d", "order": "0",
+            "article_authors-TOTAL_FORMS": str(len(autores)), "article_authors-INITIAL_FORMS": "0",
+            "article_authors-MIN_NUM_FORMS": "0", "article_authors-MAX_NUM_FORMS": "1000",
+            "images-TOTAL_FORMS": "0", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
+        }
+        for i, (nome, ordem) in enumerate(autores):
+            dados.update({f"article_authors-{i}-name": nome, f"article_authors-{i}-member": "", f"article_authors-{i}-order": str(ordem)})
+        dados.update(extra)
+        return dados
+
+    def test_the_form_has_the_authors_list_with_member_suggestions_and_no_old_fields(self):
+        html = self.client.get(self.url).content.decode()
+
+        self.assertIn('name="article_authors-0-name"', html)
+        self.assertIn('<datalist id="sugestoes-id_article_authors-0-name">', html)
+        self.assertIn('<option value="Ana Silva">', html)
+        self.assertIn('name="institutional"', html)
+        for campo in ('name="authors"', 'name="link"', 'name="source"'):
+            self.assertNotIn(campo, html)
+
+    def test_saving_links_the_member_by_name_and_keeps_the_outside_author(self):
+        resposta = self.client.post(self.url, self.dados([("ana silva", 0), ("Convidado {de Fora}", 1)], published="on"))
+
+        self.assertEqual(resposta.status_code, 302)
+        autores = list(self.artigo.article_authors.order_by("order"))
+        self.assertEqual([(a.name, a.member) for a in autores], [("Ana Silva", self.ana), ("Convidado {de Fora}", None)])
+        self.assertTrue(Article.objects.get(pk=self.artigo.pk).published)
+
+    def test_a_published_article_needs_an_author_or_to_be_institutional(self):
+        recusado = self.client.post(self.url, self.dados(published="on"))
+        self.assertEqual(recusado.status_code, 200)
+        self.assertIn("precisa de ao menos um autor", recusado.content.decode())
+        self.assertFalse(Article.objects.get(pk=self.artigo.pk).published)
+
+        institucional = self.client.post(self.url, self.dados(published="on", institutional="on"))
+        self.assertEqual(institucional.status_code, 302)
+
+    def test_a_new_author_row_goes_to_the_end_when_it_was_not_dragged(self):
+        ArticleAuthor.objects.create(article=self.artigo, name="Primeiro", order=0)
+        ArticleAuthor.objects.create(article=self.artigo, name="Segundo", order=1)
+        existentes = list(self.artigo.article_authors.all())
+        dados = self.dados([("Primeiro", 0), ("Segundo", 1), ("Novo", 0)])
+        dados["article_authors-INITIAL_FORMS"] = "2"
+        for i, autor in enumerate(existentes):
+            dados[f"article_authors-{i}-id"] = str(autor.pk)
+            dados[f"article_authors-{i}-article"] = str(self.artigo.pk)
+
+        self.assertEqual(self.client.post(self.url, dados).status_code, 302)
+
+        self.assertEqual(list(self.artigo.article_authors.order_by("order").values_list("name", flat=True)), ["Primeiro", "Segundo", "Novo"])
+
+    def test_a_draft_can_be_saved_without_authors(self):
+        self.assertEqual(self.client.post(self.url, self.dados()).status_code, 302)
+
+    def test_an_institutional_article_cannot_also_have_authors(self):
+        resposta = self.client.post(self.url, self.dados([("Ana Silva", 0)], institutional="on"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("não tem autores individuais", resposta.content.decode())
+
+    def test_a_name_with_open_braces_is_refused_in_the_form(self):
+        resposta = self.client.post(self.url, self.dados([("Robert {Lucas Jr", 0)]))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn("precisam abrir e fechar", resposta.content.decode())
+
+    def test_publishing_from_the_list_also_needs_an_author(self):
+        dados = {
+            "form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1", "form-MIN_NUM_FORMS": "0", "form-MAX_NUM_FORMS": "1000",
+            "form-0-id": str(self.artigo.pk), "form-0-published": "on", "form-0-order": "0", "_save": "Salvar",
+        }
+
+        self.client.post("/admin/website/article/", dados)
+        self.assertFalse(Article.objects.get(pk=self.artigo.pk).published)
+
+        ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva", member=self.ana)
+        self.client.post("/admin/website/article/", dados)
+        self.assertTrue(Article.objects.get(pk=self.artigo.pk).published)
+
+    def test_the_publish_action_skips_articles_without_author(self):
+        com = Article.objects.create(title="Com", description="d", institutional=True)
+        resposta = self.client.post(
+            "/admin/website/article/", {"action": "publicar", "_selected_action": [self.artigo.pk, com.pk]}, follow=True,
+        )
+
+        self.assertContains(resposta, "1 artigo(s) publicado(s)")
+        self.assertContains(resposta, "não foram publicados por não terem autor")
+        self.assertFalse(Article.objects.get(pk=self.artigo.pk).published)
+        self.assertTrue(Article.objects.get(pk=com.pk).published)
+
+    def test_the_list_shows_the_authors_and_the_search_finds_by_author(self):
+        ArticleAuthor.objects.create(article=self.artigo, name="Convidado {de Fora}", order=0)
+
+        resposta = self.client.get("/admin/website/article/?q=convidado")
+
+        self.assertContains(resposta, "Convidado de Fora")
+        self.assertEqual(len(resposta.context["cl"].result_list), 1)
+
+    def test_the_member_list_labels_only_homonyms_and_only_with_the_id(self):
+        from website.admin import rotulos_dos_membros
+
+        atual = Member.objects.create(name="Beto Souza")
+        arquivado = Member.objects.create(name="beto  souza", is_active=False)
+        outro = Member.objects.create(name="BETO SOUZA")
+        unico = Member.objects.create(name="Carla Dias")
+
+        rotulos = rotulos_dos_membros()
+
+        self.assertEqual(rotulos[self.ana.pk], "Ana Silva")
+        self.assertEqual(rotulos[unico.pk], "Carla Dias")
+        self.assertEqual(rotulos[atual.pk], f"Beto Souza (ID {atual.pk})")
+        self.assertEqual(rotulos[arquivado.pk], f"beto  souza (ID {arquivado.pk})")  # arquivado ou não, só o ID
+        self.assertEqual(rotulos[outro.pk], f"BETO SOUZA (ID {outro.pk})")
+        self.assertEqual(len(set(rotulos.values())), len(rotulos))  # nunca duas linhas iguais
+
+    def test_the_author_form_shows_those_labels_in_the_member_field_and_each_name_once_in_the_suggestions(self):
+        outra = Member.objects.create(name="Ana Silva", is_active=False)
+
+        html = self.client.get(self.url).content.decode()
+
+        self.assertIn(f"Ana Silva (ID {self.ana.pk})", html)
+        self.assertIn(f"Ana Silva (ID {outra.pk})", html)
+        sugestoes = html[html.index("<datalist"):html.index("</datalist>")]
+        self.assertEqual(sugestoes.count('<option value="Ana Silva">'), 1)  # o homônimo não repete a sugestão
+
+    def test_a_homonym_is_resolved_by_choosing_the_member_in_the_form(self):
+        outra = Member.objects.create(name="Ana Silva", is_active=False)
+        dados = self.dados([("Ana Silva", 0)])
+
+        recusado = self.client.post(self.url, dados)
+        self.assertEqual(recusado.status_code, 200)
+        self.assertIn("mais de um membro", recusado.content.decode())
+
+        dados["article_authors-0-member"] = str(outra.pk)
+        self.assertEqual(self.client.post(self.url, dados).status_code, 302)
+        self.assertEqual(self.artigo.article_authors.get().member, outra)
+
+    def test_the_member_list_shows_the_id_column(self):
+        html = self.client.get("/admin/website/member/").content.decode()
+
+        self.assertIn("column-id", html)
+        self.assertRegex(html, rf'field-id[^>]*>{self.ana.pk}</td>')
+
+    def test_the_member_form_has_the_citation_name_in_the_advanced_section(self):
+        html = self.client.get(f"/admin/website/member/{self.ana.pk}/change/").content.decode()
+
+        self.assertIn('name="citation_name"', html)
+        self.assertGreater(html.index('name="citation_name"'), html.index("Avançado"))
+
+
+class ArticleAuthorsMigrationTests(TransactionTestCase):
+    """Migration 0032: o texto dos autores vira uma linha por autor, e o caminho de volta funciona."""
+
+    ANTES = ("website", "0031_secoes_da_home")
+    DEPOIS = ("website", "0032_autores_dos_artigos")
+
+    def _estado(self, alvo):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        MigrationExecutor(connection).migrate([alvo])
+        return MigrationExecutor(connection).loader.project_state([alvo]).apps
+
+    def tearDown(self):
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_authors_text_becomes_rows_linked_to_members_when_the_name_matches(self):
+        antigo = self._estado(self.ANTES)
+        Member, Article = antigo.get_model("website", "Member"), antigo.get_model("website", "Article")
+        ana = Member.objects.create(name="Ana Silva")
+        joao = Member.objects.create(name="Joao Souza")
+        Member.objects.create(name="Dup Lo")
+        Member.objects.create(name="dup lo")
+        artigo = Article.objects.create(
+            title="T", description="d", authors="Ana Silva, João Souza ,Fulano de Tal, Dup Lo", link="https://x.com", source="Rev",
+        )
+
+        novo = self._estado(self.DEPOIS)
+        autores = list(novo.get_model("website", "ArticleAuthor").objects.filter(article_id=artigo.pk).order_by("order"))
+
+        self.assertEqual([a.name for a in autores], ["Ana Silva", "João Souza", "Fulano de Tal", "Dup Lo"])
+        self.assertEqual([a.member_id for a in autores], [ana.pk, joao.pk, None, None])  # o homônimo não é adivinhado
+        self.assertEqual([a.order for a in autores], [0, 1, 2, 3])
+        self.assertFalse(hasattr(novo.get_model("website", "Article"), "link"))
+
+    def test_undoing_rebuilds_the_authors_text_without_braces(self):
+        novo = self._estado(self.DEPOIS)
+        Article, ArticleAuthor = novo.get_model("website", "Article"), novo.get_model("website", "ArticleAuthor")
+        artigo = Article.objects.create(title="T", description="d")
+        ArticleAuthor.objects.create(article=artigo, name="Robert {Lucas Jr}", order=1)
+        ArticleAuthor.objects.create(article=artigo, name="Ana Silva", order=0)
+        institucional = Article.objects.create(title="I", description="d", institutional=True)
+
+        antigo = self._estado(self.ANTES)
+        Article = antigo.get_model("website", "Article")
+
+        self.assertEqual(Article.objects.get(title="T").authors, "Ana Silva, Robert Lucas Jr")
+        self.assertEqual(Article.objects.get(pk=institucional.pk).authors, "Insper Consulting Club")
+        self.assertEqual(Article.objects.get(title="T").link, "")
 

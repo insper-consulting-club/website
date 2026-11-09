@@ -13,17 +13,18 @@ import unicodedata
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget
 
 from .conteudo import PADRAO as PADRAO_DOS_TEXTOS, PAGINAS, POR_CHAVE, POR_SLUG
+from .autores import normaliza
 from .conteudo.base import Pagina
 from .widgets import MarkdownPreviewWidget
 from .models import (
-    PartnerCategory, ProgramComponent, SecaoDaHome,
+    PartnerCategory, ProgramComponent, SecaoDaHome, ArticleAuthor,
     Partner, Member, Article, ArticleImage, Position, Directorate,
     DirectorateMembership, Statistic,
     Project, ProjectImage, ProjectTimelineEvent, ProjectContentBlock,
@@ -343,7 +344,7 @@ class MemberForm(forms.ModelForm):
 class MemberAdmin(AdminDoSite):
     form = MemberForm
     inlines = [MemberTrajectoryInline, DirectorateMembershipInline]
-    list_display = ('foto', 'name', 'get_directorates', 'position', 'is_active')
+    list_display = ('foto', 'name', 'get_directorates', 'position', 'is_active', 'id')
     list_display_links = ('foto', 'name')
     list_editable = ('is_active',)
     list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position')
@@ -355,7 +356,10 @@ class MemberAdmin(AdminDoSite):
     ordering = ('-is_active', 'name')
     list_per_page = 50
     actions = ['arquivar', 'reativar']
-    fields = ('name', 'photo', 'position', 'linkedin', 'is_active')
+    fieldsets = (
+        (None, {'fields': ('name', 'photo', 'position', 'linkedin', 'is_active')}),
+        secao_avancada('citation_name'),
+    )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -557,29 +561,139 @@ class ArticleImageInline(TabularInline):
         )
 
 
+class CampoDeNomeComSugestoes(UnfoldAdminTextInputWidget):
+    """
+    Campo de texto que sugere os membros enquanto se digita, como o de destinatários de um e-mail, mas aceita qualquer
+    nome. A lista é a do navegador (datalist): nada de JavaScript. O vínculo com o membro é feito ao salvar.
+    """
+
+    def __init__(self, nomes=(), attrs=None):
+        super().__init__(attrs)
+        self.nomes = list(nomes)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        id_da_lista = f'sugestoes-{(attrs or {}).get("id") or name}'
+        campo = super().render(name, value, {**(attrs or {}), 'list': id_da_lista, 'autocomplete': 'off'}, renderer)
+        opcoes = format_html_join('', '<option value="{}">', ((n,) for n in self.nomes))
+        return format_html('{}<datalist id="{}">{}</datalist>', campo, id_da_lista, opcoes)
+
+
+class AutoresDoArtigoFormSet(BaseInlineFormSet):
+    """Um artigo publicado precisa de autor (ou ser institucional); um institucional não tem autores individuais."""
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        linhas = sum(1 for f in self.forms if f.cleaned_data and not f.cleaned_data.get('DELETE'))
+        # Os campos do artigo chegam no mesmo envio do formulário; marcado, o checkbox vem como "on".
+        institucional = self.data.get('institutional') in ('on', 'true', 'True', '1')
+        publicado = self.data.get('published') in ('on', 'true', 'True', '1')
+        self._ordena_os_novos()
+        if institucional and linhas:
+            raise forms.ValidationError(
+                'Um artigo institucional não tem autores individuais: remova as linhas ou desmarque "Artigo institucional".'
+            )
+        if publicado and not institucional and not linhas:
+            raise forms.ValidationError(
+                'Um artigo publicado precisa de ao menos um autor, ou ser marcado como institucional.'
+            )
+
+
+    def _ordena_os_novos(self):
+        """Uma linha nova que ainda não foi arrastada (ordem 0) entra no fim, depois dos autores que já estavam."""
+        vivos = [f for f in self.forms if f.cleaned_data and not f.cleaned_data.get('DELETE')]
+        proximo = max([f.instance.order for f in vivos if f.instance.pk] or [-1]) + 1
+        for form in vivos:
+            if not form.instance.pk and not form.cleaned_data.get('order'):
+                form.instance.order = form.cleaned_data['order'] = proximo
+                proximo += 1
+
+
+def rotulos_dos_membros():
+    """
+    O texto de cada membro na lista de escolha. Só o nome, a menos que haja homônimos (nomes iguais sem contar acento nem
+    maiúscula): aí entra o ID, que é o que garante que nunca haja duas linhas iguais. Cargo e situação não servem para
+    distinguir: há quem acumule cargos, e o cargo principal sozinho enganaria. Ex.: "Ana Silva (ID 12)".
+    """
+    membros = list(Member.objects.order_by('name'))
+    grupos = {}
+    for membro in membros:
+        grupos.setdefault(normaliza(membro.name), []).append(membro)
+    return {
+        membro.pk: membro.name if len(grupos[normaliza(membro.name)]) == 1 else f'{membro.name} (ID {membro.pk})'
+        for membro in membros
+    }
+
+
+class AutoresDoArtigoInline(AbaOrdenavelTabular):
+    model = ArticleAuthor
+    formset = AutoresDoArtigoFormSet
+    extra = 1
+    fields = ('name', 'member')
+    tab = False  # fica no formulário, e não numa aba: o autor é parte do que se preenche para publicar
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'name':
+            nomes = dict.fromkeys(Member.objects.order_by('name').values_list('name', flat=True))
+            kwargs['widget'] = CampoDeNomeComSugestoes(nomes)
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        campo = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == 'member':
+            rotulos = rotulos_dos_membros()
+            campo.queryset = Member.objects.order_by('name')
+            campo.label_from_instance = lambda membro: rotulos.get(membro.pk, membro.name)
+        return campo
+
+
+class FormDaListaDeArtigos(forms.ModelForm):
+    """Publicar pela lista (caixa "Publicado") também exige autor, como no formulário do artigo."""
+
+    def clean(self):
+        dados = super().clean()
+        artigo = self.instance
+        if dados.get('published') and artigo.pk and not artigo.institutional and not artigo.article_authors.exists():
+            self.add_error('published', 'Adicione os autores (ou marque "Artigo institucional") antes de publicar.')
+        return dados
+
+
 @admin.register(Article)
 class ArticleAdmin(AdminDoSite):
     linhas_dos_campos = {'description': 4}
     # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
     prepopulated_fields = {'slug': ('title',)}
     fieldsets = (
-        (None, {'fields': ('title', 'slug', 'authors', 'topics', 'description', 'content')}),
+        (None, {'fields': ('title', 'slug', 'institutional', 'topics', 'description', 'content')}),
         ('Publicação', {'fields': ('published', 'date', 'image')}),
-        secao_avancada('order', 'source', 'link'),
+        secao_avancada('order'),
     )
     actions = ['publicar', 'despublicar']
-    list_display = ('capa', 'title', 'slug', 'authors', 'published', 'date', 'order')
+    list_display = ('capa', 'title', 'slug', 'autores', 'published', 'date', 'order')
     list_display_links = ('capa', 'title')
-    search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
+    search_fields = ('title', 'slug', 'article_authors__name', 'topics', 'description', 'content')
     list_editable = ('published', 'order')
-    list_filter = ('published', 'source', 'date')
+    list_filter = ('published', 'date')
     date_hierarchy = 'date'
     ordering = ('-date', 'order')
-    inlines = [ArticleImageInline]
+    inlines = [AutoresDoArtigoInline, ArticleImageInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('article_authors')
+
+    def get_changelist_form(self, request, **kwargs):
+        return super().get_changelist_form(request, form=FormDaListaDeArtigos, **kwargs)
 
     @admin.display(description='Capa')
     def capa(self, obj):
         return miniatura(obj.image)
+
+    @admin.display(description='Autores')
+    def autores(self, obj):
+        if obj.institutional:
+            return f'{Article.NOME_INSTITUCIONAL} (institucional)'
+        return ', '.join(a.display_name for a in obj.article_authors.all())
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'content':
@@ -599,9 +713,18 @@ class ArticleAdmin(AdminDoSite):
 
     @admin.action(description='Publicar selecionados (aparecem no site)', permissions=['change'])
     def publicar(self, request, queryset):
-        n = queryset.filter(published=False).update(published=True)
+        sem_autor = queryset.filter(published=False, institutional=False, article_authors__isnull=True)
+        sem_autor_ids = list(sem_autor.values_list('pk', flat=True))
+        n = queryset.filter(published=False).exclude(pk__in=sem_autor_ids).update(published=True)
         sem_data = queryset.filter(date__isnull=True).count()
         self.message_user(request, f'{n} artigo(s) publicado(s).', messages.SUCCESS)
+        if sem_autor_ids:
+            self.message_user(
+                request,
+                f'{len(sem_autor_ids)} artigo(s) não foram publicados por não terem autor. Adicione os autores '
+                '(ou marque "Artigo institucional") em cada um.',
+                messages.WARNING,
+            )
         if sem_data:
             self.message_user(
                 request,

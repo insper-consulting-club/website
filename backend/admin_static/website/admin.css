@@ -50,8 +50,9 @@ fieldset.module {
   font-size: .75rem;
 }
 
-/* Participantes do case: o nome já está no campo logo abaixo, então o rótulo da linha só repetia. */
-#participants-group p[class~="group/title"] {
+/* Participantes do case e autores do artigo: o nome já está no campo logo abaixo, então o rótulo da linha só repetia. */
+#participants-group p[class~="group/title"],
+#article_authors-group p[class~="group/title"] {
   display: none;
 }
 
