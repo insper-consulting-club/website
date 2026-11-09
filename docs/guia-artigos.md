@@ -167,7 +167,7 @@ Links que começam com `http` abrem em outra aba.
 As imagens são cadastradas no mesmo formulário do artigo, sem precisar salvar antes.
 
 1. Desça até **Imagens do artigo**. Em cada linha, preencha:
-   - **Número:** 1, 2, 3, na ordem que você preferir. Cada número só pode ser usado uma vez no artigo;
+   - **Número:** deixe vazio e o admin numera sozinho (1, 2, 3, na ordem em que as imagens entram). Se preferir, digite o seu; cada número só pode ser usado uma vez no artigo;
    - **Imagem:** um arquivo JPG ou PNG (SVG é recusado), com nome de até 100 caracteres, de preferência com 1400 px ou mais de largura e até cerca de 2 MB. Textos e números dentro da imagem precisam ser legíveis no celular;
    - **Legenda:** o texto que aparece embaixo da imagem, com até 300 caracteres. Fonte e notas longas ficam melhor no texto do artigo.
 2. No **Texto do artigo**, no ponto onde a imagem deve aparecer, escreva em uma linha sozinha:
@@ -176,7 +176,7 @@ As imagens são cadastradas no mesmo formulário do artigo, sem precisar salvar 
    ![](imagem-1)
    ```
 
-   Troque o 1 pelo número da imagem.
+   Troque o 1 pelo número da imagem. Depois de salvar, cada linha mostra o trecho pronto na coluna **Para colar no texto**, com o botão **Copiar**.
 3. Salve. No site, a imagem ocupa a largura do texto, com a legenda embaixo.
 
 Para usar uma legenda diferente só naquele ponto, escreva-a entre os colchetes:

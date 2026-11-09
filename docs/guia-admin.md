@@ -29,7 +29,7 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 |---|---|
 | Pessoas da equipe | Membros, Cargos, Diretorias |
 | Empresas parceiras | Parceiros, Categorias dos parceiros |
-| Programas do ICC e o que os compõe | Programas, Componentes dos programas |
+| Programas do ICC e o que os compõe | Programas (os componentes ficam numa aba dentro do programa) |
 | Trabalhos feitos com parceiros | Projetos |
 | Cases dos programas | Cases dos programas |
 | Textos publicados pelos membros | Artigos |
@@ -84,13 +84,11 @@ O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo 
 **Membros > Adicionar membro**
 
 1. **Nome**, **Foto** (JPG ou PNG, de preferência quadrada), **Cargo principal** e **LinkedIn**.
-2. **No ICC:** **Projetos participados**, se quiser (eles formam a equipe de cada projeto). A caixa **Exibir na equipe** fica marcada; desmarque quando a pessoa deixa o clube (veja "Quando alguém sai do clube").
+2. **Exibir na equipe** fica marcada; desmarque quando a pessoa deixa o clube (veja "Quando alguém sai do clube"). Os projetos de que a pessoa participou são ligados pelo cadastro do **projeto**, no campo **Equipe**.
 3. Nas abas **Trajetória** e **Vínculos com diretorias**, no alto do formulário, ficam as listas da pessoa:
    - **Trajetória** (opcional): uma linha por semestre, com o **Semestre** no formato `AAAA.S` (por exemplo, `2026.1`) e o **Cargo nesse semestre**. O perfil público mostra as etapas em ordem de semestre, e o admin recusa um semestre fora do formato.
    - **Vínculos com diretorias:** uma linha por diretoria da pessoa, com o cargo nela. Arraste a linha para mudar a ordem dentro da diretoria.
 4. Salvar.
-
-Em **Projetos participados**, digite parte do nome do projeto para buscar e escolha; os escolhidos aparecem como etiquetas, e o "x" tira cada um.
 
 O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança.
 
@@ -149,7 +147,7 @@ Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá p
 
 ### Componentes dos programas
 
-Em **Componentes dos programas** ficam as partes de cada programa (por exemplo, as atividades que o compõem). Cada componente tem **Programa**, **Título** e **Descrição**, e aparece na seção "Como funciona" da página do programa.
+Na aba **Componentes dos programas**, dentro do próprio programa, ficam as partes dele (por exemplo, as atividades que o compõem). Cada componente tem **Título** e **Descrição**, e aparece na seção "Como funciona" da página do programa.
 
 ### Cases dos programas
 
@@ -185,7 +183,7 @@ A página **Projetos** do site mostra os programas, e a página de cada programa
 - **Página Projetos**, na seção **"Outros projetos"**, quando o projeto está sem programa. Use isso para visitas, capacitações e competições que pertencem a vários programas ou a nenhum.
 - **Página do parceiro**, em "Casos de sucesso", quando o projeto tem **Data de conclusão** e um parceiro.
 
-Os membros que participaram são ligados pelo cadastro de cada membro: abra o membro e, em **No ICC > Projetos participados**, passe o projeto para a caixa da direita.
+Os membros que participaram são escolhidos no campo **Equipe** do próprio projeto: digite parte do nome para buscar e escolha; os escolhidos aparecem como etiquetas, e o "x" tira cada um. A equipe aparece na página do projeto e no perfil de cada pessoa.
 
 Um projeto com **Data de conclusão** preenchida também conta nos números do parceiro.
 
@@ -257,7 +255,7 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de preparação
 - **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
 - **Home:** título do topo, frase de destaque, o bloco "Quem somos" (com a foto, que é opcional), a missão, "como preparamos", "onde queremos chegar" e a chamada final.
 - **Rodapé:** a frase de apresentação.
-- **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** recebe o slug de um programa existente (por exemplo, `jornada-do-consultor`) e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
+- **Páginas:** o texto que aparece logo abaixo do título de Equipe, Parceiros, Projetos, Artigos, Contato e Processo Seletivo, a mensagem de inscrições encerradas e o título de "Por que ser parceiro". O campo **"Programa dos cases em destaque"** é uma lista dos programas cadastrados e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção.
 - **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
 - **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
   - **Texto exibido**. A ordem é a das linhas (arraste para mudar).
