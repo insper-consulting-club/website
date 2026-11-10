@@ -278,6 +278,10 @@ textarea {
   background: var(--cinza-50);
 }
 
+.page-hero--estreito .container {
+  max-width: var(--container-narrow);
+}
+
 .page-hero__title {
   font-size: var(--fs-h1);
   max-width: 820px;

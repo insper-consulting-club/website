@@ -14,7 +14,7 @@ function formatDate(date: string) {
   // Brasília já é o dia anterior; construindo com ano/mês/dia separados, a
   // data é interpretada no fuso local, sem esse desvio de um dia.
   const [ano, mes, dia] = date.split("-").map(Number)
-  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
 }
 
 // Para achar homônimos: sem acento, sem maiúscula e sem espaços repetidos.

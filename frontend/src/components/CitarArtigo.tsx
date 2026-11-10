@@ -88,7 +88,7 @@ export default function CitarArtigo({ citacoes }: Props) {
 
   return (
     <>
-      <button type="button" className="btn btn--secondary" onClick={abre}>
+      <button type="button" className="btn btn--secondary btn--sm" onClick={abre}>
         {t("artigo.citar")}
       </button>
       <dialog

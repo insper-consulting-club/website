@@ -14,7 +14,7 @@ import "./index.css"
 function formatDate(date: string) {
   // Mesmo cuidado da lista: ano/mês/dia separados evitam o desvio de um dia do UTC.
   const [ano, mes, dia] = date.split("-").map(Number)
-  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
 }
 
 export default function Artigo() {
@@ -59,40 +59,45 @@ export default function Artigo() {
 
   return (
     <div className="artigo-page">
+      {/* Um bloco só: título, autores, data e ações, na mesma coluna do texto. */}
       <PageHero
+        estreito
         back={{ to: "/artigos", label: t("artigo.voltar") }}
-        eyebrow={artigo.date ? formatDate(artigo.date) : undefined}
         title={artigo.title}
         lead={<AutoresDoArtigo autores={artigo.authors} links />}
-      />
+      >
+        {artigo.date && <p className="artigo__data">{formatDate(artigo.date)}</p>}
+        <div className="artigo__acoes">
+          <a
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--secondary btn--sm"
+          >
+            <LinkedInIcon size={16} />
+            {t("artigo.compartilhar")}
+          </a>
+          <CitarArtigo citacoes={artigo.citations} />
+        </div>
+      </PageHero>
 
       <section className="section">
         <article className="container artigo">
-          {/* As ações ficam no começo: não faz sentido só aparecerem para quem leu o texto inteiro. */}
-          <div className="artigo__acoes">
-            <a
-              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn--secondary"
-            >
-              <LinkedInIcon size={16} />
-              {t("artigo.compartilhar")}
-            </a>
-            <CitarArtigo citacoes={artigo.citations} />
-          </div>
-          {temas.length > 0 && (
-            <ul className="artigo__temas">
-              {temas.map((tema) => (
-                <li key={tema}>{tema}</li>
-              ))}
-            </ul>
-          )}
           {artigo.image_url && <img src={artigo.image_url} alt="" className="artigo__capa" />}
-          {artigo.description && (
+          {(artigo.description || temas.length > 0) && (
             <div className="artigo__resumo">
-              <h2>{t("artigo.resumo")}</h2>
-              <p>{artigo.description}</p>
+              {artigo.description && (
+                <>
+                  <h2>{t("artigo.resumo")}</h2>
+                  <p>{artigo.description}</p>
+                </>
+              )}
+              {temas.length > 0 && (
+                <p className="artigo__palavras">
+                  {t("artigo.palavras_chave") && <strong>{t("artigo.palavras_chave")}: </strong>}
+                  {temas.join(" · ")}
+                </p>
+              )}
             </div>
           )}
           {/* O texto vem em Markdown (ver components/ArtigoMarkdown). */}

@@ -2471,7 +2471,7 @@ class ContentRegistryTests(TestCase):
 
         chaves = [t.chave for p in PAGINAS for t in p.textos]
         self.assertEqual(len(chaves), len(set(chaves)))
-        self.assertEqual(len(chaves), 148)
+        self.assertEqual(len(chaves), 149)
         self.assertEqual(len({p.slug for p in PAGINAS}), len(PAGINAS))
         for pagina in PAGINAS:
             self.assertTrue(pagina.textos, pagina.slug)

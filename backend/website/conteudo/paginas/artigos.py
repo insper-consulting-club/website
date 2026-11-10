@@ -17,6 +17,7 @@ PAGINA = Pagina(
         Texto("artigo.nao_encontrado_titulo", "Quando o artigo não existe", "Título", "Artigo não encontrado", raro=True),
         Texto("artigo.nao_encontrado_texto", "Quando o artigo não existe", "Texto", "Não foi possível carregar esse artigo.", raro=True),
         Texto("artigo.resumo", "Leitura de um artigo", "Título do resumo", "Resumo"),
+        Texto("artigo.palavras_chave", "Leitura de um artigo", "Título dos temas do artigo, dentro do resumo", "Palavras-chave"),
         Texto("artigo.compartilhar", "Leitura de um artigo", "Botão de compartilhar no LinkedIn", "Compartilhar"),
         Texto("artigo.citar", "Leitura de um artigo", "Botão que abre as formas de citar o artigo (ABNT, APA, BibTeX...)", "Citar"),
         Texto("artigo.citar_titulo", "Leitura de um artigo", "Título da janela de citação", "Citar este artigo"),

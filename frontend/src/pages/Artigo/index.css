@@ -7,24 +7,6 @@
   line-height: 1.75;
 }
 
-.artigo__temas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1.5rem;
-  list-style: none;
-  padding: 0;
-}
-
-.artigo__temas li {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--vermelho-suave);
-  color: var(--vermelho-escuro);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
 .artigo__capa {
   width: 100%;
   border-radius: var(--radius);
@@ -147,12 +129,33 @@
   line-height: 1.5;
 }
 
-/* Ações no começo do artigo: compartilhar e exportar a referência. */
+/* Cabeçalho do artigo: a data e as ações ficam dentro da faixa do título, na mesma coluna do texto. */
+.artigo__data {
+  margin-top: 4px;
+  font-size: var(--fs-small);
+  color: var(--cinza-500);
+}
+
 .artigo__acoes {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 1.5rem;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+/* O texto começa logo depois da faixa do título, sem o espaço de uma seção comum. */
+.artigo-page > .section {
+  padding-top: clamp(28px, 4vw, 44px);
+}
+
+.artigo__palavras {
+  margin-top: 0.875rem;
+  font-size: var(--fs-small);
+  color: var(--cinza-descricoes);
+}
+
+.artigo__palavras strong {
+  color: var(--preto);
 }
 
 /* Janela "Citar": uma aba por forma de citação, o texto e o botão de copiar. */
