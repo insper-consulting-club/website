@@ -528,3 +528,78 @@ fieldset.module {
   min-height: 0;
   margin-top: 0;
 }
+
+/* Página inicial do admin: um cartão de atalhos por assunto (ver website/admin/painel.html). */
+.painel__nivel {
+  margin: 0 0 1rem;
+  font-size: .9375rem;
+  opacity: .8;
+}
+
+.painel__grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.painel__cartao {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid rgba(127, 127, 127, .3);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.dark .painel__cartao {
+  background: #1f2937;
+}
+
+.painel__icone {
+  color: #b20000;
+  font-size: 1.75rem;
+}
+
+.dark .painel__icone {
+  color: #f87171;
+}
+
+.painel__titulo {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.painel__explicacao {
+  margin: 0 0 .5rem;
+  font-size: .875rem;
+  opacity: .75;
+}
+
+.painel__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem .75rem;
+  margin-top: auto;
+}
+
+.painel__links a {
+  font-size: .875rem;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.painel__links a.painel__principal {
+  padding: .25rem .75rem;
+  border-radius: 6px;
+  background: #b20000;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.painel__links a.painel__principal:hover {
+  background: #8f0000;
+}

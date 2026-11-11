@@ -9,6 +9,6 @@ PAGINA = Pagina(
         Texto("equipe.vazio", "Lista de membros", "Mensagem quando não há nenhum membro", "Nenhum membro cadastrado no momento.", raro=True),
         Texto("equipe.contagem_um", "Lista de membros", "Contagem de uma diretoria com 1 membro", "{n} membro", raro=True),
         Texto("equipe.contagem_varios", "Lista de membros", "Contagem de uma diretoria com mais de 1 membro", "{n} membros", raro=True),
-        Texto("equipe.outros", "Lista de membros", "Nome do grupo de quem não está em nenhuma diretoria", "Outros"),
+        Texto("equipe.outros", "Lista de membros", "Nome do grupo de quem não está em nenhuma diretoria", "Outros", raro=True),
     ),
 )

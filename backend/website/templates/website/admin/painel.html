@@ -1,0 +1,30 @@
+{% extends 'admin/base.html' %}
+
+{% load i18n %}
+{# Página inicial do admin: atalhos para o que se faz com frequência (ver atalhos em config/navigation.py). #}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="painel">
+  <p class="painel__nivel">Você entrou como <strong>{{ nivel_de_acesso }}</strong>. O que você mais usa está abaixo; o menu à esquerda tem o restante.</p>
+  <div class="painel__grade">
+    {% for cartao in atalhos %}
+    <section class="painel__cartao">
+      <span class="material-symbols-outlined painel__icone" aria-hidden="true">{{ cartao.icone }}</span>
+      <h2 class="painel__titulo">{{ cartao.titulo }}</h2>
+      <p class="painel__explicacao">{{ cartao.explicacao }}</p>
+      <div class="painel__links">
+        {% for link in cartao.links %}
+        <a href="{{ link.url }}"{% if forloop.first %} class="painel__principal"{% endif %}>{{ link.texto }}</a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

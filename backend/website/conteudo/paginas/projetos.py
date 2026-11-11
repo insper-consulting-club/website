@@ -9,9 +9,9 @@ PAGINA = Pagina(
         Texto("projetos.abertura", "Cabeçalho da página", "Texto logo abaixo do título", "Como formamos consultores, do primeiro semestre na entidade aos cases reais resolvidos ao longo da Jornada do Consultor."),
         Texto("projetos.outros_eyebrow", "Outros projetos", "Palavra pequena acima do título da seção", "Além dos programas"),
         Texto("projetos.outros_titulo", "Outros projetos", "Título da seção (projetos que não são de nenhum programa)", "Outros projetos"),
-        Texto("projetos.cases_eyebrow", "Cases em destaque", "Palavra pequena acima do título da seção", "Cases resolvidos"),
+        Texto("projetos.cases_eyebrow", "Cases em destaque", "Palavra pequena acima do título da seção", "Cases resolvidos", raro=True),
         Texto("projetos.cases_titulo_um", "Cases em destaque", "Título quando o programa tem 1 case", "{programa}: {n} case", raro=True),
-        Texto("projetos.cases_titulo_varios", "Cases em destaque", "Título quando o programa tem mais de 1 case", "{programa}: {n} cases"),
-        Texto("projetos.cases_botao", "Cases em destaque", "Botão da seção", "Ver os cases"),
+        Texto("projetos.cases_titulo_varios", "Cases em destaque", "Título quando o programa tem mais de 1 case", "{programa}: {n} cases", raro=True),
+        Texto("projetos.cases_botao", "Cases em destaque", "Botão da seção", "Ver os cases", raro=True),
     ),
 )

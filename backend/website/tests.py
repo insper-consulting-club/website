@@ -678,6 +678,54 @@ class AdminNavigationTests(TestCase):
         self.assertEqual([g["title"] for g in grupos], ["Artigos"])
         self.assertEqual([i["title"] for i in grupos[0]["items"]], ["Artigos"])
 
+    def test_the_editor_does_not_see_cargos_in_the_menu_but_the_administrator_does(self):
+        from django.contrib.auth.models import Group
+        from config.navigation import navegacao
+
+        editor = get_user_model().objects.create_user("editora", "ed@example.com", "senha-de-teste", is_staff=True)
+        editor.groups.add(Group.objects.get(name="Editores"))
+        admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+
+        itens_do_editor = [i["title"] for g in navegacao(mock.Mock(user=get_user_model().objects.get(pk=editor.pk))) for i in g["items"]]
+        itens_do_admin = [i["title"] for g in navegacao(mock.Mock(user=admin)) for i in g["items"]]
+
+        self.assertNotIn("Cargos", itens_do_editor)
+        self.assertIn("Membros", itens_do_editor)
+        self.assertIn("Cargos", itens_do_admin)
+
+    def test_the_home_page_shows_shortcuts_for_what_the_user_can_do(self):
+        from django.contrib.auth.models import Group
+
+        editor = get_user_model().objects.create_user("editora", "ed@example.com", "senha-de-teste", is_staff=True)
+        editor.groups.add(Group.objects.get(name="Editores"))
+        self.client.force_login(editor)
+
+        pagina = self.client.get("/admin/").content.decode()
+
+        self.assertIn("Você entrou como <strong>Editor</strong>", pagina)
+        for atalho in ("Escrever um artigo", "Novo membro", "Novo parceiro", "Editar textos", "Processos seletivos"):
+            self.assertIn(atalho, pagina)
+        self.assertNotIn("Atividade recente", pagina)
+        self.assertNotIn("/admin/auth/user/", pagina)
+        self.assertNotIn('class="painel__titulo">Acesso<', pagina)
+
+        admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(admin)
+        pagina = self.client.get("/admin/").content.decode()
+
+        self.assertIn("Você entrou como <strong>Administrador</strong>", pagina)
+        self.assertIn("/admin/auth/user/", pagina)
+        self.assertIn("Atividade recente", pagina)
+
+    def test_logging_out_goes_straight_to_the_login_page(self):
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(usuario)
+
+        resposta = self.client.post("/admin/logout/")
+
+        self.assertRedirects(resposta, "/admin/login/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/admin/").status_code, 302)  # saiu de fato
+
     def test_sidebar_is_rendered_in_the_admin(self):
         usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
         self.client.force_login(usuario)
@@ -2602,12 +2650,25 @@ class TextosDoSiteAdminTests(TestCase):
         self.assertIn('value="Seja membro"', pagina)
 
     def test_rare_messages_are_collapsed_in_their_own_block(self):
+        from website.conteudo import PAGINAS
+
         pagina = PaginaDoSite.objects.get(slug="equipe")
+        raros = sum(1 for p in PAGINAS if p.slug == "equipe" for t in p.textos if t.raro)
 
         html = self.client.get(f"/admin/website/paginadosite/{pagina.pk}/change/").content.decode()
 
-        self.assertIn("Mensagens e estados raros (3)", html)
+        self.assertGreater(raros, 0)
+        self.assertIn(f"Mensagens e estados raros ({raros})", html)
         self.assertIn("<details", html)
+
+    def test_titles_and_sentences_stay_in_view_and_short_labels_are_collapsed(self):
+        from website.conteudo import POR_CHAVE
+
+        # Regra de classificação: título e frase da página ficam à vista; botão, rótulo e mensagem curta ficam recolhidos.
+        for chave in ("equipe.titulo", "home.hero_titulo", "home.hero_frase", "artigos.abertura", "rodape.frase", "contato.titulo"):
+            self.assertFalse(POR_CHAVE[chave][1].raro, chave)
+        for chave in ("artigo.voltar", "artigos.card_link", "rodape.navegacao", "nao_encontrada.titulo", "artigo.copiar_link"):
+            self.assertTrue(POR_CHAVE[chave][1].raro, chave)
 
     def test_long_texts_use_a_textarea(self):
         pagina = PaginaDoSite.objects.get(slug="privacidade")
