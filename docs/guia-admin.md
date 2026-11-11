@@ -278,7 +278,8 @@ As mudanças podem levar até um minuto para aparecer no site.
 Os títulos de seção, rótulos, botões e mensagens curtas (por exemplo, "Quem constrói o clube", "Calendário", "Nenhum artigo cadastrado no momento") ficam em **Textos do site**. A lista mostra uma linha por página do site, na ordem em que as páginas aparecem. Abra a página que quer ajustar.
 
 - Dentro da página, os textos vêm agrupados por seção (Apresentação, Quem somos, Missão e assim por diante), cada um com uma descrição de onde aparece. Edite e clique em **Salvar**.
-- Mensagens raras (por exemplo, "página não encontrada" ou "lista vazia") ficam num bloco recolhido no fim da página.
+- **O que fica à vista e o que fica recolhido.** À vista ficam os títulos e as frases de cada página (por exemplo, o título e a frase da Home, o texto de abertura de cada página e as seções da Home). Os rótulos e as mensagens curtas (por exemplo, "Voltar", "Ler artigo", "Visitar site", "página não encontrada", "lista vazia", os títulos do rodapé) ficam num bloco recolhido no fim da página, chamado **Mensagens e estados raros**. Clique nele para abrir, se precisar mudar um deles.
+- **Cuidado com os títulos de página.** O título de uma página (por exemplo, **Nossa Equipe** ou **Artigos**) também é o nome da aba do navegador. Se uma edição não ficar boa, **Restaurar o original** desfaz.
 - Um texto alterado fica marcado como **Editado**, com o original logo abaixo e o botão **Restaurar o original**.
 - A busca na lista procura pelo que o texto diz, pela descrição ou pela seção, e mostra os textos encontrados. O filtro **Situação** separa as páginas com textos editados.
 - Para voltar uma página inteira ao original, marque a página e use a ação **Restaurar os textos originais das páginas selecionadas**.

@@ -2602,12 +2602,25 @@ class TextosDoSiteAdminTests(TestCase):
         self.assertIn('value="Seja membro"', pagina)
 
     def test_rare_messages_are_collapsed_in_their_own_block(self):
+        from website.conteudo import PAGINAS
+
         pagina = PaginaDoSite.objects.get(slug="equipe")
+        raros = sum(1 for p in PAGINAS if p.slug == "equipe" for t in p.textos if t.raro)
 
         html = self.client.get(f"/admin/website/paginadosite/{pagina.pk}/change/").content.decode()
 
-        self.assertIn("Mensagens e estados raros (3)", html)
+        self.assertGreater(raros, 0)
+        self.assertIn(f"Mensagens e estados raros ({raros})", html)
         self.assertIn("<details", html)
+
+    def test_titles_and_sentences_stay_in_view_and_short_labels_are_collapsed(self):
+        from website.conteudo import POR_CHAVE
+
+        # Regra de classificação: título e frase da página ficam à vista; botão, rótulo e mensagem curta ficam recolhidos.
+        for chave in ("equipe.titulo", "home.hero_titulo", "home.hero_frase", "artigos.abertura", "rodape.frase", "contato.titulo"):
+            self.assertFalse(POR_CHAVE[chave][1].raro, chave)
+        for chave in ("artigo.voltar", "artigos.card_link", "rodape.navegacao", "nao_encontrada.titulo", "artigo.copiar_link"):
+            self.assertTrue(POR_CHAVE[chave][1].raro, chave)
 
     def test_long_texts_use_a_textarea(self):
         pagina = PaginaDoSite.objects.get(slug="privacidade")
