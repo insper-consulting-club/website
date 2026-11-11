@@ -60,7 +60,7 @@ Deixe essa janela aberta enquanto usar o site.
 | Site | http://localhost:5173 | Não precisa |
 | Área administrativa | http://localhost:8000/admin/ | Usuário `admin`, senha `admin` |
 
-Esse login só vale no seu computador. O site local já vem com membros, projetos, parceiros e artigos de exemplo.
+Esse login só vale no seu computador. O site local já vem com membros, projetos, parceiros e artigos de exemplo. O artigo **Guia de formatação: todos os recursos do editor** usa seções, listas, tabela, fórmulas, blocos de código e imagens, e serve para treinar a edição e conferir o resultado no site.
 
 ---
 

@@ -159,7 +159,7 @@ As migrations ficam versionadas em `backend/website/migrations/`. O Docker Compo
 
 ### Testes
 
-Os testes do backend ficam em `backend/website/tests.py` e usam o `django.test.TestCase` com o `APIClient` do DRF. Hoje cobrem os endpoints públicos: artigos (slug, id e rascunhos), membros atuais e arquivados, parceiros ocultos, projetos arquivados, programas, componentes e cases, processo seletivo e o `/api/health/`. Ao criar ou alterar um endpoint, acrescente testes. O frontend ainda não tem testes automatizados.
+Os testes do backend ficam em `backend/website/tests.py` e usam o `django.test.TestCase` com o `APIClient` do DRF. Hoje cobrem os endpoints públicos: artigos (slug, id e rascunhos), membros atuais e arquivados, parceiros ocultos, projetos arquivados, programas, componentes e cases, processo seletivo e o `/api/health/`. Os artigos têm testes do formulário do admin (autores, faixa "Para publicar", prévia da citação, barra do Markdown e filtros), da migration dos autores e das citações (`CitationTests`). Ao criar ou alterar um endpoint, acrescente testes. O frontend ainda não tem testes automatizados.
 
 ### Estilo de código
 

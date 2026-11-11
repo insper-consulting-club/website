@@ -20,9 +20,10 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 - Clicar no nome de um registro abre a edição.
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
+- **Alterações não salvas:** se você alterar um formulário e tentar sair da página sem salvar, o navegador pergunta antes de descartar.
 - **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
 - **Menu lateral:** vem com o que se edita com mais frequência primeiro (Artigos, Equipe, Parceiros, Programas e projetos, Processo seletivo), e deixa **Site** (configuração, textos e estatísticas) e **Acesso** (usuários, grupos e atividade recente) no fim.
-- **Seção Avançado:** nos formulários de artigo, parceiro, programa e case, os campos que quase nunca mudam (ordem de exibição, link externo e publicação do artigo) ficam numa seção recolhida chamada **Avançado**, no fim da página. Clique nela para abrir. Se um desses campos tiver erro ao salvar, ela abre sozinha.
+- **Seção Avançado:** nos formulários de artigo, parceiro, programa e case, os campos que quase nunca mudam (a ordem de exibição, por exemplo) ficam numa seção recolhida chamada **Avançado**, no fim da página. Clique nela para abrir. Se um desses campos tiver erro ao salvar, ela abre sozinha.
 - **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
 | Quero cadastrar ou editar | Linha do admin |
@@ -200,17 +201,17 @@ O projeto arquivado some do site (de todas as páginas acima e do perfil dos mem
 
 ## Artigos
 
-Os artigos são escritos pelos membros do ICC e ficam **dentro do site**: cada um tem a própria página, com resumo, temas, o texto completo, "Como citar" e um botão para compartilhar no LinkedIn.
+Os artigos são escritos pelos membros do ICC e ficam **dentro do site**: cada um tem a própria página, com resumo, temas, o texto completo e os botões **Compartilhar** e **Citar** (citação em ABNT, APA, BibTeX, BibLaTeX e RIS).
 
 O passo a passo completo, com a referência de Markdown, imagens, fórmulas, conversão de documentos e solução de problemas, está no **[guia de artigos](guia-artigos.md)**. Em resumo:
 
-1. **Artigos > Adicionar artigo.** Preencha título, autores, resumo, temas, data e, se quiser, o slug e a imagem de capa. O link externo e a publicação ficam em **Avançado**.
+1. **Artigos > Adicionar artigo.** Preencha título e slug, os **autores** (lista logo abaixo, com os membros sugeridos ao digitar), temas, resumo, data e, se quiser, a imagem de capa. A faixa **Para publicar**, no alto, mostra o que falta.
 2. Escreva o **Texto do artigo** em Markdown, com uma linha em branco entre os parágrafos.
 3. Envie as imagens do texto em **Imagens do artigo** e chame cada uma no texto por `![](imagem-1)`.
 4. Revise o artigo antes de publicar, de preferência no ambiente local (ver o [guia do ambiente local](guia-ambiente-local.md)).
 5. Salve com **Publicado** desmarcado (rascunho). Quando estiver pronto, marque **Publicado**, salve e confira a página no site.
 
-Na lista de artigos, as ações **Publicar selecionados** e **Despublicar selecionados** mudam vários de uma vez (despublicar devolve o artigo a rascunho, sem apagar o texto). Ao publicar, o admin avisa se algum artigo está sem data de publicação, porque a ordem no site depende dela.
+Na lista de artigos, a busca e os filtros **Autor** e **Tema** ajudam a achar um artigo, e as ações **Publicar selecionados** e **Despublicar selecionados** mudam vários de uma vez (despublicar devolve o artigo a rascunho, sem apagar o texto). Artigos sem autor não são publicados pela ação (o admin avisa quais são), e, ao publicar, ele avisa se algum está sem data de publicação, porque a ordem no site depende dela.
 
 ---
 
