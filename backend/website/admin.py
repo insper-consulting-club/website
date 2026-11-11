@@ -550,14 +550,10 @@ class ArticleImageInline(TabularInline):
     model = ArticleImage
     formset = ImagemDoArtigoFormSet
     extra = 1
-    fields = ('number', 'image', 'miniatura', 'caption', 'trecho')
-    readonly_fields = ('miniatura', 'trecho')
+    fields = ('number', 'image', 'caption', 'trecho')
+    readonly_fields = ('trecho',)
     ordering = ('number',)
     tab = True
-
-    @admin.display(description='Imagem')
-    def miniatura(self, obj):
-        return miniatura(obj.image, 48) if obj and obj.pk else '—'
 
     @admin.display(description='Para colar no texto')
     def trecho(self, obj):

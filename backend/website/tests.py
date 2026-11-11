@@ -3473,7 +3473,7 @@ class ArticleEditingHelpTests(TestCase):
         self.assertIn("website/avisa_alteracoes.js", self.pagina())
 
 
-    def test_the_image_list_shows_a_thumbnail_and_whether_the_text_uses_each_image(self):
+    def test_the_image_list_shows_whether_the_text_uses_each_image(self):
         Article.objects.filter(pk=self.artigo.pk).update(institutional=True, content="Texto\n\n![](imagem-1)")
         ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png")
         ArticleImage.objects.create(article=self.artigo, number=2, image="articles/b.png")
@@ -3482,7 +3482,6 @@ class ArticleEditingHelpTests(TestCase):
 
         self.assertIn("Usada no texto", html)
         self.assertIn("Ainda não usada no texto", html)
-        self.assertIn('src="/media/articles/a.png"', html)
 
     def test_the_toolbar_has_the_image_picker_with_the_saved_images_and_the_save_button_for_full_screen(self):
         ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png", caption="Gráfico")
