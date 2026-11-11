@@ -341,11 +341,6 @@ class Article(models.Model):
         verbose_name='Slug da URL',
         help_text='Opcional. Usado no link do artigo; se vazio, o site usa o ID.',
     )
-    institutional = models.BooleanField(
-        default=False, verbose_name='Artigo institucional',
-        help_text='Marque se o texto não tem autores individuais: o autor passa a ser o Insper Consulting Club. '
-                  'Os autores de um artigo comum ficam na lista "Autores", abaixo.'
-    )
     topics = models.CharField(
         max_length=200, blank=True, verbose_name='Temas',
         help_text='Separados por vírgula. Ex.: Estratégia, Varejo.'
@@ -366,7 +361,7 @@ class Article(models.Model):
         help_text='Desmarcado, o artigo é um rascunho: fica salvo aqui, mas não aparece no site.'
     )
 
-    # Autor dos artigos institucionais.
+    # Autor mostrado nos artigos sem autores cadastrados (textos antigos); o admin exige autor para publicar.
     NOME_INSTITUCIONAL = 'Insper Consulting Club'
 
     class Meta:

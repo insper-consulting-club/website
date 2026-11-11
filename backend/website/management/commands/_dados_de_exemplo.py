@@ -425,10 +425,9 @@ ARTIGOS = [
                  "![](imagem-1)\n\n## Quando usar cada uma\n\nCada matriz responde a uma pergunta diferente.",
      "capa": True, "imagens": ["Matriz de impacto por esforço"], "publicado": True},
     {
-        # Artigo institucional: o autor é o ICC, sem autores individuais.
         "titulo": "Entrevista com uma mentora do ICC", "slug": "entrevista-com-uma-mentora",
-        "autores": [], "institucional": True, "temas": "Carreira", "data": date(2026, 6, 2), "ordem": 4,
-        "resumo": "Artigo institucional, assinado pelo Insper Consulting Club.",
+        "autores": ["Beatriz Salgado"], "temas": "Carreira", "data": date(2026, 6, 2), "ordem": 4,
+        "resumo": "Uma conversa sobre carreira em consultoria, com uma mentora do clube.",
         "conteudo": "Uma conversa com uma mentora do ICC sobre carreira em consultoria.",
      "capa": False, "imagens": [], "publicado": True,
     },

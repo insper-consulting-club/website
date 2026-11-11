@@ -266,9 +266,9 @@ class ArticleImageSerializer(serializers.ModelSerializer):
 def autores_do_artigo(artigo):
     """
     Os autores como o site os mostra: o nome sem as chaves do BibTeX, o membro (quando há vínculo, para filtrar por
-    autor) e se ele tem perfil na página Equipe (só membros ativos têm). Artigo institucional tem um autor só.
+    autor) e se ele tem perfil na página Equipe (só membros ativos têm). Sem autores cadastrados (texto antigo), o autor é o próprio clube.
     """
-    if artigo.institutional:
+    if not artigo.article_authors.exists():
         return [{"name": Article.NOME_INSTITUCIONAL, "member_id": None, "has_profile": False}]
     return [
         {

@@ -633,7 +633,7 @@ def temas_ja_usados():
 
 
 class AutoresDoArtigoFormSet(BaseInlineFormSet):
-    """Um artigo publicado precisa de autor (ou ser institucional); um institucional não tem autores individuais."""
+    """Um artigo publicado precisa de ao menos um autor."""
 
     def clean(self):
         super().clean()
@@ -641,17 +641,10 @@ class AutoresDoArtigoFormSet(BaseInlineFormSet):
             return
         linhas = sum(1 for f in self.forms if f.cleaned_data and not f.cleaned_data.get('DELETE'))
         # Os campos do artigo chegam no mesmo envio do formulário; marcado, o checkbox vem como "on".
-        institucional = self.data.get('institutional') in ('on', 'true', 'True', '1')
         publicado = self.data.get('published') in ('on', 'true', 'True', '1')
         self._ordena_os_novos()
-        if institucional and linhas:
-            raise forms.ValidationError(
-                'Um artigo institucional não tem autores individuais: remova as linhas ou desmarque "Artigo institucional".'
-            )
-        if publicado and not institucional and not linhas:
-            raise forms.ValidationError(
-                'Um artigo publicado precisa de ao menos um autor, ou ser marcado como institucional.'
-            )
+        if publicado and not linhas:
+            raise forms.ValidationError('Um artigo publicado precisa de ao menos um autor.')
 
 
     def _ordena_os_novos(self):
@@ -686,6 +679,7 @@ class AutoresDoArtigoInline(AbaOrdenavelTabular):
     extra = 1
     fields = ('name', 'member')
     tab = False  # fica no formulário, e não numa aba: o autor é parte do que se preenche para publicar
+    logo_apos_o_primeiro_grupo = True  # desenhado por artigo_change_form.html, abaixo do título e do slug
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == 'member':
@@ -707,15 +701,15 @@ class FormDaListaDeArtigos(forms.ModelForm):
     def clean(self):
         dados = super().clean()
         artigo = self.instance
-        if dados.get('published') and artigo.pk and not artigo.institutional and not artigo.article_authors.exists():
-            self.add_error('published', 'Adicione os autores (ou marque "Artigo institucional") antes de publicar.')
+        if dados.get('published') and artigo.pk and not artigo.article_authors.exists():
+            self.add_error('published', 'Adicione os autores antes de publicar.')
         if dados.get('published') and artigo.pk and not artigo.date:
             self.add_error('published', 'Preencha a data de publicação do artigo antes de publicar.')
         return dados
 
 
 class AutorDoArtigoFilter(DropdownFilter):
-    """Os artigos de um autor: um membro (com o ID, se houver homônimos), alguém de fora ou o próprio clube."""
+    """Os artigos de um autor: um membro (com o ID, se houver homônimos) ou alguém de fora."""
     title = 'autor'
     parameter_name = 'autor'
 
@@ -728,16 +722,12 @@ class AutorDoArtigoFilter(DropdownFilter):
             else:
                 autores.setdefault(f'n{normaliza(autor.display_name)}', autor.display_name)
         opcoes = sorted(autores.items(), key=lambda par: normaliza(par[1]))
-        if Article.objects.filter(institutional=True).exists():
-            opcoes.append(('i', f'{Article.NOME_INSTITUCIONAL} (institucional)'))
         return opcoes
 
     def queryset(self, request, queryset):
         valor = self.value()
         if not valor:
             return queryset
-        if valor == 'i':
-            return queryset.filter(institutional=True)
         if valor.startswith('m') and valor[1:].isdigit():
             return queryset.filter(article_authors__member_id=int(valor[1:])).distinct()
         ids = [a.pk for a in ArticleAuthor.objects.filter(member__isnull=True) if f'n{normaliza(a.display_name)}' == valor]
@@ -768,7 +758,8 @@ class ArticleAdmin(AdminDoSite):
     # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
     prepopulated_fields = {'slug': ('title',)}
     fieldsets = (
-        (None, {'fields': ('pendencias', 'title', 'slug', 'institutional', 'topics', 'description', 'content')}),
+        (None, {'fields': ('pendencias', 'title', 'slug')}),
+        (None, {'fields': ('topics', 'description', 'content')}),
         ('Publicação', {'fields': ('published', 'date', 'image')}),
         ('Como será citado', {'fields': ('previa_da_citacao',), 'classes': ('collapse',)}),
         secao_avancada('order'),
@@ -782,6 +773,7 @@ class ArticleAdmin(AdminDoSite):
     list_filter = ('published', AutorDoArtigoFilter, TemaDoArtigoFilter, 'date')
     date_hierarchy = 'date'
     ordering = ('-date', 'order')
+    change_form_template = 'website/admin/artigo_change_form.html'
     inlines = [AutoresDoArtigoInline, ArticleImageInline]
 
     def get_queryset(self, request):
@@ -800,8 +792,8 @@ class ArticleAdmin(AdminDoSite):
         if obj is None or not obj.pk:
             return 'Salve o rascunho para ver aqui o que falta para publicar.'
         itens = []
-        if not obj.institutional and not obj.article_authors.exists():
-            itens.append(('falta', 'Falta ao menos um autor (ou marcar “Artigo institucional”).'))
+        if not obj.article_authors.exists():
+            itens.append(('falta', 'Falta ao menos um autor.'))
         enviadas = set(obj.images.values_list('number', flat=True))
         citadas = {int(n) for n in re.findall(r'!\[[^\]]*\]\(imagem-(\d+)\)', obj.content or '')}
         for numero in sorted(citadas - enviadas):
@@ -820,7 +812,7 @@ class ArticleAdmin(AdminDoSite):
         """As citações como o site as entrega, para o editor conferir o nome dos autores. Vale para o que está salvo."""
         if obj is None or not obj.pk:
             return 'Aparece depois de salvar o artigo.'
-        if not obj.institutional and not obj.article_authors.exists():
+        if not obj.article_authors.exists():
             return 'Adicione ao menos um autor para ver a citação.'
         hoje = timezone.localdate()
         por_id = {c['id']: c for c in citacao.citacoes(obj)}
@@ -844,8 +836,6 @@ class ArticleAdmin(AdminDoSite):
 
     @admin.display(description='Autores')
     def autores(self, obj):
-        if obj.institutional:
-            return f'{Article.NOME_INSTITUCIONAL} (institucional)'
         return ', '.join(a.display_name for a in obj.article_authors.all())
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
@@ -868,7 +858,7 @@ class ArticleAdmin(AdminDoSite):
 
     @admin.action(description='Publicar selecionados (aparecem no site)', permissions=['change'])
     def publicar(self, request, queryset):
-        sem_autor = queryset.filter(published=False, institutional=False, article_authors__isnull=True)
+        sem_autor = queryset.filter(published=False, article_authors__isnull=True)
         sem_autor_ids = list(sem_autor.values_list('pk', flat=True))
         n = queryset.filter(published=False).exclude(pk__in=sem_autor_ids).update(published=True)
         sem_data = queryset.filter(date__isnull=True).count()
@@ -877,7 +867,7 @@ class ArticleAdmin(AdminDoSite):
             self.message_user(
                 request,
                 f'{len(sem_autor_ids)} artigo(s) não foram publicados por não terem autor. Adicione os autores '
-                '(ou marque "Artigo institucional") em cada um.',
+                'em cada um.',
                 messages.WARNING,
             )
         if sem_data:

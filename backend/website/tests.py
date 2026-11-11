@@ -1169,8 +1169,10 @@ class AdminBulkActionsTests(TestCase):
         return self.client.post(f"/admin/website/{modelo}/", {"action": nome, "_selected_action": ids}, follow=True)
 
     def test_publish_and_unpublish_articles_in_bulk(self):
-        a = Article.objects.create(title="A", description="d", published=False, date=date(2026, 1, 1), institutional=True)
-        b = Article.objects.create(title="B", description="d", published=False, institutional=True)
+        a = Article.objects.create(title="A", description="d", published=False, date=date(2026, 1, 1))
+        b = Article.objects.create(title="B", description="d", published=False)
+        ArticleAuthor.objects.create(article=a, name="Ana Silva")
+        ArticleAuthor.objects.create(article=b, name="Ana Silva")
 
         resposta = self.acao("article", "publicar", [a.pk, b.pk])
 
@@ -1515,7 +1517,7 @@ class SeedDataTests(TestCase):
 
         self.assertFalse(Article.objects.get(title="Rascunho ainda não publicado").published)
         self.assertIsNone(Article.objects.get(title="Transformação digital em PMEs: barreiras e alavancas").slug)
-        self.assertTrue(Article.objects.get(slug="entrevista-com-uma-mentora").institutional)
+        self.assertTrue(Article.objects.get(slug="entrevista-com-uma-mentora").article_authors.exists())
         self.assertGreater(max(len(a.title) for a in Article.objects.all()), 120)
 
         self.assertFalse(Project.objects.get(title="Projeto piloto descontinuado").is_active)
@@ -1989,7 +1991,7 @@ class AdminAdvancedSectionTests(TestCase):
     def test_article_form_keeps_only_daily_fields_visible(self):
         self.posicoes(
             "/admin/website/article/add/",
-            visiveis=["title", "slug", "institutional", "topics", "description", "content", "published", "date", "image"],
+            visiveis=["title", "slug", "topics", "description", "content", "published", "date", "image"],
             avancados=["order"],
         )
 
@@ -2170,7 +2172,7 @@ class AdminQuickWinsTests(TestCase):
         self.addCleanup(configuracao.disable)
 
         artigo = Article.objects.create(
-            title="A", description="d", slug="a", published=True, date=date(2026, 1, 1), institutional=True,
+            title="A", description="d", slug="a", published=False, date=date(2026, 1, 1),
         )
         dados = {k: v for k, v in model_to_dict(artigo).items() if v is not None and k != "image"}
         dados.update({
@@ -3163,8 +3165,8 @@ class ArticleAuthorsApiTests(TestCase):
         self.assertEqual(APIClient().get("/api/articles/").data[0]["authors"], esperado)
         self.assertEqual(APIClient().get("/api/articles/a/").data["authors"], esperado)
 
-    def test_an_institutional_article_has_a_single_author_the_club(self):
-        Article.objects.filter(pk=self.artigo.pk).update(institutional=True)
+    def test_an_old_article_without_authors_has_the_club_as_author(self):
+        self.artigo.article_authors.all().delete()
 
         autores = APIClient().get("/api/articles/a/").data["authors"]
 
@@ -3217,7 +3219,7 @@ class ArticleAuthorsAdminTests(TestCase):
         self.assertIn('website/autor_combobox.js', html)
         self.assertRegex(html, r'<input type="hidden" name="article_authors-0-member"')  # o vínculo vem da escolha na lista
         self.assertNotIn("<datalist", html)
-        self.assertIn('name="institutional"', html)
+        self.assertNotIn('name="institutional"', html)
         for campo in ('name="authors"', 'name="link"', 'name="source"'):
             self.assertNotIn(campo, html)
 
@@ -3263,14 +3265,14 @@ class ArticleAuthorsAdminTests(TestCase):
         self.assertEqual(self.client.post(self.url, dados).status_code, 200)
         self.assertFalse(self.artigo.article_authors.exists())
 
-    def test_a_published_article_needs_an_author_or_to_be_institutional(self):
+    def test_a_published_article_needs_an_author(self):
         recusado = self.client.post(self.url, self.dados(published="on"))
         self.assertEqual(recusado.status_code, 200)
         self.assertIn("precisa de ao menos um autor", recusado.content.decode())
         self.assertFalse(Article.objects.get(pk=self.artigo.pk).published)
 
-        institucional = self.client.post(self.url, self.dados(published="on", institutional="on"))
-        self.assertEqual(institucional.status_code, 302)
+        com_autor = self.client.post(self.url, self.dados([("Ana Silva", 0)], published="on"))
+        self.assertEqual(com_autor.status_code, 302)
 
     def test_a_new_author_row_goes_to_the_end_when_it_was_not_dragged(self):
         ArticleAuthor.objects.create(article=self.artigo, name="Primeiro", order=0)
@@ -3288,12 +3290,6 @@ class ArticleAuthorsAdminTests(TestCase):
 
     def test_a_draft_can_be_saved_without_authors(self):
         self.assertEqual(self.client.post(self.url, self.dados()).status_code, 302)
-
-    def test_an_institutional_article_cannot_also_have_authors(self):
-        resposta = self.client.post(self.url, self.dados([("Ana Silva", 0)], institutional="on"))
-
-        self.assertEqual(resposta.status_code, 200)
-        self.assertIn("não tem autores individuais", resposta.content.decode())
 
     def test_a_name_with_open_braces_is_refused_in_the_form(self):
         resposta = self.client.post(self.url, self.dados([("Robert {Lucas Jr", 0)]))
@@ -3319,7 +3315,8 @@ class ArticleAuthorsAdminTests(TestCase):
         self.assertTrue(Article.objects.get(pk=self.artigo.pk).published)
 
     def test_the_publish_action_skips_articles_without_author(self):
-        com = Article.objects.create(title="Com", description="d", institutional=True)
+        com = Article.objects.create(title="Com", description="d")
+        ArticleAuthor.objects.create(article=com, name="Ana Silva")
         resposta = self.client.post(
             "/admin/website/article/", {"action": "publicar", "_selected_action": [self.artigo.pk, com.pk]}, follow=True,
         )
@@ -3378,7 +3375,7 @@ class ArticleEditingHelpTests(TestCase):
 
     def dados(self, **extra):
         dados = {
-            "title": "Varejo hoje", "slug": "varejo", "description": "d", "order": "0", "institutional": "on",
+            "title": "Varejo hoje", "slug": "varejo", "description": "d", "order": "0",
             "date": "2026-01-05",
             "article_authors-TOTAL_FORMS": "0", "article_authors-INITIAL_FORMS": "0",
             "article_authors-MIN_NUM_FORMS": "0", "article_authors-MAX_NUM_FORMS": "1000",
@@ -3395,7 +3392,10 @@ class ArticleEditingHelpTests(TestCase):
         self.assertEqual(sem_data.status_code, 200)
         self.assertIn("Este campo é obrigatório", sem_data.content.decode())
 
-        self.assertEqual(self.client.post(self.url, self.dados(date="2026-01-05", published="on")).status_code, 302)
+        self.assertEqual(self.client.post(self.url, self.dados(date="2026-01-05", published="on", **{
+            "article_authors-TOTAL_FORMS": "1", "article_authors-0-name": "Ana Silva", "article_authors-0-order": "0",
+            "article_authors-0-member": "",
+        })).status_code, 302)
         self.assertEqual(Article.objects.get(pk=self.artigo.pk).date, date(2026, 1, 5))
 
     def test_a_new_article_has_no_checklist_yet(self):
@@ -3410,13 +3410,15 @@ class ArticleEditingHelpTests(TestCase):
         self.assertIn("Sem imagem de capa", html)
 
     def test_the_checklist_is_happy_when_nothing_is_missing(self):
-        Article.objects.filter(pk=self.artigo.pk).update(institutional=True, image="news/capa.png")
+        ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva")
+        Article.objects.filter(pk=self.artigo.pk).update(image="news/capa.png")
 
         self.assertIn("Tudo pronto para publicar", self.pagina())
 
     def test_the_checklist_points_at_images_the_text_asks_for_but_were_not_sent(self):
+        ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva")
         Article.objects.filter(pk=self.artigo.pk).update(
-            institutional=True, image="news/capa.png", content="Texto\n\n![](imagem-1)\n\n![legenda](imagem-2)",
+            image="news/capa.png", content="Texto\n\n![](imagem-1)\n\n![legenda](imagem-2)",
         )
         ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png")
 
@@ -3474,7 +3476,8 @@ class ArticleEditingHelpTests(TestCase):
 
 
     def test_the_image_list_shows_whether_the_text_uses_each_image(self):
-        Article.objects.filter(pk=self.artigo.pk).update(institutional=True, content="Texto\n\n![](imagem-1)")
+        ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva")
+        Article.objects.filter(pk=self.artigo.pk).update(content="Texto\n\n![](imagem-1)")
         ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png")
         ArticleImage.objects.create(article=self.artigo, number=2, image="articles/b.png")
 
@@ -3507,15 +3510,14 @@ class ArticleEditingHelpTests(TestCase):
         self.assertEqual(resultado("tema=carreira"), {outra.pk})
         self.assertEqual(resultado("tema=estrategia"), {self.artigo.pk})
 
-    def test_the_author_filter_lists_members_outsiders_and_the_institutional_option(self):
+    def test_the_author_filter_lists_members_and_outsiders(self):
         ana = Member.objects.create(name="Ana Silva")
         ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva", member=ana)
         ArticleAuthor.objects.create(article=self.artigo, name="Fulano {de Tal}")
-        Article.objects.create(title="Inst", description="d", slug="inst", institutional=True)
 
         html = self.client.get("/admin/website/article/").content.decode()
 
-        for texto in ("Ana Silva", "Fulano de Tal", "Insper Consulting Club (institucional)"):
+        for texto in ("Ana Silva", "Fulano de Tal"):
             self.assertIn(texto, html)
 
 
@@ -3615,10 +3617,10 @@ class CitationTests(TestCase):
         self.assertEqual(chave_da_citacao(self.artigo("Ação e reação", ["José Ávila"], slug="y")), "avila2026acao")
         self.assertEqual(chave_da_citacao(self.artigo("100% de ganho com precificação", ["Ana Souza"], slug="n")), "souza2026ganho")  # número não serve
 
-    def test_institutional_article_and_article_without_a_date(self):
+    def test_article_without_authors_and_article_without_a_date(self):
         from website.citacao import chave_da_citacao
 
-        self.assertEqual(chave_da_citacao(self.artigo(institutional=True, autores=(), slug="i")), "icc2026precificacao")
+        self.assertEqual(chave_da_citacao(self.artigo(autores=(), slug="i")), "icc2026precificacao")
         self.assertEqual(chave_da_citacao(self.artigo(autores=["Ana Souza"], date=None, slug="sd")), "souzaprecificacao")
 
     def test_key_has_only_ascii_letters_and_digits(self):
@@ -3677,10 +3679,10 @@ class CitationTests(TestCase):
         ))
 
     @override_settings(FRONTEND_URL="https://icc.example.com")
-    def test_institutional_author_uses_double_braces_so_it_is_not_split_into_a_surname(self):
+    def test_club_as_author_uses_double_braces_so_it_is_not_split_into_a_surname(self):
         from website.citacao import biblatex, bibtex
 
-        artigo = self.artigo(institutional=True, autores=(), slug="i")
+        artigo = self.artigo(autores=(), slug="i")
 
         for texto in (biblatex(artigo), bibtex(artigo)):
             self.assertIn("author       = {{Insper Consulting Club}},", texto)
@@ -3740,15 +3742,15 @@ class CitationTests(TestCase):
 
     def amostra(self, slug):
         casos = {
-            "um": ("Precificação dinâmica no varejo brasileiro: um estudo de caso", ["Maria da Silva"], False, date(2026, 3, 12)),
-            "dois": ("Preço e valor", ["Maria da Silva", "Robert {Lucas Jr}"], False, date(2026, 3, 12)),
+            "um": ("Precificação dinâmica no varejo brasileiro: um estudo de caso", ["Maria da Silva"], date(2026, 3, 12)),
+            "dois": ("Preço e valor", ["Maria da Silva", "Robert {Lucas Jr}"], date(2026, 3, 12)),
             "quatro": ("Como escolher a ferramenta certa para priorizar projetos",
-                       ["Ana Paula Souza Lima", "Beto Souza", "Carla Dias", "Davi Nunes"], False, date(2026, 5, 20)),
-            "inst": ("Relatório anual do clube", [], True, date(2026, 6, 2)),
-            "semdata": ("Texto sem data de publicação", ["Maria da Silva"], False, None),
+                       ["Ana Paula Souza Lima", "Beto Souza", "Carla Dias", "Davi Nunes"], date(2026, 5, 20)),
+            "inst": ("Relatório anual do clube", [], date(2026, 6, 2)),
+            "semdata": ("Texto sem data de publicação", ["Maria da Silva"], None),
         }
-        titulo, autores, institucional, data = casos[slug]
-        return self.artigo(titulo, autores, slug=slug, date=data, institutional=institucional)
+        titulo, autores, data = casos[slug]
+        return self.artigo(titulo, autores, slug=slug, date=data)
 
     @override_settings(FRONTEND_URL="https://icc.example.com")
     def test_abnt_matches_what_biblatex_abnt_prints(self):

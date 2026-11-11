@@ -311,7 +311,6 @@ class Command(BaseCommand):
                 title=item["titulo"],
                 defaults={
                     "slug": item["slug"] or None,
-                    "institutional": item.get("institucional", False),
                     "topics": item["temas"],
                     "description": item["resumo"],
                     "content": item["conteudo"],

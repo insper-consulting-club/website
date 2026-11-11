@@ -161,15 +161,13 @@ def _palavra_do_titulo(titulo):
 
 
 def nomes_dos_autores(artigo):
-    """Os nomes na ordem, ou None quando o autor é o próprio clube (institucional, ou sem autores)."""
-    if artigo.institutional:
-        return None
+    """Os nomes na ordem, ou None quando não há autores cadastrados (o autor passa a ser o próprio clube)."""
     nomes = [autor.name for autor in artigo.article_authors.all()]
     return nomes or None
 
 
 def chave_da_citacao(artigo):
-    """Sobrenome do primeiro autor, ano e primeira palavra do título: silva2026precificacao. Institucional: icc2026..."""
+    """Sobrenome do primeiro autor, ano e primeira palavra do título: silva2026precificacao. Sem autores: icc2026..."""
     nomes = nomes_dos_autores(artigo)
     quem = _so_letras_e_numeros(sobrenome_bibtex(nomes[0])) if nomes else 'icc'
     ano = str(artigo.date.year) if artigo.date else ''
@@ -191,7 +189,7 @@ def _campos(pares):
 def _autor(artigo):
     nomes = nomes_dos_autores(artigo)
     if nomes is None:
-        return '{{' + Article.NOME_INSTITUCIONAL + '}}'  # autor institucional: chaves duplas, para não virar sobrenome
+        return '{{' + Article.NOME_INSTITUCIONAL + '}}'  # sem autores: chaves duplas, para não virar sobrenome
     return '{' + ' and '.join(_escapa_nome(n) for n in nomes) + '}'
 
 
