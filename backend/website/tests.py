@@ -678,7 +678,7 @@ class AdminNavigationTests(TestCase):
         self.assertEqual([g["title"] for g in grupos], ["Artigos"])
         self.assertEqual([i["title"] for i in grupos[0]["items"]], ["Artigos"])
 
-    def test_the_editor_does_not_see_cargos_in_the_menu_but_the_administrator_does(self):
+    def test_the_editor_and_the_administrator_both_see_cargos_in_the_menu(self):
         from django.contrib.auth.models import Group
         from config.navigation import navegacao
 
@@ -689,7 +689,7 @@ class AdminNavigationTests(TestCase):
         itens_do_editor = [i["title"] for g in navegacao(mock.Mock(user=get_user_model().objects.get(pk=editor.pk))) for i in g["items"]]
         itens_do_admin = [i["title"] for g in navegacao(mock.Mock(user=admin)) for i in g["items"]]
 
-        self.assertNotIn("Cargos", itens_do_editor)
+        self.assertIn("Cargos", itens_do_editor)
         self.assertIn("Membros", itens_do_editor)
         self.assertIn("Cargos", itens_do_admin)
 
@@ -705,9 +705,8 @@ class AdminNavigationTests(TestCase):
         self.assertIn("Você entrou como <strong>Editor</strong>", pagina)
         for atalho in ("Escrever um artigo", "Novo membro", "Novo parceiro", "Editar textos", "Processos seletivos"):
             self.assertIn(atalho, pagina)
-        self.assertNotIn("Atividade recente", pagina)
+        self.assertIn("Atividade recente", pagina)  # o editor vê o histórico, mas não os usuários
         self.assertNotIn("/admin/auth/user/", pagina)
-        self.assertNotIn('class="painel__titulo">Acesso<', pagina)
 
         admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
         self.client.force_login(admin)
@@ -833,15 +832,18 @@ class EditorsGroupTests(TestCase):
     def test_group_is_created_by_migrate_with_the_expected_permissions(self):
         codenames = self.codenames()
 
-        for esperado in ("change_article", "add_article", "view_member", "change_siteconfig", "change_paginadosite", "change_secaodahome",
-                         "delete_projectimage", "view_position", "add_position"):
+        for esperado in ("change_article", "add_article", "delete_article", "view_member", "delete_member", "change_siteconfig",
+                         "change_paginadosite", "change_secaodahome", "delete_projectimage", "view_position", "add_position",
+                         "change_position", "change_partnerbenefit", "delete_partnerbenefit", "view_logentry",
+                         "add_membertrajectory", "delete_membertrajectory", "add_articleauthor", "delete_articleauthor"):
             self.assertIn(esperado, codenames)
-        for proibido in ("delete_article", "delete_member", "delete_project", "add_siteconfig", "delete_siteconfig",
-                         "add_paginadosite", "delete_paginadosite", "add_secaodahome", "delete_secaodahome", "change_position", "delete_position", "view_user", "change_user", "view_group",
-                         "view_navitem", "change_navitem", "view_partnerbenefit", "change_partnerbenefit"):
+        for proibido in ("delete_project", "delete_partner", "delete_program", "delete_programcase", "delete_selectionprocess",
+                         "delete_directorate", "add_siteconfig", "delete_siteconfig", "add_paginadosite", "delete_paginadosite",
+                         "add_secaodahome", "delete_secaodahome", "delete_position", "view_user", "change_user", "view_group",
+                         "view_navitem", "change_navitem"):
             self.assertNotIn(proibido, codenames)
 
-    def test_editor_edits_content_but_cannot_reach_users_or_delete_articles(self):
+    def test_editor_edits_content_but_cannot_reach_users_or_delete_a_published_article(self):
         self.client.force_login(self.editor)
         artigo = Article.objects.create(title="A", description="d", published=True)
 
@@ -852,15 +854,75 @@ class EditorsGroupTests(TestCase):
         self.assertEqual(self.client.get("/admin/auth/group/").status_code, 403)
         self.assertEqual(self.client.get(f"/admin/website/article/{artigo.pk}/delete/").status_code, 403)
 
-    def test_editor_sees_no_access_group_in_the_menu(self):
+    def test_editor_deletes_a_draft_article_but_not_a_member_with_history(self):
+        from website.models import MemberTrajectory
+
+        self.client.force_login(self.editor)
+        rascunho = Article.objects.create(title="Rascunho", description="d", published=False)
+        sem_historico = Member.objects.create(name="Engano")
+        com_historico = Member.objects.create(name="Ana")
+        MemberTrajectory.objects.create(member=com_historico, semester="2026.1", role="Trainee")
+
+        self.assertEqual(self.client.get(f"/admin/website/article/{rascunho.pk}/delete/").status_code, 200)
+        self.assertEqual(self.client.get(f"/admin/website/member/{sem_historico.pk}/delete/").status_code, 200)
+        self.assertEqual(self.client.get(f"/admin/website/member/{com_historico.pk}/delete/").status_code, 403)
+
+        self.client.post(f"/admin/website/member/{sem_historico.pk}/delete/", {"post": "yes"})
+        self.assertFalse(Member.objects.filter(pk=sem_historico.pk).exists())
+
+    def test_a_member_in_an_article_or_project_cannot_be_deleted_by_an_editor(self):
+        from website.models import Project
+
+        self.client.force_login(self.editor)
+        no_artigo = Member.objects.create(name="Autora")
+        no_projeto = Member.objects.create(name="Da equipe")
+        artigo = Article.objects.create(title="A", description="d")
+        ArticleAuthor.objects.create(article=artigo, name="Autora", member=no_artigo)
+        projeto = Project.objects.create(title="P", description="d", start_date=date(2026, 1, 1))
+        projeto.members.add(no_projeto)
+
+        for membro in (no_artigo, no_projeto):
+            self.assertEqual(self.client.get(f"/admin/website/member/{membro.pk}/delete/").status_code, 403, membro.name)
+
+    def test_an_administrator_deletes_any_member(self):
+        from website.models import MemberTrajectory
+
+        admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(admin)
+        membro = Member.objects.create(name="Ana")
+        MemberTrajectory.objects.create(member=membro, semester="2026.1", role="Trainee")
+
+        self.assertEqual(self.client.get(f"/admin/website/member/{membro.pk}/delete/").status_code, 200)
+
+    def test_editor_sees_the_activity_but_not_the_users_and_groups_in_the_menu(self):
         from config.navigation import navegacao
 
         usuario = get_user_model().objects.get(pk=self.editor.pk)
-        titulos = [g["title"] for g in navegacao(mock.Mock(user=usuario))]
+        grupos = navegacao(mock.Mock(user=usuario))
+        titulos = [g["title"] for g in grupos]
+        itens = [i["title"] for g in grupos for i in g["items"]]
 
         self.assertIn("Site", titulos)
         self.assertIn("Artigos", titulos)
-        self.assertNotIn("Acesso", titulos)
+        self.assertIn("Atividade recente", itens)
+        self.assertIn("Cargos", itens)
+        self.assertNotIn("Usuários", itens)
+        self.assertNotIn("Grupos", itens)
+
+    def test_migration_0035_gives_the_existing_group_the_new_permissions_once(self):
+        import importlib
+
+        from django.apps import apps
+        from django.contrib.auth.models import Permission
+
+        modulo = importlib.import_module("website.migrations.0035_permissoes_do_editor")
+        todas = list(Permission.objects.filter(codename__in=[c for _, c in modulo.NOVAS]))
+        self.grupo.permissions.remove(*todas)
+        self.assertTrue(self.codenames().isdisjoint({c for _, c in modulo.NOVAS}))
+
+        modulo.permitir_aos_editores(apps, None)
+
+        self.assertTrue({c for _, c in modulo.NOVAS} <= self.codenames())
 
     def test_migrate_keeps_adjustments_made_in_the_admin(self):
         from django.apps import apps
@@ -894,14 +956,14 @@ class EditorsGroupTests(TestCase):
         from django.contrib.auth.models import Group, Permission
         from website.editors_group import sincroniza_grupo_editores
 
-        self.grupo.permissions.add(Permission.objects.get(codename="delete_article"))
+        self.grupo.permissions.add(Permission.objects.get(codename="delete_project"))
         self.grupo.delete()
 
         self.assertTrue(sincroniza_grupo_editores(apps, apps.get_app_config("website")))
 
         novo = Group.objects.get(name="Editores")
         codenames = set(novo.permissions.values_list("codename", flat=True))
-        self.assertNotIn("delete_article", codenames)
+        self.assertNotIn("delete_project", codenames)
         self.assertIn("change_article", codenames)
         # Quem estava no grupo apagado precisa ser colocado de novo.
         self.assertFalse(novo.user_set.exists())
@@ -1761,13 +1823,13 @@ class PermissionLevelsTests(TestCase):
         self.assertIn("nav_items-TOTAL_FORMS", pagina)
         self.assertIn("partner_benefits-TOTAL_FORMS", pagina)
 
-    def test_the_editor_does_not_see_brand_privacy_menu_or_benefits(self):
+    def test_the_editor_does_not_see_brand_privacy_or_menu_but_sees_the_partner_benefits(self):
         pagina = self.pagina(self.editor)
 
         for campo in ("site_name", "site_description", "logo", "favicon", "og_image", "privacy_text", "privacy_updated"):
             self.assertNotIn(f'name="{campo}"', pagina, campo)
         self.assertNotIn("nav_items-TOTAL_FORMS", pagina)
-        self.assertNotIn("partner_benefits-TOTAL_FORMS", pagina)
+        self.assertIn("partner_benefits-TOTAL_FORMS", pagina)  # o texto da página de Parceiros é conteúdo
         # O que é conteúdo continua editável.
         for campo in ("email", "home_about_photo_alt", "featured_program_slug"):
             self.assertIn(f'name="{campo}"', pagina, campo)
@@ -1779,7 +1841,9 @@ class PermissionLevelsTests(TestCase):
         dados = {k: v for k, v in model_to_dict(config).items()
                  if v is not None and k not in ("logo", "favicon", "og_image", "home_about_photo", "home_hidden_sections")}
         dados.update({"featured_program_slug": "", "email": "novo@example.com",
-                      "site_name": "Nome trocado", "privacy_text": "Texto trocado"})
+                      "site_name": "Nome trocado", "privacy_text": "Texto trocado",
+                      "partner_benefits-TOTAL_FORMS": "0", "partner_benefits-INITIAL_FORMS": "0",
+                      "partner_benefits-MIN_NUM_FORMS": "0", "partner_benefits-MAX_NUM_FORMS": "1000"})
         self.client.force_login(self.editor)
 
         resposta = self.client.post(self.url, dados)
@@ -2416,29 +2480,31 @@ class AdminSmallImprovementsTests(TestCase):
 
     # --- 2: cargo criado por um editor
 
-    def test_editor_can_create_a_position_but_not_choose_its_priority(self):
+    def test_editor_creates_and_changes_positions_including_the_priority(self):
         from website.models import Position
 
         self.client.force_login(self.editor)
         pagina = self.client.get("/admin/website/position/add/").content.decode()
         self.assertIn('name="title"', pagina)
-        self.assertNotIn('name="power"', pagina)
+        self.assertIn('name="power"', pagina)
+        self.assertIn("0 = Presidência", pagina)  # a explicação das prioridades está no campo
 
-        resposta = self.client.post("/admin/website/position/add/", {"title": "Analista de Dados", "power": "0"})
-
+        resposta = self.client.post("/admin/website/position/add/", {"title": "Analista de Dados", "power": "3"})
         self.assertEqual(resposta.status_code, 302)
-        self.assertEqual(Position.objects.get(title="Analista de Dados").power, 4)
+        cargo = Position.objects.get(title="Analista de Dados")
+        self.assertEqual(cargo.power, 3)
 
-    def test_editor_cannot_change_an_existing_position_and_administrator_chooses_priority(self):
+        self.client.post(f"/admin/website/position/{cargo.pk}/change/", {"title": "Analista de Dados", "power": "2"})
+        cargo.refresh_from_db()
+        self.assertEqual(cargo.power, 2)
+
+    def test_an_editor_cannot_delete_a_position(self):
         from website.models import Position
 
         cargo = Position.objects.create(title="Presidente", power=0)
         self.client.force_login(self.editor)
 
-        self.assertEqual(self.client.post(f"/admin/website/position/{cargo.pk}/change/", {"title": "X"}).status_code, 403)
-
-        self.client.force_login(self.admin)
-        self.assertIn('name="power"', self.client.get("/admin/website/position/add/").content.decode())
+        self.assertEqual(self.client.get(f"/admin/website/position/{cargo.pk}/delete/").status_code, 403)
 
     def test_migration_gives_the_existing_editors_group_the_new_permission(self):
         import importlib
@@ -2478,10 +2544,15 @@ class AdminSmallImprovementsTests(TestCase):
 
     # --- 4: atividade recente
 
-    def test_administrator_sees_who_changed_what_and_editor_does_not(self):
+    def test_editor_and_administrator_see_who_changed_what_but_a_user_without_permission_does_not(self):
         self.client.force_login(self.editor)
-        self.client.post("/admin/website/position/add/", {"title": "Analista de Dados"})
+        self.client.post("/admin/website/position/add/", {"title": "Analista de Dados", "power": "4"})
 
+        pagina_do_editor = self.client.get("/admin/admin/logentry/")
+        self.assertEqual(pagina_do_editor.status_code, 200)
+
+        sem_permissao = get_user_model().objects.create_user("leitor", "l@example.com", "senha-de-teste", is_staff=True)
+        self.client.force_login(sem_permissao)
         self.assertEqual(self.client.get("/admin/admin/logentry/").status_code, 403)
 
         self.client.force_login(self.admin)

@@ -14,7 +14,7 @@ Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site a
 
 ## Como a tela está organizada
 
-O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários, grupos e, só para administradores, a atividade recente). Quem tem um login limitado vê só os grupos que pode usar (o editor, por exemplo, não vê **Cargos** nem **Acesso**). A busca no topo do menu acha qualquer tela pelo nome.
+O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários e grupos, só para administradores, e a atividade recente). Quem tem um login limitado vê só os grupos que pode usar (o editor, por exemplo, vê a atividade recente, mas não **Usuários** nem **Grupos**). A busca no topo do menu acha qualquer tela pelo nome.
 
 A **página inicial** mostra, no alto, com qual nível você entrou (Editor ou Administrador) e um cartão de atalhos por assunto: **Artigos** (com **Escrever um artigo**), **Equipe**, **Parceiros**, **Programas e projetos**, **Processo seletivo** e **Textos do site**. O administrador vê também o cartão **Acesso**, com os usuários e a atividade recente. O botão destacado de cada cartão é a ação mais comum, e o menu à esquerda tem o restante. Em todas as telas o padrão é o mesmo:
 
@@ -67,14 +67,15 @@ Cada pessoa que mexe no site deve ter o próprio login. Compartilhar senha imped
    - **Administrador:** marque "Status de superusuário". Dá acesso total, incluindo criar outros logins, apagar qualquer registro e mexer na estrutura do site. Deixe isso para duas pessoas (por exemplo, o Diretor Tech e alguém da presidência), para nunca depender de uma só.
 
 **O que o grupo Editores pode e não pode:**
-- Pode criar e editar membros, parceiros, programas, projetos, cases, artigos, processos seletivos, e os textos e contatos do site (**Textos do site**, **Seções da Home** e **Configuração do site**), e mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas.
-- **Não** vê as abas **Marca e compartilhamento** e **Política de Privacidade** da configuração, nem o menu do site e os benefícios para parceiros. Isso fica com os administradores.
-- **Não** vê Usuários nem Grupos, e **não** apaga membros, parceiros, projetos, programas, cases, artigos nem processos. Para tirar algo do ar, use as opções de esconder (veja "Esconder ou apagar"). Pode **criar um cargo novo** (pelo botão ao lado do campo **Cargo principal** do membro), que entra como membro comum; não escolhe a prioridade nem altera os cargos existentes, porque a prioridade define quem é liderança na Home. Um administrador ajusta isso em **Cargos**.
+- **Pode** criar e editar membros (com a **Trajetória**), diretorias, parceiros (e os **benefícios para parceiros**), programas, projetos, cases, artigos (com os **Autores**), processos seletivos, **Cargos** (inclusive a **Prioridade**), e os textos e contatos do site (**Textos do site**, **Seções da Home** e **Configuração do site**). Pode também mexer nas listas dentro de cada registro (blocos, imagens, etapas), inclusive removendo linhas, e ver a **Atividade recente**.
+- **Pode apagar** só o que foi cadastrado por engano: um **artigo em rascunho** e um **membro sem nenhum vínculo** (sem trajetória, case, projeto nem artigo). O botão **Excluir** só aparece nesses casos. Um artigo publicado se despublica, e quem tem histórico se arquiva (veja "Esconder ou apagar").
+- **Não** apaga parceiros, projetos, programas, cases, processos seletivos, diretorias nem cargos. Para tirar algo do ar, use as opções de esconder.
+- **Não** vê as abas **Marca e compartilhamento** e **Política de Privacidade** da configuração, nem o menu do site, nem **Usuários** e **Grupos**. Isso, a estrutura do site e o controle de acesso ficam com os administradores.
 - O menu mostra só o que a pessoa pode usar.
 
-O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar artigos), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, apague o grupo **Editores** em **Grupos**: ele é recriado com as permissões originais no próximo deploy (as pessoas que estavam nele precisam ser colocadas de novo). As permissões aparecem agrupadas por assunto, como "Pode ver", "Pode alterar", "Pode adicionar" e "Pode excluir".
+O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo a mais (por exemplo, apagar parceiros), ajuste em **Grupos > Editores**: o ajuste fica e não é desfeito nas próximas publicações. Para voltar ao padrão, apague o grupo **Editores** em **Grupos**: ele é recriado com as permissões originais no próximo deploy (as pessoas que estavam nele precisam ser colocadas de novo). As permissões aparecem agrupadas por assunto, como "Pode ver", "Pode alterar", "Pode adicionar" e "Pode excluir".
 
-**Quem mudou o quê:** em **Acesso > Atividade recente** (só administradores) fica a lista das alterações feitas no admin, com data, usuário, cadastro, registro e o que mudou. Cada registro também tem o botão **Histórico**.
+**Quem mudou o quê:** em **Acesso > Atividade recente** (administradores e editores) fica a lista das alterações feitas no admin, com data, usuário, cadastro, registro e o que mudou. Cada registro também tem o botão **Histórico**.
 
 **Quando alguém sai da gestão:** abra o usuário dela e desmarque **"Ativo"**. Ela perde o acesso na hora.
 
@@ -95,7 +96,7 @@ O grupo é criado sozinho na primeira publicação. Se for preciso liberar algo 
    - **Vínculos com diretorias:** uma linha por diretoria da pessoa, com o cargo nela. Arraste a linha para mudar a ordem dentro da diretoria.
 4. Salvar.
 
-O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança. Um cargo criado por um editor entra com prioridade 4 (membro comum); só administradores veem e mudam a prioridade.
+O **Cargo principal** define a ordem da pessoa no site e se ela aparece na Home. Os cargos ficam em **Cargos**, e cada um tem uma **Prioridade para exibição**: 0 = Presidência, 1 = Vice, 2 = Diretoria, 3 = Coordenação, 4 = Membro/Mentor, 5 = Trainee. Quem tem prioridade até 2 aparece na Home como liderança. Um editor também cria e altera cargos, inclusive a prioridade. Um valor errado só muda a ordem e a Home, e se corrige em **Cargos**.
 
 ### Quando alguém sai do clube
 

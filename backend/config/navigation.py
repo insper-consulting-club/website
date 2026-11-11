@@ -44,14 +44,7 @@ GRUPOS = [
 ]
 
 
-# Cadastros que o editor só consulta (ele cria um cargo pelo formulário do membro, mas não o altera): ficam fora do
-# menu de quem não pode alterar, para não parecerem uma lista de trabalho.
-SO_PARA_QUEM_ALTERA = {("website", "position")}
-
-
 def pode_abrir(usuario, app, modelo):
-    if (app, modelo) in SO_PARA_QUEM_ALTERA:
-        return usuario.has_perm(f"{app}.change_{modelo}")
     return usuario.has_perm(f"{app}.view_{modelo}") or usuario.has_perm(f"{app}.change_{modelo}")
 
 
@@ -100,7 +93,7 @@ ATALHOS = [
         ("Editar textos", "website", "paginadosite", "lista"),
         ("Seções da Home", "website", "secaodahome", "lista"),
     ]),
-    ("Acesso", "Logins e o histórico das alterações (só administradores).", "admin_panel_settings", [
+    ("Acesso e atividade", "Logins (só administradores) e o histórico de quem mudou o quê.", "admin_panel_settings", [
         ("Usuários", "auth", "user", "lista"),
         ("Atividade recente", "admin", "logentry", "lista"),
     ]),
