@@ -34,6 +34,8 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - ./backend:/app
+      # Só leitura: o teste que confere os textos pedidos pelo site lê o código do frontend.
+      - ./frontend:/frontend:ro
       # Dados reais do ICC (não versionados), lidos pelo import_icc_data.
       - ./site-data:/site-data:ro
     env_file:

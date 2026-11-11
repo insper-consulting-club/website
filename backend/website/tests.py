@@ -1841,10 +1841,12 @@ class AdminJavaScriptTranslationTests(TestCase):
 @SEM_MANIFESTO
 class AdminPortugueseTextsTests(TestCase):
     def setUp(self):
-        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste-123"))
+        # O id do usuário não é fixo: no Postgres, a sequência não reinicia entre os testes.
+        self.usuario = get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste-123")
+        self.client.force_login(self.usuario)
 
     def test_permissions_are_listed_in_portuguese(self):
-        for url in ("/admin/auth/group/add/", "/admin/auth/user/1/change/"):
+        for url in ("/admin/auth/group/add/", f"/admin/auth/user/{self.usuario.pk}/change/"):
             pagina = self.client.get(url).content.decode()
 
             self.assertNotIn("Can add", pagina, url)
@@ -1872,7 +1874,7 @@ class AdminPortugueseTextsTests(TestCase):
         self.assertIn("Deixe vazio para ele aparecer em", pagina)
 
     def test_user_form_uses_corrected_django_sentences(self):
-        pagina = self.client.get("/admin/auth/user/1/change/").content.decode()
+        pagina = self.client.get(f"/admin/auth/user/{self.usuario.pk}/change/").content.decode()
 
         self.assertIn("Indica que o usuário consegue acessar este site de administração.", pagina)
         self.assertIn("Os grupos a que este usuário pertence.", pagina)
@@ -2522,7 +2524,7 @@ class ContentRegistryTests(TestCase):
         for arquivo in pasta.rglob("*.tsx"):
             pedidas |= set(re.findall(r'\bt\("([a-z_]+\.[a-z_0-9]+)"\)', arquivo.read_text(encoding="utf-8")))
 
-        self.assertGreater(len(pedidas), 100)
+        self.assertGreater(len(pedidas), 100, f"não achei o código do frontend em {pasta} (no Docker, o Compose monta ./frontend em /frontend)")
         self.assertEqual(sorted(pedidas - set(POR_CHAVE)), [], "o frontend usa uma chave que o registro não tem")
 
     def test_sync_creates_the_pages_in_site_order_and_removes_the_ones_that_left(self):
