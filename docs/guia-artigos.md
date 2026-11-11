@@ -28,7 +28,7 @@ Cada artigo aparece em dois lugares:
 3. a **Imagem de capa**, na largura inteira;
 4. o quadro **Resumo**;
 5. o **Texto do artigo**, com as imagens e fórmulas;
-6. o bloco **Como citar**, gerado sozinho a partir dos autores, do título e do ano, com os botões **Copiar citação** e **Compartilhar** (LinkedIn);
+6. o bloco **Como citar**, gerado sozinho a partir dos autores, do título e do ano, com os botões **Copiar citação** e **Compartilhar**: no celular abre a folha de compartilhamento do aparelho, e no computador um menu com LinkedIn, WhatsApp e **Copiar link**;
 7. o botão **Ver publicação original**, só quando o artigo tem **Link externo**.
 
 ---
@@ -41,7 +41,7 @@ Cada artigo aparece em dois lugares:
 4. **Cole** o texto convertido em **Texto do artigo**.
 5. **Envie as imagens** em **Imagens do artigo** e coloque-as no texto pelo número (ver [Imagens no meio do texto](#imagens-no-meio-do-texto)).
 6. Clique em **Salvar e continuar editando**, com **Publicado** desmarcado. O artigo fica guardado como rascunho e não aparece no site.
-7. **Revise** o texto com o botão **Mostrar prévia**, abaixo de **Texto do artigo** (ver [Revisar antes de publicar](#revisar-antes-de-publicar)). Corrija e salve até ficar certo.
+7. **Revise** o texto com o botão **Prévia**, na barra acima de **Texto do artigo** (ver [Revisar antes de publicar](#revisar-antes-de-publicar)). Corrija e salve até ficar certo.
 8. Marque **Publicado**, salve e abra a página no site para conferir. Se algo estiver errado, desmarque **Publicado** e corrija.
 
 Dica: antes de abrir o admin, prepare numa ficha o título, os autores, os temas, o resumo, o slug, a data e a lista das imagens (número, arquivo e legenda), respeitando os limites de [Campo a campo](#campo-a-campo).
@@ -59,7 +59,7 @@ Os campos **Ordem de exibição**, **Publicação** e **Link externo** ficam na 
 | **Autores** | Não | 300 caracteres | Nomes separados por vírgula, por exemplo `Ana Silva, João Souza`. O texto aparece igual no card, no topo da página e na citação |
 | **Temas** | Não | 200 caracteres no total | Palavras-chave separadas por vírgula, por exemplo `Estratégia, Varejo`. Viram etiquetas no topo do artigo |
 | **Resumo** | Sim | - | Duas ou três frases. Aparece no card da lista e no quadro "Resumo" do artigo |
-| **Texto do artigo** | Não, mas é o conteúdo | - | O texto completo, em Markdown. O botão **Mostrar prévia**, abaixo do campo, mostra como o texto ficará no site, com imagens e fórmulas |
+| **Texto do artigo** | Não, mas é o conteúdo | - | O texto completo, em Markdown. O botão **Prévia**, na barra acima do campo, mostra como o texto ficará no site, com imagens e fórmulas |
 | **Link externo** | Não | 200 caracteres | Endereço de outra publicação do mesmo artigo (revista, LinkedIn ou um PDF em uma pasta do ICC com acesso "Qualquer pessoa com o link"). Cria o botão "Ver publicação original" |
 | **Publicação** | Não | 200 caracteres | Nome da revista ou do evento, quando o artigo também saiu fora do site. Aparece no card |
 | **Data de publicação** | Recomendado | - | A data que aparece no card e no topo do artigo. Preencha sempre: um artigo sem data pode aparecer no topo da lista, antes dos mais recentes |
@@ -76,6 +76,15 @@ Dica sobre o slug: depois de compartilhar o link do artigo, evite mudar o slug, 
 ## Escrever o texto em Markdown
 
 O texto do artigo é escrito em **Markdown**, um jeito simples de marcar a formatação com símbolos. O site converte os símbolos em seções, listas, negrito e o resto. O título do artigo já aparece no topo da página e é preenchido à parte, então **comece as seções pelo nível `##`**. Os botões acima do campo de texto (Negrito, Itálico, Código em linha, Seção, Subseção, Subsubseção, Lista, Lista numerada, Citação, Link, Bloco de código, Tabela, Linha divisória e Fórmula) inserem esses símbolos por você. Seção, Subseção, Subsubseção, Lista, Lista numerada e Citação valem para as linhas selecionadas, e clicar de novo remove a marcação. O botão Tabela pergunta quantas colunas (até 8) e quantas linhas (até 20, além do cabeçalho) a tabela terá.
+
+**A barra do campo.** Acima do texto há uma barra que aplica a formatação sem digitar os símbolos. Selecione um trecho e clique, ou clique sem selecionar para inserir um exemplo. Da esquerda para a direita:
+
+- **Seção:** menu com Seção, Subseção e Subsubseção, que transformam a linha onde está o cursor em título;
+- **N**, **I** e **link**; depois a **lista** com marcadores, a **lista numerada** e a **citação**;
+- **Inserir:** menu com Imagem, Tabela, Fórmula, Bloco de código, Código na frase e Linha divisória. A tabela e a imagem abrem um quadro para escolher o tamanho ou a imagem;
+- **Prévia:** mostra o texto como ficará no site;
+- **Tela cheia:** o campo ocupa a janela, com a prévia ao lado. Nela aparece o botão **Salvar e continuar**, que salva sem sair da tela cheia, e **Sair** volta ao formulário.
+
 
 ### Referência rápida
 
@@ -129,7 +138,7 @@ Passos da análise:
 
 Para uma lista dentro de outra, recue o item com quatro espaços.
 
-**Blocos de código.** Para um trecho de script com várias linhas, use o botão `</>` ou coloque três crases sozinhas em uma linha antes e depois do código. O bloco aparece em caixa própria, com letra de máquina, e rola na horizontal se a linha for longa. Para um nome de função ou variável no meio da frase, use o botão **Código em linha**.
+**Blocos de código.** Para um trecho de script com várias linhas, use **Inserir > Bloco de código** ou coloque três crases sozinhas em uma linha antes e depois do código. O bloco aparece em caixa própria, com letra de máquina, e rola na horizontal se a linha for longa. Para um nome de função ou variável no meio da frase, use **Inserir > Código na frase**.
 
 ````
 ```
@@ -167,7 +176,7 @@ Links que começam com `http` abrem em outra aba.
 ### O que não funciona ou não é recomendado
 
 - **HTML.** Se você colar marcação HTML, o site a mostra como texto comum. Isso é proposital, por segurança.
-- **Seções de nível 1, 5 e 6** (`#`, `#####` e `######`). O texto tem três níveis de seção, `##` a `####`, e o título do artigo é colocado pelo site.
+- **Seções de nível 1, 5 e 6** (`#`, `#####` e `######`). O texto tem três níveis de seção, `##` a `####`, e o título do artigo é colocado pelo site. Se aparecerem, o site não os formata: a linha sai como texto comum, com os símbolos `#` à vista, para você perceber e corrigir.
 - **Cores, tamanho de letra e alinhamento do texto.** O visual segue o padrão do site, igual em todos os artigos.
 - **Notas de rodapé** (`[^1]`). Funcionam, mas saem sem o estilo do site, em uma lista simples no fim do texto. Prefira citar a fonte no próprio texto, com um link, ou em uma seção "Referências" no fim do artigo.
 
@@ -271,7 +280,7 @@ Um artigo com **Publicado** desmarcado fica guardado só no admin, e um artigo p
 
 ### Prévia no admin (o caso comum)
 
-Abaixo do campo **Texto do artigo**, o botão **Mostrar prévia** abre o texto desenhado pelo próprio site, com os mesmos estilos, tabelas, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita, e nada é publicado até clicar em **Salvar**.
+Na barra acima do campo **Texto do artigo**, o botão **Prévia** abre, abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, tabelas, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita, e nada é publicado até clicar em **Salvar**.
 
 - **Imagens.** Num artigo novo, elas só aparecem depois de salvar o artigo e as imagens uma vez (use **Salvar e continuar editando**).
 - **O que a prévia não mostra.** Só o corpo do texto aparece. Título, autores, data, resumo, imagem de capa e o card da lista não entram. Para vê-los, use o ambiente local.

@@ -957,7 +957,7 @@ class MarkdownPreviewWidgetTests(TestCase):
 
         pagina = self.client.get(f"/admin/website/article/{artigo.pk}/change/").content.decode()
 
-        self.assertNotIn("md-previa__botao", pagina)
+        self.assertNotIn('data-md="previa"', pagina)
         self.assertIn('name="content"', pagina)
 
 
@@ -1443,7 +1443,7 @@ class SeedDataTests(TestCase):
         self.assertEqual(Partner.objects.count(), 8)
         self.assertEqual(Program.objects.count(), 5)
         self.assertEqual(Project.objects.count(), 7)
-        self.assertEqual(Article.objects.count(), 7)
+        self.assertEqual(Article.objects.count(), 8)
         self.assertEqual(SelectionProcess.objects.count(), 2)
         self.assertEqual(ProgramCase.objects.count(), 6)
         self.assertEqual(Statistic.objects.count(), 4)
@@ -1600,6 +1600,8 @@ class SeedDataTests(TestCase):
 
         for artigo in Article.objects.all():
             for numero in re.findall(r"!\[\]\(imagem-(\d+)\)", artigo.content):
+                if numero == "9":  # o artigo "Guia de formatação" pede de propósito uma imagem que não existe
+                    continue
                 self.assertTrue(artigo.images.filter(number=int(numero)).exists(), f"{artigo.title}: imagem-{numero}")
 
     def test_placeholder_text_has_no_accented_glyphs_the_font_cannot_draw(self):
@@ -2473,7 +2475,7 @@ class ContentRegistryTests(TestCase):
 
         chaves = [t.chave for p in PAGINAS for t in p.textos]
         self.assertEqual(len(chaves), len(set(chaves)))
-        self.assertEqual(len(chaves), 149)
+        self.assertEqual(len(chaves), 151)
         self.assertEqual(len({p.slug for p in PAGINAS}), len(PAGINAS))
         for pagina in PAGINAS:
             self.assertTrue(pagina.textos, pagina.slug)
@@ -3448,7 +3450,7 @@ class ArticleEditingHelpTests(TestCase):
 
         acoes = (
             "negrito", "italico", "codigo", "secao", "subsecao", "subsubsecao", "lista", "numerada", "citacao",
-            "link", "bloco", "tabela", "tabela-inserir", "divisoria", "formula", "tela",
+            "link", "bloco", "tabela", "tabela-inserir", "divisoria", "formula", "tela", "previa",
         )
         for acao in acoes:
             self.assertIn(f'data-md="{acao}"', html)
