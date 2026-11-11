@@ -157,13 +157,13 @@ class ArticleListView(generics.ListAPIView):
     # A lista não leva o texto nem as imagens do corpo; o artigo completo vem do detalhe.
     serializer_class = ArticleListSerializer
     # Rascunhos (Publicado desmarcado) não aparecem no site.
-    queryset = Article.objects.filter(published=True).defer("content")
+    queryset = Article.objects.filter(published=True).defer("content").prefetch_related("article_authors__member")
 
 
 class ArticleDetailView(generics.RetrieveAPIView):
     serializer_class = ArticleSerializer
     # Rascunho responde 404, como se não existisse.
-    queryset = Article.objects.filter(published=True).prefetch_related("images")
+    queryset = Article.objects.filter(published=True).prefetch_related("images", "article_authors__member")
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())

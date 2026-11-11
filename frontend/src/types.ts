@@ -153,24 +153,42 @@ export interface Statistic {
   order: number
 }
 
+// Um autor do artigo. Com membro vinculado, o nome leva à lista dos artigos dele; has_profile diz se ele tem perfil
+// na página Equipe (só membros ativos têm).
+export interface ArticleAuthor {
+  name: string
+  member_id: number | null
+  has_profile: boolean
+}
+
 export interface Article {
   id: number
   slug: string | null
   title: string
   description: string
-  link: string
   image_url: string | null
-  source: string
   date: string | null
   order: number
-  authors: string
+  authors: ArticleAuthor[]
   topics: string
   content: string
   images: ArticleImage[]
+  // As citações do artigo, com marcadores no lugar da data de acesso, que é a de quem copia.
+  citations: ArticleCitation[]
 }
 
-// Item da lista de artigos: o texto e as imagens do corpo só vêm no artigo completo.
-export type ArticleSummary = Omit<Article, "content" | "images">
+// Uma forma de citar o artigo. "texto" (ABNT, APA) vem em partes, para pôr título e "et al." em destaque; "codigo"
+// (BibTeX, BibLaTeX, RIS) é para copiar como está.
+export interface ArticleCitation {
+  id: string
+  label: string
+  kind: "texto" | "codigo"
+  texto: string
+  partes?: { t: string; e: "b" | "i" | null }[]
+}
+
+// Item da lista de artigos: o texto, as imagens do corpo e as citações só vêm no artigo completo.
+export type ArticleSummary = Omit<Article, "content" | "images" | "citations">
 
 // Imagem chamada no texto do artigo como ![](imagem-<number>).
 export interface ArticleImage {

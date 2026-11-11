@@ -17,19 +17,19 @@ Cada artigo aparece em dois lugares:
 
 **1. Na lista de Artigos** (`/artigos`), como um card, do mais recente para o mais antigo:
 
-- a **imagem de capa**. Sem capa, o card mostra o nome da **Publicação** ou, se estiver vazio, "ICC";
-- a linha com a **Publicação** e a **Data**;
+- a **imagem de capa**. Sem capa, o card mostra "ICC";
+- a **Data**;
 - o **Título**, os **Autores** e o **Resumo**.
+
+No alto da lista há um seletor de **Autor**, que mostra só os artigos de um membro (entram os membros que assinam algum artigo publicado; autores de fora não).
 
 **2. Na página do artigo** (`/artigos/<slug>`), de cima para baixo:
 
-1. a data, o título e os autores;
-2. os **Temas**, como etiquetas;
+1. o título, os **Autores** (quem é membro ativo vira link para o perfil, na página Equipe) e a data;
+2. os botões **Compartilhar** e **Citar**. **Compartilhar** abre, no celular, a folha de compartilhamento do aparelho e, no computador, um menu com LinkedIn, WhatsApp e **Copiar link**. **Citar** abre uma janela com as citações em ABNT, APA, BibTeX, BibLaTeX e RIS, gerada sozinha a partir dos autores, do título e da data, com um ícone para copiar (a data de acesso é a de quem copia);
 3. a **Imagem de capa**, na largura inteira;
-4. o quadro **Resumo**;
-5. o **Texto do artigo**, com as imagens e fórmulas;
-6. o bloco **Como citar**, gerado sozinho a partir dos autores, do título e do ano, com os botões **Copiar citação** e **Compartilhar** (LinkedIn);
-7. o botão **Ver publicação original**, só quando o artigo tem **Link externo**.
+4. o quadro **Resumo**, com os **Temas** como palavras-chave;
+5. o **Texto do artigo**, com as imagens e fórmulas.
 
 ---
 
@@ -37,11 +37,11 @@ Cada artigo aparece em dois lugares:
 
 1. **Escreva** o artigo no formato que preferir, inclusive direto em Markdown (`.md`). Use os estilos de título do editor para seções, subseções e subsubseções (no Google Docs, `Ctrl+Alt+2`, `Ctrl+Alt+3` e `Ctrl+Alt+4`). Deixe as imagens em arquivos separados.
 2. **Converta** o texto para Markdown (ver [Converter o texto para Markdown](#converter-o-texto-para-markdown)).
-3. No admin, abra **Artigos > Adicionar artigo** e preencha os campos (ver [Campo a campo](#campo-a-campo)).
+3. No admin, abra **Artigos > Adicionar artigo** e preencha os campos (ver [Campo a campo](#campo-a-campo)), inclusive a lista de **Autores** (ver [Autores](#autores)).
 4. **Cole** o texto convertido em **Texto do artigo**.
 5. **Envie as imagens** em **Imagens do artigo** e coloque-as no texto pelo número (ver [Imagens no meio do texto](#imagens-no-meio-do-texto)).
-6. Clique em **Salvar e continuar editando**, com **Publicado** desmarcado. O artigo fica guardado como rascunho e não aparece no site.
-7. **Revise** o texto com o botão **Mostrar prévia**, abaixo de **Texto do artigo** (ver [Revisar antes de publicar](#revisar-antes-de-publicar)). Corrija e salve até ficar certo.
+6. Clique em **Salvar e continuar editando**, com **Publicado** desmarcado. O artigo fica guardado como rascunho e não aparece no site. A faixa **Para publicar**, no alto do formulário, mostra o que ainda falta (ver [O que falta para publicar e como será citado](#o-que-falta-para-publicar-e-como-será-citado)). Se você tentar sair da página com alterações não salvas, o navegador avisa.
+7. **Revise** o texto com o botão **Prévia**, na barra acima de **Texto do artigo** (ver [Revisar antes de publicar](#revisar-antes-de-publicar)). Corrija e salve até ficar certo.
 8. Marque **Publicado**, salve e abra a página no site para conferir. Se algo estiver errado, desmarque **Publicado** e corrija.
 
 Dica: antes de abrir o admin, prepare numa ficha o título, os autores, os temas, o resumo, o slug, a data e a lista das imagens (número, arquivo e legenda), respeitando os limites de [Campo a campo](#campo-a-campo).
@@ -50,22 +50,39 @@ Dica: antes de abrir o admin, prepare numa ficha o título, os autores, os temas
 
 ## Campo a campo
 
-Os campos **Ordem de exibição**, **Publicação** e **Link externo** ficam na seção recolhida **Avançado**, no fim do formulário. Clique nela para abrir. Os demais aparecem à vista.
+O campo **Ordem de exibição** fica na seção recolhida **Avançado**, no fim do formulário, e a prévia das citações na seção recolhida **Como será citado**. Os demais aparecem à vista. Os autores têm uma lista própria, logo abaixo de **Título** e **Slug** (ver [Autores](#autores)).
 
 | Campo | Obrigatório | Limite | O que escrever |
 | --- | --- | --- | --- |
 | **Título** | Sim | 200 caracteres | O título do artigo |
 | **Slug da URL** | Não | 200 caracteres | O trecho final do endereço, em letras minúsculas, sem acento nem espaço, com palavras separadas por hífen. Por exemplo, `analise-do-setor-de-varejo` gera `/artigos/analise-do-setor-de-varejo`. Deve ser único. Se ficar em branco, o endereço usa o número do artigo |
-| **Autores** | Não | 300 caracteres | Nomes separados por vírgula, por exemplo `Ana Silva, João Souza`. O texto aparece igual no card, no topo da página e na citação |
-| **Temas** | Não | 200 caracteres no total | Palavras-chave separadas por vírgula, por exemplo `Estratégia, Varejo`. Viram etiquetas no topo do artigo |
+| **Autores** | Para publicar | 200 caracteres por nome | Uma linha por pessoa, escolhida na lista de membros ou escrita como autor de fora. Ver [Autores](#autores) |
+| **Temas** | Não | 200 caracteres no total | Palavras-chave separadas por vírgula, por exemplo `Estratégia, Varejo`. Ao digitar, o campo sugere os temas já usados em outros artigos, para não escrever o mesmo tema de dois jeitos. Aparecem como palavras-chave no quadro Resumo |
 | **Resumo** | Sim | - | Duas ou três frases. Aparece no card da lista e no quadro "Resumo" do artigo |
-| **Texto do artigo** | Não, mas é o conteúdo | - | O texto completo, em Markdown. O botão **Mostrar prévia**, abaixo do campo, mostra como o texto ficará no site, com imagens e fórmulas |
-| **Link externo** | Não | 200 caracteres | Endereço de outra publicação do mesmo artigo (revista, LinkedIn ou um PDF em uma pasta do ICC com acesso "Qualquer pessoa com o link"). Cria o botão "Ver publicação original" |
-| **Publicação** | Não | 200 caracteres | Nome da revista ou do evento, quando o artigo também saiu fora do site. Aparece no card |
-| **Data de publicação** | Recomendado | - | A data que aparece no card e no topo do artigo. Preencha sempre: um artigo sem data pode aparecer no topo da lista, antes dos mais recentes |
+| **Texto do artigo** | Não, mas é o conteúdo | - | O texto completo, em Markdown. O botão **Prévia**, na barra acima do campo, mostra como o texto ficará no site, com imagens e fórmulas |
+| **Data de publicação** | Sim | - | A data que aparece no card e no topo do artigo, e que ordena a lista. O calendário tem o botão "Hoje" |
 | **Imagem de capa** | Não | Nome do arquivo: 100 caracteres | Imagem horizontal, de preferência na proporção 16:9 (por exemplo, 1600 por 900 pixels). No card ela é cortada nessa proporção, e na página aparece inteira |
 | **Ordem de exibição** | Não | - | Só desempata artigos com a mesma data: o menor número aparece primeiro |
 | **Publicado** | Começa desmarcado | - | Desmarcado, o artigo é rascunho e fica invisível no site |
+
+## Autores
+
+Os autores ficam numa lista logo abaixo de **Título** e **Slug**, uma linha por pessoa, na ordem em que aparecem no site (arraste a alça para reordenar). Um artigo precisa de ao menos um autor para ser publicado, mas um rascunho pode ficar sem. Todo artigo é assinado por pessoas: não há "artigo institucional", e os comunicados do clube saem pelas redes sociais.
+
+1. Clique na linha e comece a digitar o nome. Aparece uma lista com os membros que combinam, sem diferenciar acento nem maiúscula. Membros que saíram aparecem marcados como "ex-membro", e, se dois membros têm o mesmo nome, a lista mostra o número (ID) de cada um.
+2. **Escolha o membro** na lista, com o clique ou com as setas e Enter. A linha passa a mostrar "Ligado ao perfil de ...". No site, o nome vira link para o perfil na página Equipe (só para membros ativos), e o artigo entra no filtro por autor.
+3. Para quem **não é membro**, escreva o nome e escolha a última opção da lista ("Usar “...” como autor de fora"). A linha avisa "Autor de fora": sem link para o perfil e fora do filtro por autor.
+4. Se você mexer no nome depois de escolher um membro, o vínculo se desfaz e a linha volta a ser de um autor de fora, até escolher de novo.
+
+O nome é guardado como foi escrito, então renomear o membro depois não muda uma citação já feita. Ao escolher um membro, a linha usa o nome dele para citações: o **Nome na citação**, se estiver preenchido no cadastro do membro, ou o nome comum.
+
+**Nomes nas citações.** As citações separam nome e sobrenome pelas regras do BibTeX. O que vai entre chaves não se separa: escreva `Robert {Lucas Jr}` ou `{Maria Clara} {Souza Lima}` quando o sobrenome tem mais de uma palavra ou um sufixo. As chaves não aparecem no site, só nas citações.
+
+## O que falta para publicar e como será citado
+
+No alto do formulário, a faixa **Para publicar** mostra o que falta no artigo salvo: falta de autor, imagens que o texto pede (`![](imagem-N)`) mas que não foram enviadas e a sugestão de imagem de capa. Quando não falta nada, aparece "Tudo pronto para publicar". Ela reflete o que está salvo, então salve para atualizar.
+
+A seção recolhida **Como será citado**, mais abaixo, mostra as citações em ABNT, APA e BibTeX como o site as entrega, com a data de acesso de hoje. Serve para conferir os nomes dos autores. Se um nome sair errado, ajuste a linha do autor (com chaves) ou o **Nome na citação** do membro. Nomes com partículas, sufixos ou sobrenomes compostos são os que mais pedem essa conferência. O ABNT e o APA foram conferidos com o BibLaTeX (biblatex-abnt e biblatex-apa) no desenvolvimento, com poucas diferenças deliberadas.
 
 **Licença das imagens.** Na capa e nas demais imagens, use só imagens de licença livre, como as do [Unsplash](https://unsplash.com/license), ou criadas pelo ICC, e cite o autor e a fonte no fim do artigo.
 
@@ -75,18 +92,29 @@ Dica sobre o slug: depois de compartilhar o link do artigo, evite mudar o slug, 
 
 ## Escrever o texto em Markdown
 
-O texto do artigo é escrito em **Markdown**, um jeito simples de marcar a formatação com símbolos. O site converte os símbolos em títulos, listas, negrito e o resto. O título do artigo já aparece como título da página, então **comece as seções pelo nível `##`**.
+O texto do artigo é escrito em **Markdown**, um jeito simples de marcar a formatação com símbolos. O site converte os símbolos em seções, listas, negrito e o resto. O título do artigo já aparece no topo da página e é preenchido à parte, então **comece as seções pelo nível `##`**. Os botões acima do campo de texto (Negrito, Itálico, Código em linha, Seção, Subseção, Subsubseção, Lista, Lista numerada, Citação, Link, Bloco de código, Tabela, Linha divisória e Fórmula) inserem esses símbolos por você. Seção, Subseção, Subsubseção, Lista, Lista numerada e Citação valem para as linhas selecionadas, e clicar de novo remove a marcação. O botão Tabela pergunta quantas colunas (até 8) e quantas linhas (até 20, além do cabeçalho) a tabela terá.
+
+**A barra do campo.** Acima do texto há uma barra que aplica a formatação sem digitar os símbolos. Selecione um trecho e clique, ou clique sem selecionar para inserir um exemplo. Da esquerda para a direita:
+
+- **Seção:** menu com Seção, Subseção e Subsubseção, que transformam a linha onde está o cursor em título;
+- **N**, **I** e **link**; depois a **lista** com marcadores, a **lista numerada** e a **citação**;
+- **Inserir:** menu com Imagem, Tabela, Fórmula, Bloco de código, Código na frase e Linha divisória. A tabela e a imagem abrem um quadro para escolher o tamanho ou a imagem;
+- **Prévia:** mostra o texto como ficará no site;
+- **Tela cheia:** o campo ocupa a janela, com a prévia ao lado. Nela aparece o botão **Salvar e continuar**, que salva sem sair da tela cheia, e **Sair** volta ao formulário.
+
 
 ### Referência rápida
 
 | Para ter | Escreva |
 |---|---|
 | Parágrafo novo | uma linha em branco entre os parágrafos |
-| Seção | `## Título da seção` |
-| Subseção | `### Título da subseção` |
-| Subsubseção | `#### Título da subsubseção` |
+| Seção | `## Nome da seção` |
+| Subseção | `### Nome da subseção` |
+| Subsubseção | `#### Nome da subsubseção` |
 | **Negrito** | `**negrito**` |
 | *Itálico* | `*itálico*` |
+| `Código` ou termo técnico, no meio da frase | ``` `código` ``` |
+| Bloco de código, com várias linhas | três crases sozinhas em uma linha, o código nas linhas seguintes e três crases sozinhas em outra linha |
 | Lista com marcadores | uma linha por item, começando com `- ` |
 | Lista numerada | uma linha por item, começando com `1. `, `2. `, `3. ` |
 | Link | `[texto do link](https://endereço.com)` |
@@ -127,6 +155,15 @@ Passos da análise:
 
 Para uma lista dentro de outra, recue o item com quatro espaços.
 
+**Blocos de código.** Para um trecho de script com várias linhas, use **Inserir > Bloco de código** ou coloque três crases sozinhas em uma linha antes e depois do código. O bloco aparece em caixa própria, com letra de máquina, e rola na horizontal se a linha for longa. Para um nome de função ou variável no meio da frase, use **Inserir > Código na frase**.
+
+````
+```
+vendas <- read.csv("vendas.csv")
+summary(vendas$receita)
+```
+````
+
 **Links e citações**
 
 ```
@@ -156,7 +193,7 @@ Links que começam com `http` abrem em outra aba.
 ### O que não funciona ou não é recomendado
 
 - **HTML.** Se você colar marcação HTML, o site a mostra como texto comum. Isso é proposital, por segurança.
-- **Títulos de nível 1, 5 e 6** (`#`, `#####` e `######`). O texto tem três níveis de título, `##` a `####`, e o título do artigo é colocado pelo site.
+- **Seções de nível 1, 5 e 6** (`#`, `#####` e `######`). O texto tem três níveis de seção, `##` a `####`, e o título do artigo é colocado pelo site. Se aparecerem, o site não os formata: a linha sai como texto comum, com os símbolos `#` à vista, para você perceber e corrigir.
 - **Cores, tamanho de letra e alinhamento do texto.** O visual segue o padrão do site, igual em todos os artigos.
 - **Notas de rodapé** (`[^1]`). Funcionam, mas saem sem o estilo do site, em uma lista simples no fim do texto. Prefira citar a fonte no próprio texto, com um link, ou em uma seção "Referências" no fim do artigo.
 
@@ -176,7 +213,7 @@ As imagens são cadastradas no mesmo formulário do artigo, sem precisar salvar 
    ![](imagem-1)
    ```
 
-   Troque o 1 pelo número da imagem. Depois de salvar, cada linha mostra o trecho pronto na coluna **Para colar no texto**, com o botão **Copiar**.
+   Troque o 1 pelo número da imagem. Depois de salvar, cada linha mostra a miniatura, o trecho pronto na coluna **Para colar no texto**, com o botão **Copiar**, e se a imagem já está "Usada no texto". Também dá para usar o botão **Imagem** da barra do texto, que mostra as imagens salvas e insere o trecho no cursor.
 3. Salve. No site, a imagem ocupa a largura do texto, com a legenda embaixo.
 
 Para usar uma legenda diferente só naquele ponto, escreva-a entre os colchetes:
@@ -260,7 +297,7 @@ Um artigo com **Publicado** desmarcado fica guardado só no admin, e um artigo p
 
 ### Prévia no admin (o caso comum)
 
-Abaixo do campo **Texto do artigo**, o botão **Mostrar prévia** abre o texto desenhado pelo próprio site, com os mesmos estilos, tabelas, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita, e nada é publicado até clicar em **Salvar**.
+Na barra acima do campo **Texto do artigo**, o botão **Prévia** abre, abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, tabelas, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita, e nada é publicado até clicar em **Salvar**.
 
 - **Imagens.** Num artigo novo, elas só aparecem depois de salvar o artigo e as imagens uma vez (use **Salvar e continuar editando**).
 - **O que a prévia não mostra.** Só o corpo do texto aparece. Título, autores, data, resumo, imagem de capa e o card da lista não entram. Para vê-los, use o ambiente local.
@@ -288,6 +325,7 @@ Com a prévia do admin, ele quase não é necessário. Serve só para conferir a
 ### Lista de conferência
 
 - [ ] Título, autores, resumo e data preenchidos, dentro dos limites de caracteres (legenda de imagem: 300).
+- [ ] Autores escolhidos na lista (membros) ou marcados como autor de fora, e faixa **Para publicar** sem pendências.
 - [ ] Slug sem acento, sem espaço e sem letra maiúscula (ou em branco).
 - [ ] Prévia do admin conferida (texto, imagens e fórmulas).
 - [ ] Cada parágrafo separado por uma linha em branco.
@@ -307,6 +345,7 @@ Com a prévia do admin, ele quase não é necessário. Serve só para conferir a
 - **Editar:** abra o artigo, altere e salve. A mudança aparece ao recarregar a página.
 - **Despublicar:** desmarque **Publicado**. O artigo sai do site e continua guardado.
 - **Apagar:** use só para artigos criados por engano, porque é definitivo. Na dúvida, despublique.
+- **Achar um artigo:** na lista, a busca e os filtros **Autor** e **Tema** reduzem a lista. O filtro de tema não repete "Varejo" e "varejo".
 - **Reordenar:** os artigos aparecem do mais recente para o mais antigo, pela **Data de publicação**. A **Ordem de exibição** só desempata datas iguais.
 
 ---
@@ -318,10 +357,12 @@ Com a prévia do admin, ele quase não é necessário. Serve só para conferir a
 | O artigo não aparece no site | **Publicado** está desmarcado | Marcar **Publicado** e salvar |
 | A página do artigo dá "Artigo não encontrado" | O link usa um slug antigo, ou o artigo foi despublicado | Conferir o slug atual e o campo **Publicado** |
 | O artigo aparece no topo da lista, antes dos mais novos | A **Data de publicação** está vazia | Preencher a data |
-| Aparecem asteriscos ou cerquilhas no texto | Faltou o espaço depois do símbolo, ou o símbolo está colado ao texto | Revisar a marcação (por exemplo, `## Título`) |
+| Aparecem asteriscos ou cerquilhas no texto | Faltou o espaço depois do símbolo, ou o símbolo está colado ao texto | Revisar a marcação (por exemplo, `## Seção`) |
 | Uma lista aparece como um parágrafo corrido | Falta uma linha em branco antes da lista | Deixar uma linha em branco antes do primeiro item |
 | Dois parágrafos aparecem juntos | Há só uma quebra de linha entre eles | Deixar uma linha em branco entre eles |
 | A imagem não aparece | O número do texto é diferente do cadastrado, ou a linha de imagem tem outro texto junto | Conferir `![](imagem-N)` em uma linha sozinha e o número em **Imagens do artigo** |
+| O admin recusa publicar o artigo | Não há nenhum autor na lista **Autores** | Adicionar ao menos um autor |
+| O autor aparece sem link no site | É um autor de fora, ou um membro que saiu (só membros ativos têm perfil) | Conferir a linha do autor: "Ligado ao perfil de ..." indica o vínculo |
 | O admin recusa o slug | Slug repetido, ou com acento ou espaço | Escolher outro slug no formato `palavras-separadas-por-hifen` |
 | A fórmula aparece em vermelho | Erro de digitação no LaTeX | Conferir chaves `{}` e barras invertidas |
 | Aparece `R$` como parte de uma fórmula | Foi usado `$$` por engano | Usar apenas um cifrão em valores em reais |
@@ -369,7 +410,7 @@ O indicador de rentabilidade é dado por $$\frac{EBITDA}{Receita}$$ e variou ent
 
 Uma ferramenta de IA conversacional pode fazer a parte mecânica da conversão: seções, listas, tabelas, fórmulas e marcadores de imagem. O uso é opcional e **não substitui a conferência**: quem publica continua responsável pelo que vai ao ar. O prompt abaixo resume as regras deste guia para a ferramenta aplicá-las.
 
-<!-- Manutenção: ao mudar uma regra deste guia (fórmulas, níveis de título, imagens), atualize o prompt abaixo no mesmo PR. -->
+<!-- Manutenção: ao mudar uma regra deste guia (fórmulas, níveis de seção, imagens), atualize o prompt abaixo no mesmo PR. -->
 
 ### Antes de usar
 
@@ -399,7 +440,7 @@ Mantenha todas as palavras do texto exatamente como estão. Não reescreva, não
 REGRAS DO FORMATO
 1. Parágrafos separados por uma linha em branco.
 2. O título do artigo NÃO entra no texto, porque o site o coloca sozinho. Se o texto começar pelo título, remova-o do texto e informe-o nos pontos de atenção.
-3. Seções com "## Título da seção", subseções com "### Título da subseção" e subsubseções com "#### Título da subsubseção". Não use "#" (nível 1) nem níveis abaixo de "####". Se o original começar os títulos em "#", desça todos os níveis em um. Se tiver mais de três níveis, use "##", "###" e "####" para os três primeiros e aponte nos pontos de atenção o que foi reduzido.
+3. Seções com "## Nome da seção", subseções com "### Nome da subseção" e subsubseções com "#### Nome da subsubseção". Não use "#" (nível 1) nem níveis abaixo de "####". Se o original começar as seções em "#", desça todos os níveis em um. Se tiver mais de três níveis, use "##", "###" e "####" para os três primeiros e aponte nos pontos de atenção o que foi reduzido.
 4. Negrito com **texto** e itálico com *texto*. Links como [texto](https://endereço). Citações com "> ". Mantenha os links do original.
 5. Listas com "- " (marcadores) ou "1. " (numeradas), sempre com uma linha em branco antes da lista. Escreva um espaço depois do símbolo.
 6. Tabelas no formato Markdown, com linha de cabeçalho e linha de traços:

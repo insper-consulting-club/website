@@ -74,6 +74,8 @@ INSTALLED_APPS = [
     # Tema do /admin. Precisa vir antes de django.contrib.admin para que seus
     # templates substituam os do Django.
     'unfold',
+    # Filtros em lista suspensa (autor e tema dos artigos). Também antes de django.contrib.admin.
+    'unfold.contrib.filters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -223,6 +225,8 @@ UNFOLD = {
     'SITE_URL': FRONTEND_URL or None,
     # Ajustes de layout (ver admin_static/website/admin.css)
     'STYLES': [lambda request: static('website/admin.css')],
+    # Avisa antes de sair de um formulário com alterações não salvas (ver admin_static/website/avisa_alteracoes.js)
+    'SCRIPTS': [lambda request: static('website/avisa_alteracoes.js')],
     'SIDEBAR': {
         'show_search': True,
         'show_all_applications': False,

@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils.text import slugify
 
+from .autores import chaves_fecham, normaliza, tira_chaves
 from .fields import LimitedImageField
 
 # Semestre no formato usado em todo o site: "2026.1" (janeiro a junho) e "2026.2" (julho a dezembro).
@@ -224,6 +225,11 @@ class Member(models.Model):
                   'os projetos, os cases e a trajetória continuam guardados.'
     )
     linkedin = models.URLField(null=True, blank=True, verbose_name='LinkedIn')
+    citation_name = models.CharField(
+        max_length=200, blank=True, verbose_name='Nome na citação',
+        help_text='Só preencha se o nome precisar de ajuste nas citações dos artigos. Escreva o nome como o BibTeX '
+                  'deve lê-lo e use chaves no que não se separa: Robert {Lucas Jr}, ou {Maria Clara} {Souza Lima}.'
+    )
 
     class Meta:
         verbose_name = 'Membro'
@@ -311,7 +317,7 @@ class ProgramContentBlock(models.Model):
     title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
     text = models.TextField(
         blank=True, verbose_name='Texto',
-        help_text='Em Markdown: **negrito**, ## Subtítulo, - item de lista, [link](https://...). '
+        help_text='Em Markdown: **negrito**, ## Seção, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco.'
     )
     image = LimitedImageField(upload_to='programs/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
@@ -335,10 +341,6 @@ class Article(models.Model):
         verbose_name='Slug da URL',
         help_text='Opcional. Usado no link do artigo; se vazio, o site usa o ID.',
     )
-    authors = models.CharField(
-        max_length=300, blank=True, verbose_name='Autores',
-        help_text='Separados por vírgula. Ex.: Ana Silva, João Souza.'
-    )
     topics = models.CharField(
         max_length=200, blank=True, verbose_name='Temas',
         help_text='Separados por vírgula. Ex.: Estratégia, Varejo.'
@@ -346,34 +348,73 @@ class Article(models.Model):
     description = models.TextField(verbose_name='Resumo', help_text='Aparece no card da lista e no topo da página do artigo.')
     content = models.TextField(
         blank=True, verbose_name='Texto do artigo',
-        help_text='Texto completo, em Markdown: **negrito**, ## Título, - item de lista, [link](https://...). '
+        help_text='Texto completo, em Markdown: **negrito**, ## Seção, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco. Para pôr uma imagem, envie-a em "Imagens do artigo", '
                   'abaixo, e escreva aqui, numa linha sozinha, ![](imagem-1), trocando 1 pelo número da imagem.'
     )
-    link = models.URLField(
-        blank=True, verbose_name='Link externo (opcional)',
-        help_text='PDF, LinkedIn ou revista onde o artigo também foi publicado.'
-    )
     image = LimitedImageField(upload_to='news/', null=True, blank=True, verbose_name='Imagem de capa')
-    source = models.CharField(
-        max_length=200, blank=True, verbose_name='Publicação',
-        help_text='Opcional: revista ou evento, se o artigo também saiu fora do site.'
-    )
-    date = models.DateField(null=True, blank=True, verbose_name='Data de publicação')
+    # Obrigatório no formulário (a ordem na lista do site depende dela); null só para não exigir dado nos registros antigos.
+    date = models.DateField(null=True, verbose_name='Data de publicação', help_text='A ordem dos artigos no site segue esta data. O calendário tem o botão “Hoje”.')
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
     published = models.BooleanField(
         default=False, verbose_name='Publicado',
         help_text='Desmarcado, o artigo é um rascunho: fica salvo aqui, mas não aparece no site.'
     )
 
+    # Autor mostrado nos artigos sem autores cadastrados (textos antigos); o admin exige autor para publicar.
+    NOME_INSTITUCIONAL = 'Insper Consulting Club'
+
     class Meta:
         verbose_name = 'Artigo'
         verbose_name_plural = 'Artigos'
         ordering = ['-date', 'order']
 
-
     def __str__(self):
         return self.title
+
+
+class ArticleAuthor(models.Model):
+    """
+    Um autor do artigo: um nome, e o vínculo com um membro quando ele existe. O nome é gravado como foi escrito
+    (formato do BibTeX: `Maria da Silva`, ou `Robert {Lucas Jr}` com chaves no que não se separa), então renomear o
+    membro depois não muda uma citação já feita. O vínculo serve para filtrar os artigos por autor.
+    """
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='article_authors', verbose_name='Artigo')
+    member = models.ForeignKey(
+        'Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='article_authorships',
+        verbose_name='Membro',
+        help_text='Escolhido na lista de sugestões ao digitar o nome. Vazio para um autor de fora.'
+    )
+    name = models.CharField(
+        max_length=200, blank=True, verbose_name='Nome',
+        help_text='Comece a digitar e escolha um membro, ou escreva o nome de quem não é membro. Use chaves no que não se separa: Robert {Lucas Jr}.'
+    )
+    order = models.IntegerField(default=0, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Autor'
+        verbose_name_plural = 'Autores'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return tira_chaves(self.name)
+
+    def clean(self):
+        nome = (self.name or '').strip()
+        membro = self.member if self.member_id else None
+        if not nome and membro is None:
+            raise ValidationError({'name': 'Informe o nome do autor.'})
+        if not chaves_fecham(nome):
+            raise ValidationError({'name': 'As chaves { } do nome precisam abrir e fechar.'})
+        if membro is not None:
+            if not nome or normaliza(nome) in (normaliza(membro.name), normaliza(membro.citation_name)):
+                # O ajuste de nome fica no cadastro do membro, para não repetir em cada artigo.
+                nome = membro.citation_name or membro.name
+        self.name = nome
 
 
 class ArticleImage(models.Model):
@@ -766,7 +807,7 @@ class SiteConfig(models.Model):
     )
     privacy_text = models.TextField(
         blank=True, verbose_name='Texto da política',
-        help_text='Em Markdown: ## Título, **negrito**, - item de lista, [link](https://...). '
+        help_text='Em Markdown: ## Seção, **negrito**, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco.'
     )
 

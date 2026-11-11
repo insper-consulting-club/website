@@ -3,8 +3,11 @@ import { Link, useParams } from "react-router-dom"
 import { api } from "../../api"
 import type { Article } from "../../types"
 import ArtigoMarkdown from "../../components/ArtigoMarkdown"
+import AutoresDoArtigo from "../../components/AutoresDoArtigo"
+import CitarArtigo from "../../components/CitarArtigo"
+import CompartilharArtigo from "../../components/CompartilharArtigo"
 import PageHero from "../../components/PageHero"
-import { ArrowLeftIcon, ExternalIcon, LinkedInIcon } from "../../components/Icons"
+import { ArrowLeftIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useTextos from "../../hooks/useTextos"
 import "./index.css"
@@ -12,7 +15,7 @@ import "./index.css"
 function formatDate(date: string) {
   // Mesmo cuidado da lista: ano/mês/dia separados evitam o desvio de um dia do UTC.
   const [ano, mes, dia] = date.split("-").map(Number)
-  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
 }
 
 export default function Artigo() {
@@ -20,7 +23,6 @@ export default function Artigo() {
   const { slugOrId } = useParams<{ slugOrId: string }>()
   const [artigo, setArtigo] = useState<Article | null>(null)
   const [loadedId, setLoadedId] = useState<string | undefined>()
-  const [copiado, setCopiado] = useState(false)
   const loading = loadedId !== slugOrId
   const artigoDaRota = artigo && (artigo.slug === slugOrId || String(artigo.id) === slugOrId) ? artigo : null
   usePageTitle(loading ? undefined : artigoDaRota?.title, loading ? undefined : artigoDaRota?.description)
@@ -55,39 +57,40 @@ export default function Artigo() {
 
   const temas = artigo.topics.split(",").map((t) => t.trim()).filter(Boolean)
   const url = window.location.href
-  const ano = artigo.date?.slice(0, 4)
-  const citacao = `${artigo.authors ? `${artigo.authors}. ` : ""}${artigo.title}. Insper Consulting Club${ano ? `, ${ano}` : ""}. Disponível em: ${url}.`
-
-  function copiarCitacao() {
-    navigator.clipboard.writeText(citacao).then(() => {
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2000)
-    })
-  }
 
   return (
     <div className="artigo-page">
+      {/* Um bloco só: título, autores, data e ações, na mesma coluna do texto. */}
       <PageHero
+        estreito
         back={{ to: "/artigos", label: t("artigo.voltar") }}
-        eyebrow={artigo.date ? formatDate(artigo.date) : undefined}
         title={artigo.title}
-        lead={artigo.authors}
-      />
+        lead={<AutoresDoArtigo autores={artigo.authors} links />}
+      >
+        {artigo.date && <p className="artigo__data">{formatDate(artigo.date)}</p>}
+        <div className="artigo__acoes">
+          <CompartilharArtigo titulo={artigo.title} url={url} />
+          <CitarArtigo citacoes={artigo.citations} />
+        </div>
+      </PageHero>
 
       <section className="section">
         <article className="container artigo">
-          {temas.length > 0 && (
-            <ul className="artigo__temas">
-              {temas.map((tema) => (
-                <li key={tema}>{tema}</li>
-              ))}
-            </ul>
-          )}
           {artigo.image_url && <img src={artigo.image_url} alt="" className="artigo__capa" />}
-          {artigo.description && (
+          {(artigo.description || temas.length > 0) && (
             <div className="artigo__resumo">
-              <h2>{t("artigo.resumo")}</h2>
-              <p>{artigo.description}</p>
+              {artigo.description && (
+                <>
+                  <h2>{t("artigo.resumo")}</h2>
+                  <p>{artigo.description}</p>
+                </>
+              )}
+              {temas.length > 0 && (
+                <p className="artigo__palavras">
+                  {t("artigo.palavras_chave") && <strong>{t("artigo.palavras_chave")}: </strong>}
+                  {temas.join(" · ")}
+                </p>
+              )}
             </div>
           )}
           {/* O texto vem em Markdown (ver components/ArtigoMarkdown). */}
@@ -96,31 +99,6 @@ export default function Artigo() {
               <ArtigoMarkdown texto={artigo.content} imagens={artigo.images ?? []} />
             </div>
           )}
-
-          <div className="artigo__rodape">
-            <h2>{t("artigo.como_citar")}</h2>
-            <p className="artigo__citacao">{citacao}</p>
-            <div className="artigo__acoes">
-              <button type="button" className="btn btn--secondary" onClick={copiarCitacao}>
-                {copiado ? t("artigo.copiado") : t("artigo.copiar")}
-              </button>
-              <a
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn--secondary"
-              >
-                <LinkedInIcon size={16} />
-                {t("artigo.compartilhar")}
-              </a>
-              {artigo.link && (
-                <a href={artigo.link} target="_blank" rel="noopener noreferrer" className="btn btn--secondary">
-                  {t("artigo.link_original")}
-                  <ExternalIcon />
-                </a>
-              )}
-            </div>
-          </div>
         </article>
       </section>
     </div>

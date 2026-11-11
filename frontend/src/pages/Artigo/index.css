@@ -7,24 +7,6 @@
   line-height: 1.75;
 }
 
-.artigo__temas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1.5rem;
-  list-style: none;
-  padding: 0;
-}
-
-.artigo__temas li {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--vermelho-suave);
-  color: var(--vermelho-escuro);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
 .artigo__capa {
   width: 100%;
   border-radius: var(--radius);
@@ -43,8 +25,7 @@
   margin-bottom: 0;
 }
 
-.artigo__resumo h2,
-.artigo__rodape h2 {
+.artigo__resumo h2 {
   font-size: var(--fs-h3);
   margin-bottom: 0.75rem;
 }
@@ -63,7 +44,6 @@
 
 .artigo__texto h4 {
   font-size: var(--fs-body);
-  font-style: italic;
   margin: 1.5rem 0 0.5rem;
 }
 
@@ -95,6 +75,23 @@
   border-radius: var(--radius-sm);
   background: var(--cinza-fundos);
   font-size: 0.9em;
+}
+
+/* Bloco de código (várias linhas): caixa própria que rola na horizontal, sem o fundo do código em linha. */
+.artigo__texto pre {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: var(--cinza-fundos);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.artigo__texto pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
 }
 
 .artigo__texto hr {
@@ -148,20 +145,218 @@
   line-height: 1.5;
 }
 
-.artigo__rodape {
-  margin-top: 3rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--cinza-bordas);
-}
-
-.artigo__citacao {
+/* Cabeçalho do artigo: a data e as ações ficam dentro da faixa do título, na mesma coluna do texto. */
+.artigo__data {
+  margin-top: 4px;
   font-size: var(--fs-small);
-  color: var(--cinza-descricoes);
-  overflow-wrap: anywhere;
+  color: var(--cinza-500);
 }
 
 .artigo__acoes {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+/* Botão Compartilhar: no computador, um menu com LinkedIn, WhatsApp e Copiar link. */
+.compartilhar {
+  position: relative;
+}
+
+.compartilhar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 6px;
+  border: 1px solid var(--cinza-bordas);
+  border-radius: var(--radius-sm);
+  background: var(--branco);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.compartilhar__menu a,
+.compartilhar__menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--preto);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.compartilhar__menu a:hover,
+.compartilhar__menu button:hover {
+  background: var(--cinza-100);
+}
+
+/* O texto começa logo depois da faixa do título, sem o espaço de uma seção comum. */
+.artigo-page > .section {
+  padding-top: clamp(28px, 4vw, 44px);
+}
+
+.artigo__palavras {
+  margin-top: 0.875rem;
+  font-size: var(--fs-small);
+  color: var(--cinza-descricoes);
+}
+
+.artigo__palavras strong {
+  color: var(--preto);
+}
+
+/* Janela "Citar": uma aba por forma de citação, o texto e o botão de copiar. */
+.citar {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.25);
+  color: inherit;
+}
+
+.citar::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.citar__caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.citar__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.citar__topo h2 {
+  font-size: var(--fs-h3);
+}
+
+.citar__fechar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.citar__fechar:hover {
+  background: var(--cinza-100);
+}
+
+.citar__abas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--cinza-bordas);
+}
+
+.citar__abas button {
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-weight: 600;
+  color: var(--cinza-descricoes);
+  cursor: pointer;
+}
+
+.citar__abas button:hover {
+  color: var(--preto);
+}
+
+.citar__abas button.is-ativa {
+  border-bottom-color: var(--vermelho-icc);
+  color: var(--vermelho-icc);
+}
+
+.citar__painel {
+  overflow-y: auto;
+}
+
+.citar__texto {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--cinza-bordas);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-fundos);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.citar__painel pre {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--cinza-bordas);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-fundos);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+}
+
+.citar__painel code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+.citar__bloco {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.citar__copiar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--cinza-bordas);
+  border-radius: var(--radius-sm);
+  background: var(--branco);
+  color: var(--cinza-descricoes);
+  cursor: pointer;
+}
+
+.citar__copiar:hover {
+  color: var(--preto);
+  border-color: var(--cinza-300);
+}
+
+.citar__copiar.is-copiado {
+  color: var(--vermelho-icc);
+}
+
+/* Espaço para o ícone não ficar sobre o texto. */
+.citar__texto,
+.citar__painel pre {
+  padding-right: 3.25rem;
 }

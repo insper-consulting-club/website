@@ -1,0 +1,29 @@
+{% extends "admin/change_form.html" %}
+{# Os autores ficam logo abaixo do título e do slug, e não no fim do formulário (onde o Django põe as tabelas). #}
+
+{% block field_sets %}
+    {% with has_conditional_display=adminform.model_admin.conditional_fields %}
+        {% for fieldset in adminform %}
+            {% if "tab" not in fieldset.classes %}
+                {% include 'admin/includes/fieldset.html' %}
+            {% endif %}
+            {% if forloop.first %}
+                {% for inline_admin_formset in inline_admin_formsets %}
+                    {% if inline_admin_formset.opts.logo_apos_o_primeiro_grupo %}
+                        {% include inline_admin_formset.opts.template %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+
+        {% include "unfold/helpers/fieldsets_tabs.html" %}
+    {% endwith %}
+{% endblock %}
+
+{% block inline_field_sets %}
+    {% for inline_admin_formset in inline_admin_formsets %}
+        {% if not inline_admin_formset.opts.logo_apos_o_primeiro_grupo %}
+            {% include inline_admin_formset.opts.template %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

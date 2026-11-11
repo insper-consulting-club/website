@@ -406,56 +406,144 @@ TEXTO_LONGO_DO_ARTIGO = (
 
 # imagens: legendas das figuras do texto, na ordem 1, 2, ... capa False deixa o artigo sem imagem de capa.
 # publicado False é rascunho. data None deixa o artigo sem data.
+CONTEUDO_DE_FORMATACAO = r"""## Visão geral
+
+Este artigo existe só para testar **todos** os recursos de formatação do editor e do site: *itálico*, **negrito**, ~~tachado~~, `código no meio da frase`, [um link externo](https://example.com) e acentuação completa: ação, coração, ônibus, pingüim.
+
+> "Uma citação em destaque: o texto aparece recuado e com uma barra ao lado."
+
+### Listas
+
+- Primeiro item
+- Segundo item, com **negrito**
+- Terceiro item
+
+1. Passo um
+2. Passo dois
+3. Passo três
+
+#### Subsubseção
+
+Um parágrafo dentro de uma subsubseção, para ver os três níveis de título lado a lado.
+
+---
+
+## Tabela
+
+| Matriz | Quando usar | Custo |
+|---|---|---|
+| Impacto x esforço | Primeira triagem | Baixo |
+| Custo do atraso | Projetos com prazo | Médio |
+| Atratividade x capacidade | Portfólio de iniciativas | Alto |
+
+## Fórmulas
+
+Em linha, o retorno é $$ROI = \frac{ganho - custo}{custo}$$ e o valor presente de um fluxo é $$VP = \sum_{t=1}^{n} \frac{F_t}{(1+i)^t}$$.
+
+Em bloco próprio:
+
+$$
+\text{Margem} = \frac{\text{Receita} - \text{Custos variáveis}}{\text{Receita}} \times 100\%
+$$
+
+O cifrão sozinho não vira fórmula: o projeto custou R$ 10 mi e rendeu R$ 20 mi.
+
+## Código
+
+Uma chamada no meio da frase, como `pandas.read_csv()`, e agora um bloco de várias linhas:
+
+```python
+import pandas as pd
+
+vendas = pd.read_csv("vendas.csv")
+por_regiao = vendas.groupby("regiao")["receita"].sum()
+print(por_regiao.sort_values(ascending=False).head(5))
+```
+
+E outro, em SQL, com uma linha bem longa para testar a rolagem horizontal:
+
+```sql
+SELECT regiao, SUM(receita) AS receita_total, COUNT(DISTINCT cliente_id) AS clientes_ativos, AVG(ticket_medio) AS ticket FROM vendas WHERE data >= '2026-01-01' GROUP BY regiao ORDER BY receita_total DESC;
+```
+
+## Imagens
+
+A primeira imagem usa a legenda cadastrada:
+
+![](imagem-1)
+
+A segunda troca a legenda só neste ponto:
+
+![Legenda escrita entre os colchetes, só aqui](imagem-2)
+
+Uma imagem que não existe é omitida em vez de aparecer quebrada: ![](imagem-9)
+
+## HTML não é executado
+
+<script>alert("isto aparece como texto, não roda")</script>
+
+Fim do artigo de teste."""
+
 ARTIGOS = [
     {"titulo": "Precificação dinâmica no varejo brasileiro: um estudo de caso", "slug": "precificacao-dinamica-no-varejo",
-     "autores": "Helena Prado, Camila Duarte", "temas": "Varejo, Precificação", "data": date(2026, 3, 12), "ordem": 1,
+     "autores": ["Helena Prado", "Camila Duarte", "Robert {Lucas Jr}"], "temas": "Varejo, Precificação", "data": date(2026, 3, 12), "ordem": 1,
      "resumo": "Análise de estratégias de precificação em redes varejistas e do impacto delas na margem.",
-     "conteudo": TEXTO_LONGO_DO_ARTIGO, "link": "https://example.com/artigos/precificacao", "fonte": "Revista Exemplo de Administração",
+     "conteudo": TEXTO_LONGO_DO_ARTIGO,
      "capa": True, "imagens": ["Margem por formato de loja", "Ruptura de estoque antes e depois da automação"], "publicado": True},
     {"titulo": "Transformação digital em PMEs: barreiras e alavancas", "slug": "",
-     "autores": "Thiago Marques", "temas": "Tecnologia, PMEs", "data": date(2026, 4, 8), "ordem": 2,
+     "autores": ["Thiago Marques", "Maria da Silva"], "temas": "Tecnologia, PMEs", "data": date(2026, 4, 8), "ordem": 2,
      "resumo": "Levantamento com pequenas e médias empresas sobre a adoção de tecnologia. Artigo sem slug, aberto pelo número.",
      "conteudo": "O que trava a adoção de tecnologia em pequenas e médias empresas.\n\nAs alavancas que funcionaram nos casos analisados.",
-     "link": "", "fonte": "", "capa": False, "imagens": [], "publicado": True},
+     "capa": False, "imagens": [], "publicado": True},
     {"titulo": "Como escolher a ferramenta certa para priorizar projetos", "slug": "priorizacao-de-projetos",
-     "autores": "Lucas Tavares, Beatriz Salgado, Rafael Moura", "temas": "Estratégia", "data": date(2026, 5, 20), "ordem": 3,
+     "autores": ["Lucas Tavares", "Beatriz Salgado", "Rafael Moura"], "temas": "Estratégia", "data": date(2026, 5, 20), "ordem": 3,
      "resumo": "Comparação de matrizes de priorização usadas em projetos de estratégia.",
      "conteudo": "## Matrizes mais usadas\n\nImpacto por esforço, atratividade por capacidade e custo do atraso.\n\n"
                  "| Matriz | Quando usar |\n|---|---|\n| Impacto x esforço | Primeira triagem |\n| Custo do atraso | Projetos com prazo |\n\n"
                  "![](imagem-1)\n\n## Quando usar cada uma\n\nCada matriz responde a uma pergunta diferente.",
-     "link": "", "fonte": "", "capa": True, "imagens": ["Matriz de impacto por esforço"], "publicado": True},
+     "capa": True, "imagens": ["Matriz de impacto por esforço"], "publicado": True},
     {
-        # Só o resumo e um link externo: sem texto completo.
         "titulo": "Entrevista com uma mentora do ICC", "slug": "entrevista-com-uma-mentora",
-        "autores": "Isabela Fontes", "temas": "Carreira", "data": date(2026, 6, 2), "ordem": 4,
-        "resumo": "Resumo curto de um artigo publicado fora do site, sem texto completo.",
-        "conteudo": "", "link": "https://example.com/entrevista", "fonte": "Newsletter Exemplo",
-        "capa": False, "imagens": [], "publicado": True,
+        "autores": ["Beatriz Salgado"], "temas": "Carreira", "data": date(2026, 6, 2), "ordem": 4,
+        "resumo": "Uma conversa sobre carreira em consultoria, com uma mentora do clube.",
+        "conteudo": "Uma conversa com uma mentora do ICC sobre carreira em consultoria.",
+     "capa": False, "imagens": [], "publicado": True,
     },
     {
         # Título muito longo, para testar a quebra no card, na página e na citação.
         "titulo": "Um título propositalmente muito longo para verificar como o card, a página do artigo e a citação lidam com "
                   "textos extensos que ocupam várias linhas em telas pequenas",
-        "slug": "titulo-muito-longo", "autores": "Pedro Henrique Cavalcanti Albuquerque de Vasconcelos Neto",
+        "slug": "titulo-muito-longo", "autores": ["Pedro Henrique Cavalcanti Albuquerque de Vasconcelos Neto"],
         "temas": "Teste de layout, Textos longos, Quebra de linha", "data": date(2026, 6, 15), "ordem": 5,
         "resumo": "Artigo de teste para o layout.",
         "conteudo": "Texto curto de um artigo cujo único objetivo é ter um título muito longo.",
-        "link": "", "fonte": "", "capa": True, "imagens": [], "publicado": True,
+     "capa": True, "imagens": [], "publicado": True,
     },
     {
         # Mais antigo, com tabela e sem imagens.
         "titulo": "Estimativas de mercado em cinco passos", "slug": "estimativas-de-mercado",
-        "autores": "Rafael Moura", "temas": "Case interview", "data": date(2025, 11, 3), "ordem": 6,
+        "autores": ["Rafael Moura"], "temas": "Case interview", "data": date(2025, 11, 3), "ordem": 6,
         "resumo": "Roteiro para estimar o tamanho de um mercado sem dados prontos.",
         "conteudo": "## Passo a passo\n\n1. Defina o mercado\n2. Segmente\n3. Estime cada segmento\n4. Some\n5. Teste a ordem de grandeza",
-        "link": "", "fonte": "", "capa": False, "imagens": [], "publicado": True,
+     "capa": False, "imagens": [], "publicado": True,
+    },
+    {
+        # Artigo de teste de formatação: usa todos os recursos do editor e do site (títulos, listas, tabela, citação,
+        # fórmulas, código, imagens, linha divisória, HTML como texto, nome de autor com chaves).
+        "titulo": "Guia de formatação: todos os recursos do editor", "slug": "guia-de-formatacao",
+        "autores": ["Robert {Lucas Jr}", "Rafael Moura"], "temas": "Teste de layout, Formatação",
+        "data": date(2026, 6, 20), "ordem": 8,
+        "resumo": "Artigo de teste com títulos, listas, tabela, citação, fórmulas, blocos de código e imagens.",
+        "conteudo": CONTEUDO_DE_FORMATACAO,
+        "capa": True, "imagens": ["Primeira imagem de teste", "Segunda imagem de teste"], "publicado": True,
     },
     {
         # Rascunho sem data: aparece no admin, não no site nem na API.
         "titulo": "Rascunho ainda não publicado", "slug": "rascunho-nao-publicado",
-        "autores": "Mateus Ribeiro", "temas": "Rascunho", "data": None, "ordem": 7,
+        "autores": ["Mateus Ribeiro"], "temas": "Rascunho", "data": date(2026, 7, 1), "ordem": 9,
         "resumo": "Está com \"Publicado\" desmarcado: aparece no admin, mas não no site.",
-        "conteudo": "Texto em construção.", "link": "", "fonte": "", "capa": False, "imagens": [], "publicado": False,
+        "conteudo": "Texto em construção.",
+     "capa": False, "imagens": [], "publicado": False,
     },
 ]
 

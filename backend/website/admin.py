@@ -8,22 +8,29 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+import json
 import re
+from collections import Counter
 import unicodedata
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.html import format_html
+from django.utils import timezone
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.contrib.filters.admin import DropdownFilter
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget
 
 from .conteudo import PADRAO as PADRAO_DOS_TEXTOS, PAGINAS, POR_CHAVE, POR_SLUG
+from .autores import normaliza
 from .conteudo.base import Pagina
 from .widgets import MarkdownPreviewWidget
+from . import citacao
 from .models import (
-    PartnerCategory, ProgramComponent, SecaoDaHome,
+    PartnerCategory, ProgramComponent, SecaoDaHome, ArticleAuthor,
     Partner, Member, Article, ArticleImage, Position, Directorate,
     DirectorateMembership, Statistic,
     Project, ProjectImage, ProjectTimelineEvent, ProjectContentBlock,
@@ -343,7 +350,7 @@ class MemberForm(forms.ModelForm):
 class MemberAdmin(AdminDoSite):
     form = MemberForm
     inlines = [MemberTrajectoryInline, DirectorateMembershipInline]
-    list_display = ('foto', 'name', 'get_directorates', 'position', 'is_active')
+    list_display = ('foto', 'name', 'get_directorates', 'position', 'is_active', 'id')
     list_display_links = ('foto', 'name')
     list_editable = ('is_active',)
     list_filter = (SituacaoFilter, 'directorate_memberships__directorate', 'position')
@@ -355,7 +362,10 @@ class MemberAdmin(AdminDoSite):
     ordering = ('-is_active', 'name')
     list_per_page = 50
     actions = ['arquivar', 'reativar']
-    fields = ('name', 'photo', 'position', 'linkedin', 'is_active')
+    fieldsets = (
+        (None, {'fields': ('name', 'photo', 'position', 'linkedin', 'is_active')}),
+        secao_avancada('citation_name'),
+    )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -550,11 +560,196 @@ class ArticleImageInline(TabularInline):
         if not obj or not obj.pk:
             return 'Aparece depois de salvar'
         codigo = f'![](imagem-{obj.number})'
+        # Se o número aparece no texto salvo, a imagem está em uso; senão, o editor ainda precisa colocá-la no texto.
+        usadas = {int(n) for n in re.findall(r'!\[[^\]]*\]\(imagem-(\d+)\)', obj.article.content or '')}
+        uso = 'Usada no texto' if obj.number in usadas else 'Ainda não usada no texto'
         return format_html(
             '<code>{}</code> <button type="button" class="copiar-trecho" data-trecho="{}" '
-            'onclick="navigator.clipboard.writeText(this.dataset.trecho);this.textContent=\'Copiado\'">Copiar</button>',
-            codigo, codigo,
+            'onclick="navigator.clipboard.writeText(this.dataset.trecho);this.textContent=\'Copiado\'">Copiar</button>'
+            '<br><small class="texto-original">{}</small>',
+            codigo, codigo, uso,
         )
+
+
+class CampoDeAutor(UnfoldAdminTextInputWidget):
+    """
+    Campo de texto do nome do autor, com uma lista de membros que se filtra enquanto se digita (ver autor_combobox.js).
+    Escolher um membro grava o ID dele no campo oculto "Membro"; qualquer outro texto é um autor de fora. A lista vai
+    embutida no campo, para o filtro ignorar acentos sem pedir nada ao servidor.
+    """
+
+    class Media:
+        js = ('website/autor_combobox.js',)
+
+    def __init__(self, membros=(), attrs=None):
+        super().__init__(attrs)
+        self.membros = list(membros)
+
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        attrs.update({
+            'class': f"{attrs.get('class', '')} autor-combobox__input".strip(),
+            'data-membros': json.dumps(self.membros, ensure_ascii=False),
+            'autocomplete': 'off',
+            'role': 'combobox',
+            'aria-autocomplete': 'list',
+            'aria-expanded': 'false',
+        })
+        return attrs
+
+
+class CampoDeTemas(UnfoldAdminTextInputWidget):
+    """
+    Campo de temas separados por vírgula que sugere os temas já usados em outros artigos (ver temas_sugestoes.js), para
+    não nascer "Varejo" e "varejo" como dois temas.
+    """
+
+    class Media:
+        js = ('website/temas_sugestoes.js',)
+
+    def __init__(self, temas=(), attrs=None):
+        super().__init__(attrs)
+        self.temas = list(temas)
+
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        attrs.update({
+            'class': f"{attrs.get('class', '')} temas-sugestoes__input".strip(),
+            'data-temas': json.dumps(self.temas, ensure_ascii=False),
+            'autocomplete': 'off',
+        })
+        return attrs
+
+
+def temas_ja_usados():
+    """Os temas dos artigos, sem repetir (ignorando acento e maiúscula) e com a grafia mais usada, do mais ao menos comum."""
+    contagem = {}
+    for texto in Article.objects.values_list('topics', flat=True):
+        for tema in (t.strip() for t in (texto or '').split(',')):
+            if tema:
+                contagem.setdefault(normaliza(tema), Counter())[tema] += 1
+    ordenados = sorted(contagem.values(), key=lambda grafias: (-sum(grafias.values()), grafias.most_common(1)[0][0].lower()))
+    return [grafias.most_common(1)[0][0] for grafias in ordenados]
+
+
+class AutoresDoArtigoFormSet(BaseInlineFormSet):
+    """Um artigo publicado precisa de ao menos um autor."""
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        linhas = sum(1 for f in self.forms if f.cleaned_data and not f.cleaned_data.get('DELETE'))
+        # Os campos do artigo chegam no mesmo envio do formulário; marcado, o checkbox vem como "on".
+        publicado = self.data.get('published') in ('on', 'true', 'True', '1')
+        self._ordena_os_novos()
+        if publicado and not linhas:
+            raise forms.ValidationError('Um artigo publicado precisa de ao menos um autor.')
+
+
+    def _ordena_os_novos(self):
+        """Uma linha nova que ainda não foi arrastada (ordem 0) entra no fim, depois dos autores que já estavam."""
+        vivos = [f for f in self.forms if f.cleaned_data and not f.cleaned_data.get('DELETE')]
+        proximo = max([f.instance.order for f in vivos if f.instance.pk] or [-1]) + 1
+        for form in vivos:
+            if not form.instance.pk and not form.cleaned_data.get('order'):
+                form.instance.order = form.cleaned_data['order'] = proximo
+                proximo += 1
+
+
+def rotulos_dos_membros():
+    """
+    O texto de cada membro na lista de escolha. Só o nome, a menos que haja homônimos (nomes iguais sem contar acento nem
+    maiúscula): aí entra o ID, que é o que garante que nunca haja duas linhas iguais. Cargo e situação não servem para
+    distinguir: há quem acumule cargos, e o cargo principal sozinho enganaria. Ex.: "Ana Silva (ID 12)".
+    """
+    membros = list(Member.objects.order_by('name'))
+    grupos = {}
+    for membro in membros:
+        grupos.setdefault(normaliza(membro.name), []).append(membro)
+    return {
+        membro.pk: membro.name if len(grupos[normaliza(membro.name)]) == 1 else f'{membro.name} (ID {membro.pk})'
+        for membro in membros
+    }
+
+
+class AutoresDoArtigoInline(AbaOrdenavelTabular):
+    model = ArticleAuthor
+    formset = AutoresDoArtigoFormSet
+    extra = 1
+    fields = ('name', 'member')
+    tab = False  # fica no formulário, e não numa aba: o autor é parte do que se preenche para publicar
+    logo_apos_o_primeiro_grupo = True  # desenhado por artigo_change_form.html, abaixo do título e do slug
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'member':
+            # Campo oculto: o vínculo vem da escolha na lista do campo de nome, e não de um segundo campo para preencher.
+            return forms.ModelChoiceField(queryset=Member.objects.all(), required=False, widget=forms.HiddenInput)
+        if db_field.name == 'name':
+            rotulos = rotulos_dos_membros()
+            membros = [
+                {'id': m.pk, 'nome': m.name, 'rotulo': rotulos[m.pk], 'ex': not m.is_active}
+                for m in Member.objects.order_by('name')
+            ]
+            kwargs['widget'] = CampoDeAutor(membros)
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+
+class FormDaListaDeArtigos(forms.ModelForm):
+    """Publicar pela lista (caixa "Publicado") também exige autor e data, como no formulário do artigo."""
+
+    def clean(self):
+        dados = super().clean()
+        artigo = self.instance
+        if dados.get('published') and artigo.pk and not artigo.article_authors.exists():
+            self.add_error('published', 'Adicione os autores antes de publicar.')
+        if dados.get('published') and artigo.pk and not artigo.date:
+            self.add_error('published', 'Preencha a data de publicação do artigo antes de publicar.')
+        return dados
+
+
+class AutorDoArtigoFilter(DropdownFilter):
+    """Os artigos de um autor: um membro (com o ID, se houver homônimos) ou alguém de fora."""
+    title = 'autor'
+    parameter_name = 'autor'
+
+    def lookups(self, request, model_admin):
+        rotulos = rotulos_dos_membros()
+        autores = {}
+        for autor in ArticleAuthor.objects.all():
+            if autor.member_id:
+                autores[f'm{autor.member_id}'] = rotulos.get(autor.member_id, autor.display_name)
+            else:
+                autores.setdefault(f'n{normaliza(autor.display_name)}', autor.display_name)
+        opcoes = sorted(autores.items(), key=lambda par: normaliza(par[1]))
+        return opcoes
+
+    def queryset(self, request, queryset):
+        valor = self.value()
+        if not valor:
+            return queryset
+        if valor.startswith('m') and valor[1:].isdigit():
+            return queryset.filter(article_authors__member_id=int(valor[1:])).distinct()
+        ids = [a.pk for a in ArticleAuthor.objects.filter(member__isnull=True) if f'n{normaliza(a.display_name)}' == valor]
+        return queryset.filter(article_authors__in=ids).distinct()
+
+
+class TemaDoArtigoFilter(DropdownFilter):
+    """Os artigos de um tema. Os temas são os já usados (sem repetir "Varejo" e "varejo") e o texto é separado por vírgula."""
+    title = 'tema'
+    parameter_name = 'tema'
+
+    def lookups(self, request, model_admin):
+        return [(normaliza(tema), tema) for tema in sorted(temas_ja_usados(), key=normaliza)]
+
+    def queryset(self, request, queryset):
+        if not self.value():
+            return queryset
+        ids = [
+            pk for pk, temas in Article.objects.values_list('pk', 'topics')
+            if self.value() in {normaliza(t) for t in (temas or '').split(',')}
+        ]
+        return queryset.filter(pk__in=ids)
 
 
 @admin.register(Article)
@@ -563,25 +758,89 @@ class ArticleAdmin(AdminDoSite):
     # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
     prepopulated_fields = {'slug': ('title',)}
     fieldsets = (
-        (None, {'fields': ('title', 'slug', 'authors', 'topics', 'description', 'content')}),
+        (None, {'fields': ('pendencias', 'title', 'slug')}),
+        (None, {'fields': ('topics', 'description', 'content')}),
         ('Publicação', {'fields': ('published', 'date', 'image')}),
-        secao_avancada('order', 'source', 'link'),
+        ('Como será citado', {'fields': ('previa_da_citacao',), 'classes': ('collapse',)}),
+        secao_avancada('order'),
     )
+    readonly_fields = ('pendencias', 'previa_da_citacao')
     actions = ['publicar', 'despublicar']
-    list_display = ('capa', 'title', 'slug', 'authors', 'published', 'date', 'order')
+    list_display = ('capa', 'title', 'slug', 'autores', 'published', 'date', 'order')
     list_display_links = ('capa', 'title')
-    search_fields = ('title', 'slug', 'authors', 'topics', 'description', 'content', 'source')
+    search_fields = ('title', 'slug', 'article_authors__name', 'topics', 'description', 'content')
     list_editable = ('published', 'order')
-    list_filter = ('published', 'source', 'date')
+    list_filter = ('published', AutorDoArtigoFilter, TemaDoArtigoFilter, 'date')
     date_hierarchy = 'date'
     ordering = ('-date', 'order')
-    inlines = [ArticleImageInline]
+    change_form_template = 'website/admin/artigo_change_form.html'
+    inlines = [AutoresDoArtigoInline, ArticleImageInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('article_authors')
+
+    def get_changelist_form(self, request, **kwargs):
+        return super().get_changelist_form(request, form=FormDaListaDeArtigos, **kwargs)
 
     @admin.display(description='Capa')
     def capa(self, obj):
         return miniatura(obj.image)
 
+    @admin.display(description='Para publicar')
+    def pendencias(self, obj):
+        """O que falta no artigo salvo, para o editor não descobrir por erro na hora de publicar."""
+        if obj is None or not obj.pk:
+            return 'Salve o rascunho para ver aqui o que falta para publicar.'
+        itens = []
+        if not obj.article_authors.exists():
+            itens.append(('falta', 'Falta ao menos um autor.'))
+        enviadas = set(obj.images.values_list('number', flat=True))
+        citadas = {int(n) for n in re.findall(r'!\[[^\]]*\]\(imagem-(\d+)\)', obj.content or '')}
+        for numero in sorted(citadas - enviadas):
+            itens.append(('falta', f'O texto pede a imagem {numero}, que não foi enviada em “Imagens do artigo”.'))
+        if not obj.image:
+            itens.append(('sugestao', 'Sem imagem de capa, o cartão do artigo na lista mostra só “ICC”.'))
+        if not itens:
+            return mark_safe('<span class="pendencias pendencias--ok">Tudo pronto para publicar.</span>')
+        return format_html(
+            '<ul class="pendencias">{}</ul>',
+            format_html_join('', '<li class="pendencias--{}">{}</li>', itens),
+        )
+
+    @admin.display(description='Citação')
+    def previa_da_citacao(self, obj):
+        """As citações como o site as entrega, para o editor conferir o nome dos autores. Vale para o que está salvo."""
+        if obj is None or not obj.pk:
+            return 'Aparece depois de salvar o artigo.'
+        if not obj.article_authors.exists():
+            return 'Adicione ao menos um autor para ver a citação.'
+        hoje = timezone.localdate()
+        por_id = {c['id']: c for c in citacao.citacoes(obj)}
+        corpo = []
+        for id_ in ('abnt', 'apa'):
+            marcas = {'b': 'strong', 'i': 'em'}
+            partes = [
+                (marcas.get(p['e'], 'span'), citacao.com_data_de_hoje(p['t'], hoje), marcas.get(p['e'], 'span'))
+                for p in por_id[id_]['partes']
+            ]
+            corpo.append(format_html(
+                '<p><b>{}</b><br>{}</p>', por_id[id_]['label'], format_html_join('', '<{}>{}</{}>', partes),
+            ))
+        bibtex = citacao.com_data_de_hoje(por_id['bibtex']['texto'], hoje)
+        corpo.append(format_html('<p><b>BibTeX</b></p><pre class="previa-citacao">{}</pre>', bibtex))
+        corpo.append(mark_safe(
+            '<p class="texto-original">Reflete o que está salvo. Se um nome sair errado, ajuste a linha do autor '
+            'ou o “Nome na citação” do membro.</p>'
+        ))
+        return format_html_join('', '{}', ((c,) for c in corpo))
+
+    @admin.display(description='Autores')
+    def autores(self, obj):
+        return ', '.join(a.display_name for a in obj.article_authors.all())
+
     def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'topics':
+            kwargs['widget'] = CampoDeTemas(temas_ja_usados())
         if db_field.name == 'content':
             kwargs['widget'] = MarkdownPreviewWidget(modo='artigo', imagens=self._imagens_do_artigo(request))
         return super().formfield_for_dbfield(db_field, request, **kwargs)
@@ -599,9 +858,18 @@ class ArticleAdmin(AdminDoSite):
 
     @admin.action(description='Publicar selecionados (aparecem no site)', permissions=['change'])
     def publicar(self, request, queryset):
-        n = queryset.filter(published=False).update(published=True)
+        sem_autor = queryset.filter(published=False, article_authors__isnull=True)
+        sem_autor_ids = list(sem_autor.values_list('pk', flat=True))
+        n = queryset.filter(published=False).exclude(pk__in=sem_autor_ids).update(published=True)
         sem_data = queryset.filter(date__isnull=True).count()
         self.message_user(request, f'{n} artigo(s) publicado(s).', messages.SUCCESS)
+        if sem_autor_ids:
+            self.message_user(
+                request,
+                f'{len(sem_autor_ids)} artigo(s) não foram publicados por não terem autor. Adicione os autores '
+                'em cada um.',
+                messages.WARNING,
+            )
         if sem_data:
             self.message_user(
                 request,

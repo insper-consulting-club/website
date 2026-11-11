@@ -10,8 +10,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.text import slugify
 from PIL import Image, ImageDraw, ImageFont
 
+from website.autores import normaliza
 from website.models import (
-    Article, ArticleImage, Directorate, DirectorateMembership, Member, MemberTrajectory, NavItem,
+    Article, ArticleAuthor, ArticleImage, Directorate, DirectorateMembership, Member, MemberTrajectory, NavItem,
     Partner, PartnerCategory, Position, PreparationMaterial, PreparationMaterialItem, Program,
     ProgramCase, ProgramCaseParticipant, ProgramComponent, ProgramContentBlock, Project,
     ProjectContentBlock, ProjectImage, ProjectTimelineEvent, SelectionProcess,
@@ -310,17 +311,24 @@ class Command(BaseCommand):
                 title=item["titulo"],
                 defaults={
                     "slug": item["slug"] or None,
-                    "authors": item["autores"],
                     "topics": item["temas"],
                     "description": item["resumo"],
                     "content": item["conteudo"],
-                    "link": item["link"],
-                    "source": item["fonte"],
                     "date": item["data"],
                     "order": item["ordem"],
                     "published": item["publicado"],
                 },
             )
+            # Os autores: o nome que bate com um membro fica vinculado a ele, como se o editor o escolhesse na lista.
+            artigo.article_authors.all().delete()
+            for ordem, nome in enumerate(item["autores"]):
+                alvo = normaliza(nome)
+                membro = next(
+                    (m for m in Member.objects.order_by("pk") if alvo in (normaliza(m.name), normaliza(m.citation_name))), None,
+                )
+                autor = ArticleAuthor(article=artigo, name=nome, member=membro, order=ordem)
+                autor.clean()
+                autor.save()
             if item["capa"]:
                 self._anexar(artigo, "image", item["titulo"], (1200, 630))
             else:

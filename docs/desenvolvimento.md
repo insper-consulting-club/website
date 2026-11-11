@@ -51,7 +51,7 @@ O `backend` roda o comando `setup_dev` a cada subida, e ele só age em `DEBUG=Tr
 docker compose exec backend python manage.py seed_mock_data
 ```
 
-**O que o `seed_mock_data` cria.** Um conjunto único e completo de dados **fictícios** (exceto os nomes e as descrições dos quatro programas do ICC, que são os reais): 16 membros, 8 parceiros, os programas com blocos de conteúdo, componentes e cases, 7 projetos, 7 artigos, dois processos seletivos (um antigo e o ativo, com inscrições abertas), a trajetória e os vínculos de diretoria dos membros e dois itens de menu a mais. Pessoas, e-mails e links são inventados e usam `example.com`.
+**O que o `seed_mock_data` cria.** Um conjunto único e completo de dados **fictícios** (exceto os nomes e as descrições dos quatro programas do ICC, que são os reais): 16 membros, 8 parceiros, os programas com blocos de conteúdo, componentes e cases, 7 projetos, 8 artigos (um deles, "Guia de formatação", usa todos os recursos do editor, para testar o site), dois processos seletivos (um antigo e o ativo, com inscrições abertas), a trajetória e os vínculos de diretoria dos membros e dois itens de menu a mais. Pessoas, e-mails e links são inventados e usam `example.com`.
 
 Ele inclui de propósito os casos de borda que o admin e o site tratam, para testar a apresentação: nome e título muito longos, membro sem foto e sem LinkedIn, ex-membros (que somem da Equipe), parceiro sem logo e sem site, programa sem link de inscrição, projeto de um dia só, projeto sem parceiros nem programa, artigo sem slug, artigo só com link externo, rascunho, e itens ocultos ou arquivados (parceiro, programa, case e projeto), que aparecem no admin mas não no site. Fotos, logos, capas e galerias recebem imagens de exemplo geradas na hora; algumas entidades ficam sem imagem de propósito.
 
@@ -159,7 +159,7 @@ As migrations ficam versionadas em `backend/website/migrations/`. O Docker Compo
 
 ### Testes
 
-Os testes do backend ficam em `backend/website/tests.py` e usam o `django.test.TestCase` com o `APIClient` do DRF. Hoje cobrem os endpoints públicos: artigos (slug, id e rascunhos), membros atuais e arquivados, parceiros ocultos, projetos arquivados, programas, componentes e cases, processo seletivo e o `/api/health/`. Ao criar ou alterar um endpoint, acrescente testes. O frontend ainda não tem testes automatizados.
+Os testes do backend ficam em `backend/website/tests.py` e usam o `django.test.TestCase` com o `APIClient` do DRF. Hoje cobrem os endpoints públicos: artigos (slug, id e rascunhos), membros atuais e arquivados, parceiros ocultos, projetos arquivados, programas, componentes e cases, processo seletivo e o `/api/health/`. Os artigos têm testes do formulário do admin (autores, faixa "Para publicar", prévia da citação, barra do Markdown e filtros), da migration dos autores e das citações (`CitationTests`). Um deles confere se todos os textos que o site pede (`t("chave")`) existem no registro, e por isso lê o código do frontend: o Compose monta `./frontend` em `/frontend`, somente leitura, no serviço do backend. Se você mudar o `docker-compose.yml`, rode `docker compose up -d` para o contêiner em execução receber a montagem. Ao criar ou alterar um endpoint, acrescente testes. O frontend ainda não tem testes automatizados.
 
 ### Estilo de código
 

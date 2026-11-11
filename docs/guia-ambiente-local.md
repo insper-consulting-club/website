@@ -60,7 +60,7 @@ Deixe essa janela aberta enquanto usar o site.
 | Site | http://localhost:5173 | Não precisa |
 | Área administrativa | http://localhost:8000/admin/ | Usuário `admin`, senha `admin` |
 
-Esse login só vale no seu computador. O site local já vem com membros, projetos, parceiros e artigos de exemplo.
+Esse login só vale no seu computador. O site local já vem com membros, projetos, parceiros e artigos de exemplo. O artigo **Guia de formatação: todos os recursos do editor** usa seções, listas, tabela, fórmulas, blocos de código e imagens, e serve para treinar a edição e conferir o resultado no site.
 
 ---
 
@@ -79,7 +79,7 @@ Lembre que o site local começa com os dados de exemplo. Para testar a edição 
 3. Marque **Publicado**. Aqui isso é seguro, porque o banco local é separado do site no ar.
 4. Salve e abra http://localhost:5173/artigos. Confira o card na lista e a página do artigo: seções, tabelas, imagens nos lugares certos e fórmulas sem trechos em vermelho.
 
-Para artigos, esta é a forma de conferir a página inteira (título, capa e card). O texto em si também pode ser revisado com o botão **Mostrar prévia** do admin (ver [Revisar antes de publicar](guia-artigos.md#revisar-antes-de-publicar)).
+Para artigos, esta é a forma de conferir a página inteira (título, capa e card). O texto em si também pode ser revisado com o botão **Prévia** do admin (ver [Revisar antes de publicar](guia-artigos.md#revisar-antes-de-publicar)).
 
 ### Mudanças no visual ou no código
 

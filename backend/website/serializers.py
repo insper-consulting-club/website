@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from . import citacao
 from .site_texts import PADRAO as PADRAO_TEXTOS
 from .models import (
     Member, Partner, Statistic, Project, ProjectImage,
@@ -262,14 +263,44 @@ class ArticleImageSerializer(serializers.ModelSerializer):
         return None
 
 
+def autores_do_artigo(artigo):
+    """
+    Os autores como o site os mostra: o nome sem as chaves do BibTeX, o membro (quando há vínculo, para filtrar por
+    autor) e se ele tem perfil na página Equipe (só membros ativos têm). Sem autores cadastrados (texto antigo), o autor é o próprio clube.
+    """
+    if not artigo.article_authors.exists():
+        return [{"name": Article.NOME_INSTITUCIONAL, "member_id": None, "has_profile": False}]
+    return [
+        {
+            "name": autor.display_name,
+            "member_id": autor.member_id,
+            "has_profile": bool(autor.member_id and autor.member.is_active),
+        }
+        for autor in artigo.article_authors.all()
+    ]
+
+
 class ArticleSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     # Imagens chamadas no texto como ![](imagem-1); o site troca pelo endereço.
     images = ArticleImageSerializer(many=True, read_only=True)
+    authors = serializers.SerializerMethodField()
+    # As citações do artigo (ABNT, APA, BibTeX, BibLaTeX e RIS). Trazem marcadores de data de acesso, que o site
+    # troca pela data de quem copia (ver citacao.py).
+    citations = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ["id", "slug", "title", "authors", "topics", "description", "content", "images", "link", "image_url", "source", "date", "order"]
+        fields = [
+            "id", "slug", "title", "authors", "topics", "description", "content", "images", "image_url", "date", "order",
+            "citations",
+        ]
+
+    def get_authors(self, obj):
+        return autores_do_artigo(obj)
+
+    def get_citations(self, obj):
+        return citacao.citacoes(obj)
 
     def get_image_url(self, obj):
         request = self.context.get("request")
@@ -281,10 +312,14 @@ class ArticleSerializer(serializers.ModelSerializer):
 class ArticleListSerializer(serializers.ModelSerializer):
     """Versão enxuta para a lista de artigos: sem o texto completo e sem as imagens do corpo."""
     image_url = serializers.SerializerMethodField()
+    authors = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ["id", "slug", "title", "authors", "topics", "description", "link", "image_url", "source", "date", "order"]
+        fields = ["id", "slug", "title", "authors", "topics", "description", "image_url", "date", "order"]
+
+    def get_authors(self, obj):
+        return autores_do_artigo(obj)
 
     def get_image_url(self, obj):
         request = self.context.get("request")

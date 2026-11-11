@@ -8,11 +8,13 @@ type PageHeroProps = {
   lead?: ReactNode
   back?: { to: string; label: string }
   children?: ReactNode
+  // Na mesma coluna estreita do texto, para o cabeçalho e o texto compartilharem a borda esquerda (artigos).
+  estreito?: boolean
 }
 
-export default function PageHero({ eyebrow, title, lead, back, children }: PageHeroProps) {
+export default function PageHero({ eyebrow, title, lead, back, children, estreito }: PageHeroProps) {
   return (
-    <header className="page-hero">
+    <header className={`page-hero${estreito ? " page-hero--estreito" : ""}`}>
       <div className="container">
         {back && (
           <Link to={back.to} className="back-link">

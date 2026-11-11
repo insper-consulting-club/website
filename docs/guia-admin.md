@@ -20,9 +20,10 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 - Clicar no nome de um registro abre a edição.
 - **Salvar** grava e volta para a lista. **Salvar e continuar editando** grava e fica na mesma tela.
 - Na lista, a caixa de busca e os filtros da direita ajudam a achar o que você procura.
+- **Alterações não salvas:** se você alterar um formulário e tentar sair da página sem salvar, o navegador pergunta antes de descartar.
 - **Ver no site:** na edição de um artigo, programa, projeto, membro, parceiro, processo seletivo e da configuração do site, o botão **Ver no site** abre a página pública correspondente, para conferir o resultado. Ele não aparece para o que está escondido do site (rascunho de artigo, projeto arquivado, parceiro ou programa oculto). O site pode levar até um minuto para mostrar uma mudança recém-salva.
 - **Menu lateral:** vem com o que se edita com mais frequência primeiro (Artigos, Equipe, Parceiros, Programas e projetos, Processo seletivo), e deixa **Site** (configuração, textos e estatísticas) e **Acesso** (usuários, grupos e atividade recente) no fim.
-- **Seção Avançado:** nos formulários de artigo, parceiro, programa e case, os campos que quase nunca mudam (ordem de exibição, link externo e publicação do artigo) ficam numa seção recolhida chamada **Avançado**, no fim da página. Clique nela para abrir. Se um desses campos tiver erro ao salvar, ela abre sozinha.
+- **Seção Avançado:** nos formulários de artigo, parceiro, programa e case, os campos que quase nunca mudam (a ordem de exibição, por exemplo) ficam numa seção recolhida chamada **Avançado**, no fim da página. Clique nela para abrir. Se um desses campos tiver erro ao salvar, ela abre sozinha.
 - **Reordenar arrastando:** onde existe ordem de exibição, arraste a linha pela alça para mudar a posição e salve. Vale para as listas de Diretorias, Parceiros, Programas, Estatísticas e Materiais de preparação, e para as tabelas dentro de um registro (blocos de conteúdo, imagens do projeto, itens de navegação, benefícios para parceiros, etapas e requisitos do processo, vínculos com diretorias). O número de ordem fica escondido e é preenchido sozinho. Duas exceções: o cronograma de um projeto segue a data de cada evento, e os artigos seguem a data de publicação.
 
 | Quero cadastrar ou editar | Linha do admin |
@@ -38,7 +39,7 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 
 ### Prévia dos textos em Markdown
 
-Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Mostrar prévia** abre, logo abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
+Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Prévia**, na barra acima do campo, abre o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão **Prévia** não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
 
 ### Depois de salvar e ao enviar imagens
 
@@ -141,7 +142,7 @@ Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá p
 - **Exibir no site.** A **Ordem de exibição** fica em **Avançado**, mas o mais simples é arrastar a linha na lista.
 - **Blocos de conteúdo:** no fim do formulário, na aba **Blocos de conteúdo do programa**, você escreve a descrição detalhada da página, no formato que fizer sentido para aquele programa. Clique em adicionar bloco e preencha:
   - **Título** (opcional), como "Para quem é", "Como funciona" ou "Requisitos".
-  - **Texto**, em Markdown: `## Subtítulo`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
+  - **Texto**, em Markdown: `## Seção`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
   - **Imagem** (opcional), com **Legenda** e **Posição da imagem** (à direita, à esquerda ou centralizada, abaixo do texto).
   - **Ordem:** os blocos aparecem na página nessa ordem, logo abaixo do topo e antes de "Como funciona".
 
@@ -200,17 +201,17 @@ O projeto arquivado some do site (de todas as páginas acima e do perfil dos mem
 
 ## Artigos
 
-Os artigos são escritos pelos membros do ICC e ficam **dentro do site**: cada um tem a própria página, com resumo, temas, o texto completo, "Como citar" e um botão para compartilhar no LinkedIn.
+Os artigos são escritos pelos membros do ICC e ficam **dentro do site**: cada um tem a própria página, com resumo, temas, o texto completo e os botões **Compartilhar** e **Citar** (citação em ABNT, APA, BibTeX, BibLaTeX e RIS).
 
 O passo a passo completo, com a referência de Markdown, imagens, fórmulas, conversão de documentos e solução de problemas, está no **[guia de artigos](guia-artigos.md)**. Em resumo:
 
-1. **Artigos > Adicionar artigo.** Preencha título, autores, resumo, temas, data e, se quiser, o slug e a imagem de capa. O link externo e a publicação ficam em **Avançado**.
+1. **Artigos > Adicionar artigo.** Preencha título e slug, os **autores** (lista logo abaixo, com os membros sugeridos ao digitar), temas, resumo, data e, se quiser, a imagem de capa. A faixa **Para publicar**, no alto, mostra o que falta.
 2. Escreva o **Texto do artigo** em Markdown, com uma linha em branco entre os parágrafos.
 3. Envie as imagens do texto em **Imagens do artigo** e chame cada uma no texto por `![](imagem-1)`.
 4. Revise o artigo antes de publicar, de preferência no ambiente local (ver o [guia do ambiente local](guia-ambiente-local.md)).
 5. Salve com **Publicado** desmarcado (rascunho). Quando estiver pronto, marque **Publicado**, salve e confira a página no site.
 
-Na lista de artigos, as ações **Publicar selecionados** e **Despublicar selecionados** mudam vários de uma vez (despublicar devolve o artigo a rascunho, sem apagar o texto). Ao publicar, o admin avisa se algum artigo está sem data de publicação, porque a ordem no site depende dela.
+Na lista de artigos, a busca e os filtros **Autor** e **Tema** ajudam a achar um artigo, e as ações **Publicar selecionados** e **Despublicar selecionados** mudam vários de uma vez (despublicar devolve o artigo a rascunho, sem apagar o texto). Artigos sem autor não são publicados pela ação (o admin avisa quais são), e, ao publicar, ele avisa se algum está sem data de publicação, porque a ordem no site depende dela.
 
 ---
 
@@ -257,7 +258,7 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de preparação
 - **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
 - **Home:** a foto de "Quem somos" (opcional) e a descrição dela, lida por leitores de tela. Os textos da Home (título do topo, frase de destaque, "Quem somos", missão, chamada final) ficam em **Textos do site**, na página Home.
 - **Páginas:** o campo **"Programa dos cases em destaque"** é uma lista dos programas cadastrados e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção. O texto que aparece logo abaixo do título de cada página, a frase do rodapé e a mensagem de inscrições encerradas também ficam em **Textos do site**.
-- **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
+- **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Seção`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
 - **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
   - **Texto exibido**. A ordem é a das linhas (arraste para mudar).
   - **Onde aparece:** menu (topo e rodapé), só no topo, só no rodapé ou botão de destaque do topo.
