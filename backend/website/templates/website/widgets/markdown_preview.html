@@ -1,43 +1,73 @@
 <div class="md-campo">
   <div class="md-barra" role="toolbar" aria-label="Formatação do texto">
-    <span class="md-barra__grupo">
-      <button type="button" data-md="negrito" title="Negrito"><b>N</b></button>
-      <button type="button" data-md="italico" title="Itálico"><i>I</i></button>
-      <button type="button" data-md="codigo" title="Código no meio da frase (um nome de função, uma variável), em letra de máquina"><code>abc</code></button>
-    </span>
-    <span class="md-barra__grupo">
-      <button type="button" data-md="secao" title="Seção: o título de uma parte do texto">Seção</button>
-      <button type="button" data-md="subsecao" title="Subseção: uma parte dentro de uma seção">Subseção</button>
-      <button type="button" data-md="subsubsecao" title="Subsubseção: uma parte dentro de uma subseção">Subsubseção</button>
-    </span>
-    <span class="md-barra__grupo">
-      <button type="button" data-md="lista" title="Lista com marcadores">Lista</button>
-      <button type="button" data-md="numerada" title="Lista numerada">1. Lista</button>
-      <button type="button" data-md="citacao" title="Citação em destaque">Citação</button>
-    </span>
-    <span class="md-barra__grupo">
-      <button type="button" data-md="link" title="Link">Link</button>
-      {% if widget.modo == "artigo" %}<button type="button" data-md="imagem" title="Inserir uma das imagens enviadas em “Imagens do artigo”" aria-expanded="false">Imagem</button>{% endif %}
-      {% if widget.modo == "artigo" %}<button type="button" data-md="bloco" title="Bloco de código com várias linhas, em caixa própria"><code>&lt;/&gt;</code></button>{% endif %}
-      <button type="button" data-md="tabela" title="Insere uma tabela, escolhendo o tamanho" aria-expanded="false">Tabela</button>
-      <button type="button" data-md="divisoria" title="Linha divisória entre partes do texto">Linha</button>
-      {% if widget.modo == "artigo" %}<button type="button" data-md="formula" title="Fórmula matemática entre $$">Fórmula</button>{% endif %}
-    </span>
-    <button type="button" data-md="salvar" class="md-barra__salvar" title="Salva o formulário e continua na tela cheia">Salvar e continuar</button>
-    <button type="button" data-md="tela" class="md-barra__tela" title="Escrever com o campo ocupando a janela inteira" aria-pressed="false">Tela cheia</button>
-    {% if widget.modo == "artigo" %}
-    <div class="md-imagens" hidden data-imagens="{{ widget.imagens_json }}"></div>
-    {% endif %}
-    <div class="md-tabela" hidden>
-      <label>Colunas <input type="number" class="md-tabela__colunas" min="1" max="8" value="2"></label>
-      <label>Linhas, além do cabeçalho <input type="number" class="md-tabela__linhas" min="1" max="20" value="2"></label>
-      <button type="button" data-md="tabela-inserir">Inserir</button>
+    <div class="md-barra__formato">
+      <div class="md-menu">
+        <button type="button" class="md-menu__botao" data-menu="secoes" aria-haspopup="true" aria-expanded="false" title="Transformar a linha em título de seção">
+          Seção <svg class="md-icone md-icone--seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="md-menu__lista" role="menu" hidden>
+          <button type="button" role="menuitem" data-md="secao"><strong>Seção</strong><small>O título de uma parte do texto</small></button>
+          <button type="button" role="menuitem" data-md="subsecao"><strong>Subseção</strong><small>Uma parte dentro de uma seção</small></button>
+          <button type="button" role="menuitem" data-md="subsubsecao"><strong>Subsubseção</strong><small>Uma parte dentro de uma subseção</small></button>
+        </div>
+      </div>
+
+      <span class="md-barra__grupo">
+        <button type="button" class="md-barra__icone" data-md="negrito" title="Negrito" aria-label="Negrito"><b>N</b></button>
+        <button type="button" class="md-barra__icone" data-md="italico" title="Itálico" aria-label="Itálico"><i>I</i></button>
+        <button type="button" class="md-barra__icone" data-md="link" title="Link" aria-label="Link">
+          <svg class="md-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+        </button>
+      </span>
+
+      <span class="md-barra__grupo">
+        <button type="button" class="md-barra__icone" data-md="lista" title="Lista com marcadores" aria-label="Lista com marcadores">
+          <svg class="md-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" class="md-icone__cheio"/><circle cx="4.5" cy="12" r="1" class="md-icone__cheio"/><circle cx="4.5" cy="18" r="1" class="md-icone__cheio"/></svg>
+        </button>
+        <button type="button" class="md-barra__icone" data-md="numerada" title="Lista numerada" aria-label="Lista numerada">
+          <svg class="md-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"/><text x="2" y="8" class="md-icone__texto">1</text><text x="2" y="14" class="md-icone__texto">2</text><text x="2" y="20" class="md-icone__texto">3</text></svg>
+        </button>
+        <button type="button" class="md-barra__icone" data-md="citacao" title="Citação em destaque" aria-label="Citação em destaque">
+          <svg class="md-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6v12M10 8h9M10 12h9M10 16h6"/></svg>
+        </button>
+      </span>
+
+      <div class="md-menu md-menu--inserir">
+        <button type="button" class="md-menu__botao" data-menu="inserir" aria-haspopup="true" aria-expanded="false" title="Inserir imagem, tabela, fórmula, código ou linha divisória">
+          Inserir <svg class="md-icone md-icone--seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="md-menu__lista" role="menu" hidden>
+          {% if widget.modo == "artigo" %}<button type="button" role="menuitem" data-md="imagem" aria-expanded="false"><strong>Imagem</strong><small>Uma das imagens enviadas em “Imagens do artigo”</small></button>{% endif %}
+          <button type="button" role="menuitem" data-md="tabela" aria-expanded="false"><strong>Tabela</strong><small>Você escolhe as colunas e as linhas</small></button>
+          {% if widget.modo == "artigo" %}<button type="button" role="menuitem" data-md="formula"><strong>Fórmula</strong><small>Matemática entre $$, como $$x^2$$</small></button>{% endif %}
+          {% if widget.modo == "artigo" %}<button type="button" role="menuitem" data-md="bloco"><strong>Bloco de código</strong><small>Várias linhas, em caixa própria</small></button>{% endif %}
+          <button type="button" role="menuitem" data-md="codigo"><strong>Código na frase</strong><small>Um nome de função ou variável, em letra de máquina</small></button>
+          <button type="button" role="menuitem" data-md="divisoria"><strong>Linha divisória</strong><small>Separa duas partes do texto</small></button>
+        </div>
+        {% if widget.modo == "artigo" %}
+        <div class="md-imagens" hidden data-imagens="{{ widget.imagens_json }}"></div>
+        {% endif %}
+        <div class="md-tabela" hidden>
+          <label>Colunas <input type="number" class="md-tabela__colunas" min="1" max="8" value="2"></label>
+          <label>Linhas, além do cabeçalho <input type="number" class="md-tabela__linhas" min="1" max="20" value="2"></label>
+          <button type="button" data-md="tabela-inserir">Inserir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="md-barra__acoes">
+      {% if widget.previa_url %}<button type="button" data-md="previa" aria-pressed="false" title="Mostrar o texto como ficará no site">Prévia</button>{% endif %}
+      <button type="button" data-md="tela" class="md-barra__tela" title="Escrever com o campo ocupando a janela inteira" aria-pressed="false">
+        <svg class="md-icone md-icone--tela" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        <svg class="md-icone md-icone--sair" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <span class="md-barra__rotulo">Tela cheia</span>
+      </button>
+      <button type="button" data-md="salvar" class="md-barra__salvar" title="Salva o formulário e continua na tela cheia">Salvar e continuar</button>
     </div>
   </div>
   {% include "unfold/widgets/textarea.html" %}
   {% if widget.previa_url %}
   <div class="md-previa" data-url="{{ widget.previa_url }}" data-modo="{{ widget.modo }}" data-imagens="{{ widget.imagens_json }}">
-    <button type="button" class="md-previa__botao" aria-expanded="false">Mostrar prévia</button>
     <div class="md-previa__caixa" hidden>
       <iframe class="md-previa__quadro" title="Prévia do texto"></iframe>
       <p class="md-previa__nota">Desenhada pelo próprio site, com o texto que está no campo. Nada é publicado até salvar.</p>

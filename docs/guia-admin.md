@@ -38,7 +38,7 @@ O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **P
 
 ### Prévia dos textos em Markdown
 
-Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Mostrar prévia** abre, logo abaixo do campo, o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
+Nos campos escritos em Markdown (o texto de um **artigo**, a **Política de Privacidade** e o texto dos **blocos de conteúdo dos programas**), o botão **Prévia**, na barra acima do campo, abre o texto desenhado pelo próprio site, com os mesmos estilos, fórmulas e imagens do artigo publicado. A prévia acompanha o que você digita. Nada é publicado até clicar em **Salvar**. As imagens de um artigo novo só aparecem na prévia depois que o artigo e as imagens forem salvos uma vez. Se o botão **Prévia** não aparecer, o endereço do site não está configurado (veja `FRONTEND_URL`, em [`arquitetura.md`](arquitetura.md)).
 
 ### Depois de salvar e ao enviar imagens
 

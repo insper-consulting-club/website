@@ -1,7 +1,7 @@
 /*
  * Prévia de textos em Markdown no admin.
  *
- * Cada campo com prévia (ver website/widgets.py) tem um botão "Mostrar prévia".
+ * Cada campo com prévia (ver website/widgets.py) tem um botão "Prévia" na barra de formatação.
  * Ao abrir, a página /previa do site é carregada num iframe e recebe o texto por
  * postMessage, então o resultado é desenhado pelos mesmos componentes e estilos
  * do site publicado. Os eventos ficam no document porque os formulários dentro
@@ -14,8 +14,6 @@
 
   var ESTILO =
     ".md-previa{margin-top:.5rem}" +
-    ".md-previa__botao{cursor:pointer;background:transparent;color:inherit;border:1px solid rgba(127,127,127,.5);border-radius:6px;padding:.25rem .75rem;font-size:.875rem}" +
-    ".md-previa__botao:hover{border-color:currentColor}" +
     ".md-previa__quadro{display:block;width:100%;height:520px;margin-top:.5rem;border:1px solid rgba(127,127,127,.4);border-radius:6px;background:#fff;resize:vertical}" +
     ".md-previa__nota{margin-top:.25rem;font-size:.75rem;opacity:.7}";
   var estilo = document.createElement("style");
@@ -121,10 +119,24 @@
   function alternaTelaCheia(caixa, ligar) {
     var botao = caixa.querySelector('[data-md="tela"]');
     var ativa = typeof ligar === "boolean" ? ligar : !caixa.classList.contains("md-campo--tela-cheia");
+    if (ativa === caixa.classList.contains("md-campo--tela-cheia")) return;
     caixa.classList.toggle("md-campo--tela-cheia", ativa);
     document.documentElement.classList.toggle("md-sem-rolagem", ativa);
     botao.setAttribute("aria-pressed", String(ativa));
-    botao.textContent = ativa ? "Sair da tela cheia" : "Tela cheia";
+    botao.querySelector(".md-barra__rotulo").textContent = ativa ? "Sair" : "Tela cheia";
+    botao.title = ativa ? "Voltar ao formulário" : "Escrever com o campo ocupando a janela inteira";
+    fechaMenus();
+    fechaQuadros();
+    // Na tela cheia a prévia abre ao lado do texto; ao sair, volta ao estado que tinha.
+    var previa = caixa.querySelector(".md-previa__caixa");
+    if (previa) {
+      if (ativa) {
+        caixa._previaAntes = !previa.hidden;
+        alternaPrevia(caixa, true);
+      } else if (caixa._previaAntes === false) {
+        alternaPrevia(caixa, false);
+      }
+    }
     var area = caixa.querySelector("textarea");
     if (area) area.focus();
   }
@@ -154,10 +166,52 @@
   }
 
   document.addEventListener("keydown", function (evento) {
+    if (evento.key === "Escape" && document.querySelector(".md-menu__lista:not([hidden]), .md-tabela:not([hidden]), .md-imagens:not([hidden])")) {
+      fechaMenus();
+      fechaQuadros();
+      return;
+    }
     if (evento.key !== "Enter" || !evento.target.closest || !evento.target.closest(".md-tabela")) return;
     evento.preventDefault(); // não envia o formulário
     insereTabela(evento.target.closest(".md-campo"));
   });
+
+  // Menus da barra (Seção, Inserir): abrem no clique e fecham ao escolher um item ou clicar fora.
+  function fechaMenus(exceto) {
+    document.querySelectorAll(".md-menu__lista:not([hidden])").forEach(function (lista) {
+      if (lista === exceto) return;
+      lista.hidden = true;
+      lista.parentNode.querySelector(".md-menu__botao").setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function alternaMenu(botao) {
+    var lista = botao.parentNode.querySelector(".md-menu__lista");
+    var abrir = lista.hidden;
+    fechaMenus();
+    fechaQuadros();
+    lista.hidden = !abrir;
+    botao.setAttribute("aria-expanded", String(abrir));
+  }
+
+  // Prévia: abre ou fecha o quadro do site ao lado (ou abaixo) do texto. Sem "abrir", inverte o estado.
+  function alternaPrevia(caixa, abrir) {
+    var previa = caixa.querySelector(".md-previa");
+    var botao = caixa.querySelector('[data-md="previa"]');
+    if (!previa || !botao) return;
+    var quadro = previa.querySelector(".md-previa__caixa");
+    var abrirAgora = typeof abrir === "boolean" ? abrir : quadro.hidden;
+    quadro.hidden = !abrirAgora;
+    botao.setAttribute("aria-pressed", String(abrirAgora));
+    if (!abrirAgora) return;
+    var iframe = previa.querySelector("iframe");
+    if (!iframe.getAttribute("src")) {
+      iframe.addEventListener("load", function () { enviar(previa); });
+      iframe.setAttribute("src", previa.dataset.url);
+    } else {
+      enviar(previa);
+    }
+  }
 
   // Fecha os quadros abertos (tabela, imagens), menos o que contém "exceto".
   function fechaQuadros(exceto) {
@@ -171,7 +225,8 @@
   }
 
   document.addEventListener("mousedown", function (evento) {
-    if (evento.target.closest(".md-tabela, .md-imagens, [data-md=\"tabela\"], [data-md=\"imagem\"]")) return;
+    if (evento.target.closest(".md-menu")) return; // o clique do próprio menu e dos quadros que saem dele
+    fechaMenus();
     fechaQuadros();
   });
 
@@ -290,6 +345,15 @@
   document.addEventListener("click", function (evento) {
     var formato = evento.target.closest(".md-barra button");
     if (formato) {
+      if (formato.dataset.menu) {
+        alternaMenu(formato);
+        return;
+      }
+      if (formato.closest(".md-menu__lista") && formato.dataset.md !== "tabela" && formato.dataset.md !== "imagem") fechaMenus();
+      if (formato.dataset.md === "previa") {
+        alternaPrevia(formato.closest(".md-campo"));
+        return;
+      }
       if (formato.dataset.md === "tela") {
         alternaTelaCheia(formato.closest(".md-campo"));
         return;
@@ -297,6 +361,7 @@
       if (formato.dataset.md === "tabela" || formato.dataset.md === "imagem") {
         var barra = formato.closest(".md-barra");
         var quadro = barra.querySelector(formato.dataset.md === "tabela" ? ".md-tabela" : ".md-imagens");
+        fechaMenus();
         var abrir = quadro.hidden;
         fechaQuadros();
         quadro.hidden = !abrir;
@@ -315,23 +380,6 @@
       var campo = formato.closest(".md-campo").querySelector("textarea");
       if (campo) formata(campo, formato.dataset.md);
       return;
-    }
-    var botao = evento.target.closest(".md-previa__botao");
-    if (!botao) return;
-    var previa = botao.closest(".md-previa");
-    var caixa = previa.querySelector(".md-previa__caixa");
-    var aberta = !caixa.hidden;
-    caixa.hidden = aberta;
-    botao.setAttribute("aria-expanded", String(!aberta));
-    botao.textContent = aberta ? "Mostrar prévia" : "Ocultar prévia";
-    if (!aberta) {
-      var quadro = previa.querySelector("iframe");
-      if (!quadro.getAttribute("src")) {
-        quadro.addEventListener("load", function () { enviar(previa); });
-        quadro.setAttribute("src", previa.dataset.url);
-      } else {
-        enviar(previa);
-      }
     }
   });
 

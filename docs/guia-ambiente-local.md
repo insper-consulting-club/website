@@ -79,7 +79,7 @@ Lembre que o site local começa com os dados de exemplo. Para testar a edição 
 3. Marque **Publicado**. Aqui isso é seguro, porque o banco local é separado do site no ar.
 4. Salve e abra http://localhost:5173/artigos. Confira o card na lista e a página do artigo: seções, tabelas, imagens nos lugares certos e fórmulas sem trechos em vermelho.
 
-Para artigos, esta é a forma de conferir a página inteira (título, capa e card). O texto em si também pode ser revisado com o botão **Mostrar prévia** do admin (ver [Revisar antes de publicar](guia-artigos.md#revisar-antes-de-publicar)).
+Para artigos, esta é a forma de conferir a página inteira (título, capa e card). O texto em si também pode ser revisado com o botão **Prévia** do admin (ver [Revisar antes de publicar](guia-artigos.md#revisar-antes-de-publicar)).
 
 ### Mudanças no visual ou no código
 
