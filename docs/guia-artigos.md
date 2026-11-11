@@ -187,7 +187,7 @@ As imagens são cadastradas no mesmo formulário do artigo, sem precisar salvar 
    ![](imagem-1)
    ```
 
-   Troque o 1 pelo número da imagem. Depois de salvar, cada linha mostra o trecho pronto na coluna **Para colar no texto**, com o botão **Copiar**.
+   Troque o 1 pelo número da imagem. Depois de salvar, cada linha mostra o trecho pronto na coluna **Para colar no texto**, com o botão **Copiar**. Também dá para usar o botão **Imagem** da barra do texto, que mostra as imagens salvas e insere o trecho no cursor.
 3. Salve. No site, a imagem ocupa a largura do texto, com a legenda embaixo.
 
 Para usar uma legenda diferente só naquele ponto, escreva-a entre os colchetes:

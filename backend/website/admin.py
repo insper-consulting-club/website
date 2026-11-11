@@ -564,15 +564,14 @@ class ArticleImageInline(TabularInline):
         if not obj or not obj.pk:
             return 'Aparece depois de salvar'
         codigo = f'![](imagem-{obj.number})'
-        # Se o número aparece no texto salvo, a imagem está em uso; senão, o editor ainda precisa inseri-la.
+        # Se o número aparece no texto salvo, a imagem está em uso; senão, o editor ainda precisa colocá-la no texto.
         usadas = {int(n) for n in re.findall(r'!\[[^\]]*\]\(imagem-(\d+)\)', obj.article.content or '')}
         uso = 'Usada no texto' if obj.number in usadas else 'Ainda não usada no texto'
         return format_html(
-            '<code>{}</code> <button type="button" class="inserir-trecho copiar-trecho" data-trecho="{}">Inserir no texto</button> '
-            '<button type="button" class="copiar-trecho" data-trecho="{}" '
+            '<code>{}</code> <button type="button" class="copiar-trecho" data-trecho="{}" '
             'onclick="navigator.clipboard.writeText(this.dataset.trecho);this.textContent=\'Copiado\'">Copiar</button>'
             '<br><small class="texto-original">{}</small>',
-            codigo, codigo, codigo, uso,
+            codigo, codigo, uso,
         )
 
 

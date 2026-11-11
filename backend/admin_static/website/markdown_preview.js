@@ -287,20 +287,7 @@
     troca(area, posicao, typeof ate === "number" ? ate : posicao, comeco + trecho + fim, selecao[0], selecao[1]);
   }
 
-  function insereImagem(botao) {
-    var area = document.querySelector("#id_content") || document.querySelector(".md-campo textarea");
-    if (!area) return;
-    insereBloco(area, botao.dataset.trecho);
-    botao.textContent = area._tocado ? "Inserido onde estava o cursor" : "Inserido no fim do texto";
-    setTimeout(function () { botao.textContent = "Inserir no texto"; }, 2500);
-  }
-
   document.addEventListener("click", function (evento) {
-    var inserir = evento.target.closest(".inserir-trecho");
-    if (inserir) {
-      insereImagem(inserir);
-      return;
-    }
     var formato = evento.target.closest(".md-barra button");
     if (formato) {
       if (formato.dataset.md === "tela") {

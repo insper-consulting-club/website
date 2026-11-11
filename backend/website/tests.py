@@ -3452,7 +3452,8 @@ class ArticleEditingHelpTests(TestCase):
             self.assertIn(f'data-md="{acao}"', html)
         self.assertRegex(html, r'class="md-tabela__colunas" min="1" max="8"')
         self.assertNotIn('data-md="titulo"', html)  # "título" é o do artigo, que tem campo próprio; o ## é uma seção
-        self.assertIn('class="inserir-trecho copiar-trecho" data-trecho="![](imagem-1)"', html)
+        self.assertIn('class="copiar-trecho" data-trecho="![](imagem-1)"', html)
+        self.assertNotIn("Inserir no texto", html)
 
     def test_the_topics_field_suggests_the_topics_already_used_without_repeating_spelling(self):
         import json
