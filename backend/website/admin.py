@@ -10,6 +10,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 import json
 import re
+from collections import Counter
 import unicodedata
 
 from django.shortcuts import redirect
@@ -18,6 +19,7 @@ from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.contrib.filters.admin import DropdownFilter
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget
@@ -548,20 +550,29 @@ class ArticleImageInline(TabularInline):
     model = ArticleImage
     formset = ImagemDoArtigoFormSet
     extra = 1
-    fields = ('number', 'image', 'caption', 'trecho')
-    readonly_fields = ('trecho',)
+    fields = ('number', 'image', 'miniatura', 'caption', 'trecho')
+    readonly_fields = ('miniatura', 'trecho')
     ordering = ('number',)
     tab = True
+
+    @admin.display(description='Imagem')
+    def miniatura(self, obj):
+        return miniatura(obj.image, 48) if obj and obj.pk else '—'
 
     @admin.display(description='Para colar no texto')
     def trecho(self, obj):
         if not obj or not obj.pk:
             return 'Aparece depois de salvar'
         codigo = f'![](imagem-{obj.number})'
+        # Se o número aparece no texto salvo, a imagem está em uso; senão, o editor ainda precisa inseri-la.
+        usadas = {int(n) for n in re.findall(r'!\[[^\]]*\]\(imagem-(\d+)\)', obj.article.content or '')}
+        uso = 'Usada no texto' if obj.number in usadas else 'Ainda não usada no texto'
         return format_html(
-            '<code>{}</code> <button type="button" class="copiar-trecho" data-trecho="{}" '
-            'onclick="navigator.clipboard.writeText(this.dataset.trecho);this.textContent=\'Copiado\'">Copiar</button>',
-            codigo, codigo,
+            '<code>{}</code> <button type="button" class="inserir-trecho copiar-trecho" data-trecho="{}">Inserir no texto</button> '
+            '<button type="button" class="copiar-trecho" data-trecho="{}" '
+            'onclick="navigator.clipboard.writeText(this.dataset.trecho);this.textContent=\'Copiado\'">Copiar</button>'
+            '<br><small class="texto-original">{}</small>',
+            codigo, codigo, codigo, uso,
         )
 
 
@@ -590,6 +601,40 @@ class CampoDeAutor(UnfoldAdminTextInputWidget):
             'aria-expanded': 'false',
         })
         return attrs
+
+
+class CampoDeTemas(UnfoldAdminTextInputWidget):
+    """
+    Campo de temas separados por vírgula que sugere os temas já usados em outros artigos (ver temas_sugestoes.js), para
+    não nascer "Varejo" e "varejo" como dois temas.
+    """
+
+    class Media:
+        js = ('website/temas_sugestoes.js',)
+
+    def __init__(self, temas=(), attrs=None):
+        super().__init__(attrs)
+        self.temas = list(temas)
+
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        attrs.update({
+            'class': f"{attrs.get('class', '')} temas-sugestoes__input".strip(),
+            'data-temas': json.dumps(self.temas, ensure_ascii=False),
+            'autocomplete': 'off',
+        })
+        return attrs
+
+
+def temas_ja_usados():
+    """Os temas dos artigos, sem repetir (ignorando acento e maiúscula) e com a grafia mais usada, do mais ao menos comum."""
+    contagem = {}
+    for texto in Article.objects.values_list('topics', flat=True):
+        for tema in (t.strip() for t in (texto or '').split(',')):
+            if tema:
+                contagem.setdefault(normaliza(tema), Counter())[tema] += 1
+    ordenados = sorted(contagem.values(), key=lambda grafias: (-sum(grafias.values()), grafias.most_common(1)[0][0].lower()))
+    return [grafias.most_common(1)[0][0] for grafias in ordenados]
 
 
 class AutoresDoArtigoFormSet(BaseInlineFormSet):
@@ -674,6 +719,54 @@ class FormDaListaDeArtigos(forms.ModelForm):
         return dados
 
 
+class AutorDoArtigoFilter(DropdownFilter):
+    """Os artigos de um autor: um membro (com o ID, se houver homônimos), alguém de fora ou o próprio clube."""
+    title = 'autor'
+    parameter_name = 'autor'
+
+    def lookups(self, request, model_admin):
+        rotulos = rotulos_dos_membros()
+        autores = {}
+        for autor in ArticleAuthor.objects.all():
+            if autor.member_id:
+                autores[f'm{autor.member_id}'] = rotulos.get(autor.member_id, autor.display_name)
+            else:
+                autores.setdefault(f'n{normaliza(autor.display_name)}', autor.display_name)
+        opcoes = sorted(autores.items(), key=lambda par: normaliza(par[1]))
+        if Article.objects.filter(institutional=True).exists():
+            opcoes.append(('i', f'{Article.NOME_INSTITUCIONAL} (institucional)'))
+        return opcoes
+
+    def queryset(self, request, queryset):
+        valor = self.value()
+        if not valor:
+            return queryset
+        if valor == 'i':
+            return queryset.filter(institutional=True)
+        if valor.startswith('m') and valor[1:].isdigit():
+            return queryset.filter(article_authors__member_id=int(valor[1:])).distinct()
+        ids = [a.pk for a in ArticleAuthor.objects.filter(member__isnull=True) if f'n{normaliza(a.display_name)}' == valor]
+        return queryset.filter(article_authors__in=ids).distinct()
+
+
+class TemaDoArtigoFilter(DropdownFilter):
+    """Os artigos de um tema. Os temas são os já usados (sem repetir "Varejo" e "varejo") e o texto é separado por vírgula."""
+    title = 'tema'
+    parameter_name = 'tema'
+
+    def lookups(self, request, model_admin):
+        return [(normaliza(tema), tema) for tema in sorted(temas_ja_usados(), key=normaliza)]
+
+    def queryset(self, request, queryset):
+        if not self.value():
+            return queryset
+        ids = [
+            pk for pk, temas in Article.objects.values_list('pk', 'topics')
+            if self.value() in {normaliza(t) for t in (temas or '').split(',')}
+        ]
+        return queryset.filter(pk__in=ids)
+
+
 @admin.register(Article)
 class ArticleAdmin(AdminDoSite):
     linhas_dos_campos = {'description': 4}
@@ -691,7 +784,7 @@ class ArticleAdmin(AdminDoSite):
     list_display_links = ('capa', 'title')
     search_fields = ('title', 'slug', 'article_authors__name', 'topics', 'description', 'content')
     list_editable = ('published', 'order')
-    list_filter = ('published', 'date')
+    list_filter = ('published', AutorDoArtigoFilter, TemaDoArtigoFilter, 'date')
     date_hierarchy = 'date'
     ordering = ('-date', 'order')
     inlines = [AutoresDoArtigoInline, ArticleImageInline]
@@ -761,6 +854,8 @@ class ArticleAdmin(AdminDoSite):
         return ', '.join(a.display_name for a in obj.article_authors.all())
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'topics':
+            kwargs['widget'] = CampoDeTemas(temas_ja_usados())
         if db_field.name == 'content':
             kwargs['widget'] = MarkdownPreviewWidget(modo='artigo', imagens=self._imagens_do_artigo(request))
         return super().formfield_for_dbfield(db_field, request, **kwargs)

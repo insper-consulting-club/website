@@ -78,6 +78,23 @@
   font-size: 0.9em;
 }
 
+/* Bloco de código (várias linhas): caixa própria que rola na horizontal, sem o fundo do código em linha. */
+.artigo__texto pre {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: var(--cinza-fundos);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.artigo__texto pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
 .artigo__texto hr {
   margin: 2.5rem 0;
   border: 0;

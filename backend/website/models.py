@@ -317,7 +317,7 @@ class ProgramContentBlock(models.Model):
     title = models.CharField(max_length=200, blank=True, verbose_name='Título do bloco (opcional)')
     text = models.TextField(
         blank=True, verbose_name='Texto',
-        help_text='Em Markdown: **negrito**, ## Subtítulo, - item de lista, [link](https://...). '
+        help_text='Em Markdown: **negrito**, ## Seção, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco.'
     )
     image = LimitedImageField(upload_to='programs/content/', null=True, blank=True, verbose_name='Imagem (opcional)')
@@ -353,7 +353,7 @@ class Article(models.Model):
     description = models.TextField(verbose_name='Resumo', help_text='Aparece no card da lista e no topo da página do artigo.')
     content = models.TextField(
         blank=True, verbose_name='Texto do artigo',
-        help_text='Texto completo, em Markdown: **negrito**, ## Título, - item de lista, [link](https://...). '
+        help_text='Texto completo, em Markdown: **negrito**, ## Seção, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco. Para pôr uma imagem, envie-a em "Imagens do artigo", '
                   'abaixo, e escreva aqui, numa linha sozinha, ![](imagem-1), trocando 1 pelo número da imagem.'
     )
@@ -812,7 +812,7 @@ class SiteConfig(models.Model):
     )
     privacy_text = models.TextField(
         blank=True, verbose_name='Texto da política',
-        help_text='Em Markdown: ## Título, **negrito**, - item de lista, [link](https://...). '
+        help_text='Em Markdown: ## Seção, **negrito**, - item de lista, [link](https://...). '
                   'Separe os parágrafos com uma linha em branco.'
     )
 

@@ -3439,6 +3439,86 @@ class ArticleEditingHelpTests(TestCase):
         self.assertIn(f"Acesso em: {timezone.localdate().day} ", html)
 
 
+    def test_the_form_has_the_markdown_toolbar_and_the_insert_button_for_saved_images(self):
+        ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png")
+
+        html = self.pagina()
+
+        acoes = (
+            "negrito", "italico", "codigo", "secao", "subsecao", "subsubsecao", "lista", "numerada", "citacao",
+            "link", "bloco", "tabela", "tabela-inserir", "divisoria", "formula", "tela",
+        )
+        for acao in acoes:
+            self.assertIn(f'data-md="{acao}"', html)
+        self.assertRegex(html, r'class="md-tabela__colunas" min="1" max="8"')
+        self.assertNotIn('data-md="titulo"', html)  # "título" é o do artigo, que tem campo próprio; o ## é uma seção
+        self.assertIn('class="inserir-trecho copiar-trecho" data-trecho="![](imagem-1)"', html)
+
+    def test_the_topics_field_suggests_the_topics_already_used_without_repeating_spelling(self):
+        import json
+
+        Article.objects.create(title="B", description="d", slug="b", topics="Varejo, Estratégia")
+        Article.objects.create(title="C", description="d", slug="c", topics="varejo, Carreira")
+        Article.objects.create(title="D", description="d", slug="d", topics="Varejo")
+
+        html = self.pagina()
+        lista = html[html.index('data-temas="') + len('data-temas="'):]
+        temas = json.loads(lista[:lista.index('"')].replace("&quot;", '"'))
+
+        self.assertEqual(temas, ["Varejo", "Carreira", "Estratégia"])  # a grafia mais usada, do mais ao menos comum
+        self.assertIn("temas-sugestoes__input", html)
+
+    def test_the_unsaved_changes_warning_is_loaded_in_the_admin(self):
+        self.assertIn("website/avisa_alteracoes.js", self.pagina())
+
+
+    def test_the_image_list_shows_a_thumbnail_and_whether_the_text_uses_each_image(self):
+        Article.objects.filter(pk=self.artigo.pk).update(institutional=True, content="Texto\n\n![](imagem-1)")
+        ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png")
+        ArticleImage.objects.create(article=self.artigo, number=2, image="articles/b.png")
+
+        html = self.pagina()
+
+        self.assertIn("Usada no texto", html)
+        self.assertIn("Ainda não usada no texto", html)
+        self.assertIn('src="/media/articles/a.png"', html)
+
+    def test_the_toolbar_has_the_image_picker_with_the_saved_images_and_the_save_button_for_full_screen(self):
+        ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png", caption="Gráfico")
+
+        html = self.pagina()
+
+        self.assertIn('data-md="imagem"', html)
+        self.assertIn('class="md-imagens"', html)
+        self.assertIn("&quot;number&quot;: 1", html[html.index('class="md-imagens"'):][:400])
+        self.assertIn('data-md="salvar"', html)
+
+    def test_the_list_filters_by_author_and_by_topic(self):
+        ana = Member.objects.create(name="Ana Silva")
+        outra = Article.objects.create(title="Outro", description="d", slug="outro", topics="varejo, Carreira")
+        ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva", member=ana)
+        ArticleAuthor.objects.create(article=outra, name="Fulano {de Tal}")
+        Article.objects.filter(pk=self.artigo.pk).update(topics="Varejo, Estratégia")
+        resultado = lambda consulta: {a.pk for a in self.client.get(f"/admin/website/article/?{consulta}").context["cl"].result_list}  # noqa: E731
+
+        self.assertEqual(resultado(f"autor=m{ana.pk}"), {self.artigo.pk})
+        self.assertEqual(resultado("autor=nfulano+de+tal"), {outra.pk})
+        self.assertEqual(resultado("tema=varejo"), {self.artigo.pk, outra.pk})  # "Varejo" e "varejo" são o mesmo tema
+        self.assertEqual(resultado("tema=carreira"), {outra.pk})
+        self.assertEqual(resultado("tema=estrategia"), {self.artigo.pk})
+
+    def test_the_author_filter_lists_members_outsiders_and_the_institutional_option(self):
+        ana = Member.objects.create(name="Ana Silva")
+        ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva", member=ana)
+        ArticleAuthor.objects.create(article=self.artigo, name="Fulano {de Tal}")
+        Article.objects.create(title="Inst", description="d", slug="inst", institutional=True)
+
+        html = self.client.get("/admin/website/article/").content.decode()
+
+        for texto in ("Ana Silva", "Fulano de Tal", "Insper Consulting Club (institucional)"):
+            self.assertIn(texto, html)
+
+
 class ArticleAuthorsMigrationTests(TransactionTestCase):
     """Migration 0032: o texto dos autores vira uma linha por autor, e o caminho de volta funciona."""
 

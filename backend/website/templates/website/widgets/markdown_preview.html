@@ -1,4 +1,39 @@
 <div class="md-campo">
+  <div class="md-barra" role="toolbar" aria-label="Formatação do texto">
+    <span class="md-barra__grupo">
+      <button type="button" data-md="negrito" title="Negrito"><b>N</b></button>
+      <button type="button" data-md="italico" title="Itálico"><i>I</i></button>
+      <button type="button" data-md="codigo" title="Código no meio da frase (um nome de função, uma variável), em letra de máquina"><code>abc</code></button>
+    </span>
+    <span class="md-barra__grupo">
+      <button type="button" data-md="secao" title="Seção: o título de uma parte do texto">Seção</button>
+      <button type="button" data-md="subsecao" title="Subseção: uma parte dentro de uma seção">Subseção</button>
+      <button type="button" data-md="subsubsecao" title="Subsubseção: uma parte dentro de uma subseção">Subsubseção</button>
+    </span>
+    <span class="md-barra__grupo">
+      <button type="button" data-md="lista" title="Lista com marcadores">Lista</button>
+      <button type="button" data-md="numerada" title="Lista numerada">1. Lista</button>
+      <button type="button" data-md="citacao" title="Citação em destaque">Citação</button>
+    </span>
+    <span class="md-barra__grupo">
+      <button type="button" data-md="link" title="Link">Link</button>
+      {% if widget.modo == "artigo" %}<button type="button" data-md="imagem" title="Inserir uma das imagens enviadas em “Imagens do artigo”" aria-expanded="false">Imagem</button>{% endif %}
+      {% if widget.modo == "artigo" %}<button type="button" data-md="bloco" title="Bloco de código com várias linhas, em caixa própria"><code>&lt;/&gt;</code></button>{% endif %}
+      <button type="button" data-md="tabela" title="Insere uma tabela, escolhendo o tamanho" aria-expanded="false">Tabela</button>
+      <button type="button" data-md="divisoria" title="Linha divisória entre partes do texto">Linha</button>
+      {% if widget.modo == "artigo" %}<button type="button" data-md="formula" title="Fórmula matemática entre $$">Fórmula</button>{% endif %}
+    </span>
+    <button type="button" data-md="salvar" class="md-barra__salvar" title="Salva o formulário e continua na tela cheia">Salvar e continuar</button>
+    <button type="button" data-md="tela" class="md-barra__tela" title="Escrever com o campo ocupando a janela inteira" aria-pressed="false">Tela cheia</button>
+    {% if widget.modo == "artigo" %}
+    <div class="md-imagens" hidden data-imagens="{{ widget.imagens_json }}"></div>
+    {% endif %}
+    <div class="md-tabela" hidden>
+      <label>Colunas <input type="number" class="md-tabela__colunas" min="1" max="8" value="2"></label>
+      <label>Linhas, além do cabeçalho <input type="number" class="md-tabela__linhas" min="1" max="20" value="2"></label>
+      <button type="button" data-md="tabela-inserir">Inserir</button>
+    </div>
+  </div>
   {% include "unfold/widgets/textarea.html" %}
   {% if widget.previa_url %}
   <div class="md-previa" data-url="{{ widget.previa_url }}" data-modo="{{ widget.modo }}" data-imagens="{{ widget.imagens_json }}">

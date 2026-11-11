@@ -141,7 +141,7 @@ Para tirar um parceiro do site sem apagar, desmarque **"Exibir no site"**. Dá p
 - **Exibir no site.** A **Ordem de exibição** fica em **Avançado**, mas o mais simples é arrastar a linha na lista.
 - **Blocos de conteúdo:** no fim do formulário, na aba **Blocos de conteúdo do programa**, você escreve a descrição detalhada da página, no formato que fizer sentido para aquele programa. Clique em adicionar bloco e preencha:
   - **Título** (opcional), como "Para quem é", "Como funciona" ou "Requisitos".
-  - **Texto**, em Markdown: `## Subtítulo`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
+  - **Texto**, em Markdown: `## Seção`, `**negrito**`, `- item de lista` e `[link](https://...)`. Separe os parágrafos com uma linha em branco.
   - **Imagem** (opcional), com **Legenda** e **Posição da imagem** (à direita, à esquerda ou centralizada, abaixo do texto).
   - **Ordem:** os blocos aparecem na página nessa ordem, logo abaixo do topo e antes de "Como funciona".
 
@@ -257,7 +257,7 @@ Os **materiais de preparação** (opcional) ficam em **Materiais de preparação
 - **Contatos:** e-mail e links do Instagram, do LinkedIn e do GitHub, cada um com o nome que aparece no site. Trocar aqui atualiza o topo, o rodapé, a página Contato, o botão de inscrições encerradas e a Política de Privacidade.
 - **Home:** a foto de "Quem somos" (opcional) e a descrição dela, lida por leitores de tela. Os textos da Home (título do topo, frase de destaque, "Quem somos", missão, chamada final) ficam em **Textos do site**, na página Home.
 - **Páginas:** o campo **"Programa dos cases em destaque"** é uma lista dos programas cadastrados e define para onde o botão "Ver os cases" da página Projetos leva. Deixe vazio para esconder essa seção. O texto que aparece logo abaixo do título de cada página, a frase do rodapé e a mensagem de inscrições encerradas também ficam em **Textos do site**.
-- **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Título`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
+- **Política de Privacidade:** a data de atualização e o texto, em Markdown (`## Seção`, `**negrito**`, `- item`, `[link](https://...)`). Separe os parágrafos com uma linha em branco.
 - **Itens de navegação:** o menu do topo, o menu do rodapé e o botão de destaque do topo (hoje, "Seja membro"). Cada item tem:
   - **Texto exibido**. A ordem é a das linhas (arraste para mudar).
   - **Onde aparece:** menu (topo e rodapé), só no topo, só no rodapé ou botão de destaque do topo.

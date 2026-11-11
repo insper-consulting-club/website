@@ -75,18 +75,20 @@ Dica sobre o slug: depois de compartilhar o link do artigo, evite mudar o slug, 
 
 ## Escrever o texto em Markdown
 
-O texto do artigo é escrito em **Markdown**, um jeito simples de marcar a formatação com símbolos. O site converte os símbolos em títulos, listas, negrito e o resto. O título do artigo já aparece como título da página, então **comece as seções pelo nível `##`**.
+O texto do artigo é escrito em **Markdown**, um jeito simples de marcar a formatação com símbolos. O site converte os símbolos em seções, listas, negrito e o resto. O título do artigo já aparece no topo da página e é preenchido à parte, então **comece as seções pelo nível `##`**. Os botões acima do campo de texto (Negrito, Itálico, Código em linha, Seção, Subseção, Subsubseção, Lista, Lista numerada, Citação, Link, Bloco de código, Tabela, Linha divisória e Fórmula) inserem esses símbolos por você. Seção, Subseção, Subsubseção, Lista, Lista numerada e Citação valem para as linhas selecionadas, e clicar de novo remove a marcação. O botão Tabela pergunta quantas colunas (até 8) e quantas linhas (até 20, além do cabeçalho) a tabela terá.
 
 ### Referência rápida
 
 | Para ter | Escreva |
 |---|---|
 | Parágrafo novo | uma linha em branco entre os parágrafos |
-| Seção | `## Título da seção` |
-| Subseção | `### Título da subseção` |
-| Subsubseção | `#### Título da subsubseção` |
+| Seção | `## Nome da seção` |
+| Subseção | `### Nome da subseção` |
+| Subsubseção | `#### Nome da subsubseção` |
 | **Negrito** | `**negrito**` |
 | *Itálico* | `*itálico*` |
+| `Código` ou termo técnico, no meio da frase | ``` `código` ``` |
+| Bloco de código, com várias linhas | três crases sozinhas em uma linha, o código nas linhas seguintes e três crases sozinhas em outra linha |
 | Lista com marcadores | uma linha por item, começando com `- ` |
 | Lista numerada | uma linha por item, começando com `1. `, `2. `, `3. ` |
 | Link | `[texto do link](https://endereço.com)` |
@@ -127,6 +129,15 @@ Passos da análise:
 
 Para uma lista dentro de outra, recue o item com quatro espaços.
 
+**Blocos de código.** Para um trecho de script com várias linhas, use o botão `</>` ou coloque três crases sozinhas em uma linha antes e depois do código. O bloco aparece em caixa própria, com letra de máquina, e rola na horizontal se a linha for longa. Para um nome de função ou variável no meio da frase, use o botão **Código em linha**.
+
+````
+```
+vendas <- read.csv("vendas.csv")
+summary(vendas$receita)
+```
+````
+
 **Links e citações**
 
 ```
@@ -156,7 +167,7 @@ Links que começam com `http` abrem em outra aba.
 ### O que não funciona ou não é recomendado
 
 - **HTML.** Se você colar marcação HTML, o site a mostra como texto comum. Isso é proposital, por segurança.
-- **Títulos de nível 1, 5 e 6** (`#`, `#####` e `######`). O texto tem três níveis de título, `##` a `####`, e o título do artigo é colocado pelo site.
+- **Seções de nível 1, 5 e 6** (`#`, `#####` e `######`). O texto tem três níveis de seção, `##` a `####`, e o título do artigo é colocado pelo site.
 - **Cores, tamanho de letra e alinhamento do texto.** O visual segue o padrão do site, igual em todos os artigos.
 - **Notas de rodapé** (`[^1]`). Funcionam, mas saem sem o estilo do site, em uma lista simples no fim do texto. Prefira citar a fonte no próprio texto, com um link, ou em uma seção "Referências" no fim do artigo.
 
@@ -318,7 +329,7 @@ Com a prévia do admin, ele quase não é necessário. Serve só para conferir a
 | O artigo não aparece no site | **Publicado** está desmarcado | Marcar **Publicado** e salvar |
 | A página do artigo dá "Artigo não encontrado" | O link usa um slug antigo, ou o artigo foi despublicado | Conferir o slug atual e o campo **Publicado** |
 | O artigo aparece no topo da lista, antes dos mais novos | A **Data de publicação** está vazia | Preencher a data |
-| Aparecem asteriscos ou cerquilhas no texto | Faltou o espaço depois do símbolo, ou o símbolo está colado ao texto | Revisar a marcação (por exemplo, `## Título`) |
+| Aparecem asteriscos ou cerquilhas no texto | Faltou o espaço depois do símbolo, ou o símbolo está colado ao texto | Revisar a marcação (por exemplo, `## Seção`) |
 | Uma lista aparece como um parágrafo corrido | Falta uma linha em branco antes da lista | Deixar uma linha em branco antes do primeiro item |
 | Dois parágrafos aparecem juntos | Há só uma quebra de linha entre eles | Deixar uma linha em branco entre eles |
 | A imagem não aparece | O número do texto é diferente do cadastrado, ou a linha de imagem tem outro texto junto | Conferir `![](imagem-N)` em uma linha sozinha e o número em **Imagens do artigo** |
@@ -369,7 +380,7 @@ O indicador de rentabilidade é dado por $$\frac{EBITDA}{Receita}$$ e variou ent
 
 Uma ferramenta de IA conversacional pode fazer a parte mecânica da conversão: seções, listas, tabelas, fórmulas e marcadores de imagem. O uso é opcional e **não substitui a conferência**: quem publica continua responsável pelo que vai ao ar. O prompt abaixo resume as regras deste guia para a ferramenta aplicá-las.
 
-<!-- Manutenção: ao mudar uma regra deste guia (fórmulas, níveis de título, imagens), atualize o prompt abaixo no mesmo PR. -->
+<!-- Manutenção: ao mudar uma regra deste guia (fórmulas, níveis de seção, imagens), atualize o prompt abaixo no mesmo PR. -->
 
 ### Antes de usar
 
@@ -399,7 +410,7 @@ Mantenha todas as palavras do texto exatamente como estão. Não reescreva, não
 REGRAS DO FORMATO
 1. Parágrafos separados por uma linha em branco.
 2. O título do artigo NÃO entra no texto, porque o site o coloca sozinho. Se o texto começar pelo título, remova-o do texto e informe-o nos pontos de atenção.
-3. Seções com "## Título da seção", subseções com "### Título da subseção" e subsubseções com "#### Título da subsubseção". Não use "#" (nível 1) nem níveis abaixo de "####". Se o original começar os títulos em "#", desça todos os níveis em um. Se tiver mais de três níveis, use "##", "###" e "####" para os três primeiros e aponte nos pontos de atenção o que foi reduzido.
+3. Seções com "## Nome da seção", subseções com "### Nome da subseção" e subsubseções com "#### Nome da subsubseção". Não use "#" (nível 1) nem níveis abaixo de "####". Se o original começar as seções em "#", desça todos os níveis em um. Se tiver mais de três níveis, use "##", "###" e "####" para os três primeiros e aponte nos pontos de atenção o que foi reduzido.
 4. Negrito com **texto** e itálico com *texto*. Links como [texto](https://endereço). Citações com "> ". Mantenha os links do original.
 5. Listas com "- " (marcadores) ou "1. " (numeradas), sempre com uma linha em branco antes da lista. Escreva um espaço depois do símbolo.
 6. Tabelas no formato Markdown, com linha de cabeçalho e linha de traços:
