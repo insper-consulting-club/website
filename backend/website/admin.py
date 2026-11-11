@@ -100,7 +100,7 @@ LogEntry._meta.verbose_name_plural = 'atividades'
 
 @admin.register(LogEntry)
 class AtividadeRecenteAdmin(ModelAdmin):
-    """Quem mudou o quê no admin, só para consulta. Só administradores veem esta página."""
+    """Quem mudou o quê no admin, só para consulta. Quem tem a permissão de ver (administradores e editores) a abre."""
     list_display = ('action_time', 'user', 'tipo', 'cadastro', 'registro', 'o_que_mudou')
     list_display_links = None
     list_filter = ('user', 'action_flag')
@@ -119,7 +119,7 @@ class AtividadeRecenteAdmin(ModelAdmin):
         return False
 
     def has_view_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return request.user.has_perm('admin.view_logentry')
 
     def changelist_view(self, request, extra_context=None):
         return super().changelist_view(request, {'title': 'Atividade recente', **(extra_context or {})})
@@ -278,10 +278,7 @@ class PositionAdmin(AdminDoSite):
     search_fields = ('title',)
     ordering = ('power', 'title')
 
-    def get_fields(self, request, obj=None):
-        # A prioridade decide quem aparece como liderança na Home. Só administradores a escolhem:
-        # um cargo criado por um editor entra como membro comum (valor padrão do modelo).
-        return ('title', 'power') if request.user.is_superuser else ('title',)
+    fields = ('title', 'power')  # a prioridade (0 a 5) decide quem aparece como liderança na Home; a explicação está no campo
 
 
 @admin.register(Directorate)
@@ -305,6 +302,17 @@ class DirectorateMembershipInline(AbaOrdenavelTabular):
     form = DirectorateMembershipForm
     extra = 1
     fields = ('directorate', 'cargo', 'order')
+
+
+def membro_tem_historico(membro):
+    """Trajetória, case, projeto ou artigo ligados ao membro. O vínculo com a diretoria é dado da própria pessoa."""
+    for relacao in membro._meta.related_objects:
+        if relacao.related_model is DirectorateMembership:
+            continue
+        gerenciador = getattr(membro, relacao.get_accessor_name())
+        if gerenciador.exists():
+            return True
+    return False
 
 
 class MemberTrajectoryInline(TabularInline):
@@ -379,6 +387,15 @@ class MemberAdmin(AdminDoSite):
     @admin.display(description='Foto')
     def foto(self, obj):
         return miniatura(obj.photo)
+
+    def has_delete_permission(self, request, obj=None):
+        # Quem tem a permissão de apagar só apaga um membro sem nenhum vínculo (feito por engano). Quem tem histórico
+        # se arquiva. Administradores apagam qualquer um.
+        if not super().has_delete_permission(request, obj):
+            return False
+        if obj is None or request.user.is_superuser:
+            return True
+        return not membro_tem_historico(obj)
 
     @admin.action(description='Arquivar selecionados (sai da página Equipe)', permissions=['change'])
     def arquivar(self, request, queryset):
@@ -856,6 +873,14 @@ class ArticleAdmin(AdminDoSite):
             {'number': imagem.number, 'image_url': request.build_absolute_uri(imagem.image.url), 'caption': imagem.caption}
             for imagem in ArticleImage.objects.filter(article_id=int(id_do_artigo))
         ]
+
+    def has_delete_permission(self, request, obj=None):
+        # Um artigo publicado se despublica; só o rascunho se apaga (feito por engano). Administradores apagam qualquer um.
+        if not super().has_delete_permission(request, obj):
+            return False
+        if obj is None or request.user.is_superuser:
+            return True
+        return not obj.published
 
     @admin.action(description='Publicar selecionados (aparecem no site)', permissions=['change'])
     def publicar(self, request, queryset):

@@ -1,8 +1,11 @@
 """
-Grupo "Editores": o acesso padrão de quem cuida do conteúdo do site, sem ser
-superusuário. Não inclui Usuários nem Grupos, e não permite apagar registros
-que têm "esconder" (membros, parceiros, projetos, programas, cases, artigos,
-processos seletivos), para que ninguém perca histórico por engano.
+Grupo "Editores": o acesso padrão de quem cuida do conteúdo do site no dia a dia, sem ser
+superusuário. Só o que é crítico fica com os administradores: usuários e grupos, a marca e a
+Política de Privacidade, o menu do site e as estruturas que apagam histórico. Quem tem
+"esconder" (membros, parceiros, projetos, programas, cases, processos seletivos) não se apaga:
+arquiva-se. Duas exceções, com regra no admin: um artigo em rascunho e um membro sem nenhum
+vínculo (trajetória, case, projeto ou artigo) podem ser apagados, para desfazer um cadastro
+feito por engano.
 
 O grupo é criado uma vez, depois do primeiro `migrate`. Se alguém ajustar as
 permissões dele no admin (Grupos > Editores), os ajustes ficam: o `migrate`
@@ -20,26 +23,31 @@ LEITURA = ("view",)
 # modelo (nome em minúsculas) -> ações permitidas
 PERMISSOES = {
     # Cadastros principais: criam, editam e escondem, mas não apagam.
-    "member": EDICAO,
+    # Membro e artigo podem ser apagados pela permissão, mas o admin só deixa apagar o que não tem histórico
+    # (MemberAdmin e ArticleAdmin.has_delete_permission).
+    "member": COMPLETO,
     "directorate": EDICAO,
     "partner": EDICAO,
     "partnercategory": EDICAO,
     "program": EDICAO,
     "programcase": EDICAO,
     "project": EDICAO,
-    "article": EDICAO,
+    "article": COMPLETO,
     "selectionprocess": EDICAO,
-    # Cargos: o editor cria um cargo novo (sempre como membro comum, a prioridade fica com os
-    # administradores) mas não altera os existentes, porque a prioridade decide a liderança da Home.
-    "position": ("add", "view"),
+    # Cargos: o editor cria e altera, inclusive a prioridade, que decide quem aparece como liderança na Home.
+    # Um valor errado só muda a ordem e a Home, e se corrige. Apagar um cargo em uso é bloqueado pelo banco.
+    "position": EDICAO,
     # Registro único e textos fixos: só alteram, não criam nem apagam. As abas Marca e
-    # compartilhamento e Política de Privacidade da configuração, o menu e os benefícios
-    # para parceiros são só dos administradores (ver SiteConfigAdmin).
+    # compartilhamento e Política de Privacidade da configuração e o menu do site são só dos
+    # administradores (ver SiteConfigAdmin).
     "siteconfig": ALTERACAO,
     "paginadosite": ALTERACAO,
     "secaodahome": ALTERACAO,
     # Itens que vivem dentro de outro registro (tabelas do formulário):
     # precisam de todas as ações, senão o botão de remover linha não funciona.
+    "membertrajectory": COMPLETO,
+    "articleauthor": COMPLETO,
+    "partnerbenefit": COMPLETO,
     "directoratemembership": COMPLETO,
     "programcomponent": COMPLETO,
     "programcontentblock": COMPLETO,
@@ -55,6 +63,10 @@ PERMISSOES = {
     "preparationmaterial": COMPLETO,
     "preparationmaterialitem": COMPLETO,
 }
+
+
+# Permissões de outros apps: quem pode ver a Atividade recente (o histórico de quem mudou o quê).
+PERMISSOES_DE_OUTROS_APPS = (("admin", "view_logentry"),)
 
 
 def codenames():
@@ -96,11 +108,16 @@ def sincroniza_grupo_editores(apps, app_config=None):
         # existem antes de procurá-las.
         from django.contrib.auth.management import create_permissions
         create_permissions(app_config, apps=apps, verbosity=0)
+        from django.apps import apps as apps_reais
+        for app_label, _ in PERMISSOES_DE_OUTROS_APPS:
+            create_permissions(apps_reais.get_app_config(app_label), apps=apps, verbosity=0)
 
     grupo, criado = Group.objects.get_or_create(name=NOME)
     if not criado:
         _acrescenta_permissoes_novas(grupo, Permission)
         return False
-    permissoes = Permission.objects.filter(content_type__app_label="website", codename__in=codenames())
+    permissoes = list(Permission.objects.filter(content_type__app_label="website", codename__in=codenames()))
+    for app_label, codename in PERMISSOES_DE_OUTROS_APPS:
+        permissoes += list(Permission.objects.filter(content_type__app_label=app_label, codename=codename))
     grupo.permissions.set(permissoes)
     return True
