@@ -717,6 +717,15 @@ class AdminNavigationTests(TestCase):
         self.assertIn("/admin/auth/user/", pagina)
         self.assertIn("Atividade recente", pagina)
 
+    def test_logging_out_goes_straight_to_the_login_page(self):
+        usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(usuario)
+
+        resposta = self.client.post("/admin/logout/")
+
+        self.assertRedirects(resposta, "/admin/login/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/admin/").status_code, 302)  # saiu de fato
+
     def test_sidebar_is_rendered_in_the_admin(self):
         usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
         self.client.force_login(usuario)
