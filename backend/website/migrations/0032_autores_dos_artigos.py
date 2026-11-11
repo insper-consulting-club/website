@@ -65,10 +65,10 @@ class Migration(migrations.Migration):
             name='ArticleAuthor',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(blank=True, help_text='Escolha um membro da lista ou escreva qualquer nome. Use chaves no que não se separa: Robert {Lucas Jr}.', max_length=200, verbose_name='Nome')),
+                ('name', models.CharField(blank=True, help_text='Comece a digitar e escolha um membro, ou escreva o nome de quem não é membro. Use chaves no que não se separa: Robert {Lucas Jr}.', max_length=200, verbose_name='Nome')),
                 ('order', models.IntegerField(default=0, verbose_name='Ordem')),
                 ('article', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='article_authors', to='website.article', verbose_name='Artigo')),
-                ('member', models.ForeignKey(blank=True, help_text='Preenchido sozinho quando o nome é o de um membro. Deixe vazio para um autor de fora.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='article_authorships', to='website.member', verbose_name='Membro')),
+                ('member', models.ForeignKey(blank=True, help_text='Escolhido na lista de sugestões ao digitar o nome. Vazio para um autor de fora.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='article_authorships', to='website.member', verbose_name='Membro')),
             ],
             options={
                 'verbose_name': 'Autor',

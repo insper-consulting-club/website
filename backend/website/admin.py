@@ -8,12 +8,13 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+import json
 import re
 import unicodedata
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.html import format_html, format_html_join
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
@@ -561,21 +562,31 @@ class ArticleImageInline(TabularInline):
         )
 
 
-class CampoDeNomeComSugestoes(UnfoldAdminTextInputWidget):
+class CampoDeAutor(UnfoldAdminTextInputWidget):
     """
-    Campo de texto que sugere os membros enquanto se digita, como o de destinatários de um e-mail, mas aceita qualquer
-    nome. A lista é a do navegador (datalist): nada de JavaScript. O vínculo com o membro é feito ao salvar.
+    Campo de texto do nome do autor, com uma lista de membros que se filtra enquanto se digita (ver autor_combobox.js).
+    Escolher um membro grava o ID dele no campo oculto "Membro"; qualquer outro texto é um autor de fora. A lista vai
+    embutida no campo, para o filtro ignorar acentos sem pedir nada ao servidor.
     """
 
-    def __init__(self, nomes=(), attrs=None):
+    class Media:
+        js = ('website/autor_combobox.js',)
+
+    def __init__(self, membros=(), attrs=None):
         super().__init__(attrs)
-        self.nomes = list(nomes)
+        self.membros = list(membros)
 
-    def render(self, name, value, attrs=None, renderer=None):
-        id_da_lista = f'sugestoes-{(attrs or {}).get("id") or name}'
-        campo = super().render(name, value, {**(attrs or {}), 'list': id_da_lista, 'autocomplete': 'off'}, renderer)
-        opcoes = format_html_join('', '<option value="{}">', ((n,) for n in self.nomes))
-        return format_html('{}<datalist id="{}">{}</datalist>', campo, id_da_lista, opcoes)
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        attrs.update({
+            'class': f"{attrs.get('class', '')} autor-combobox__input".strip(),
+            'data-membros': json.dumps(self.membros, ensure_ascii=False),
+            'autocomplete': 'off',
+            'role': 'combobox',
+            'aria-autocomplete': 'list',
+            'aria-expanded': 'false',
+        })
+        return attrs
 
 
 class AutoresDoArtigoFormSet(BaseInlineFormSet):
@@ -634,18 +645,17 @@ class AutoresDoArtigoInline(AbaOrdenavelTabular):
     tab = False  # fica no formulário, e não numa aba: o autor é parte do que se preenche para publicar
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name == 'name':
-            nomes = dict.fromkeys(Member.objects.order_by('name').values_list('name', flat=True))
-            kwargs['widget'] = CampoDeNomeComSugestoes(nomes)
-        return super().formfield_for_dbfield(db_field, request, **kwargs)
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        campo = super().formfield_for_foreignkey(db_field, request, **kwargs)
         if db_field.name == 'member':
+            # Campo oculto: o vínculo vem da escolha na lista do campo de nome, e não de um segundo campo para preencher.
+            return forms.ModelChoiceField(queryset=Member.objects.all(), required=False, widget=forms.HiddenInput)
+        if db_field.name == 'name':
             rotulos = rotulos_dos_membros()
-            campo.queryset = Member.objects.order_by('name')
-            campo.label_from_instance = lambda membro: rotulos.get(membro.pk, membro.name)
-        return campo
+            membros = [
+                {'id': m.pk, 'nome': m.name, 'rotulo': rotulos[m.pk], 'ex': not m.is_active}
+                for m in Member.objects.order_by('name')
+            ]
+            kwargs['widget'] = CampoDeAutor(membros)
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
 class FormDaListaDeArtigos(forms.ModelForm):

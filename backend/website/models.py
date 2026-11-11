@@ -387,11 +387,11 @@ class ArticleAuthor(models.Model):
     member = models.ForeignKey(
         'Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='article_authorships',
         verbose_name='Membro',
-        help_text='Preenchido sozinho quando o nome é o de um membro. Deixe vazio para um autor de fora.'
+        help_text='Escolhido na lista de sugestões ao digitar o nome. Vazio para um autor de fora.'
     )
     name = models.CharField(
         max_length=200, blank=True, verbose_name='Nome',
-        help_text='Escolha um membro da lista ou escreva qualquer nome. Use chaves no que não se separa: Robert {Lucas Jr}.'
+        help_text='Comece a digitar e escolha um membro, ou escreva o nome de quem não é membro. Use chaves no que não se separa: Robert {Lucas Jr}.'
     )
     order = models.IntegerField(default=0, verbose_name='Ordem')
 
@@ -414,18 +414,7 @@ class ArticleAuthor(models.Model):
             raise ValidationError({'name': 'Informe o nome do autor.'})
         if not chaves_fecham(nome):
             raise ValidationError({'name': 'As chaves { } do nome precisam abrir e fechar.'})
-        if membro is None:
-            # Nome de um membro: vincula sozinho. Dois membros com o mesmo nome não dá para adivinhar.
-            alvo = normaliza(nome)
-            candidatos = [
-                m for m in Member.objects.only('id', 'name', 'citation_name')
-                if alvo in (normaliza(m.name), normaliza(m.citation_name))
-            ]
-            if len(candidatos) > 1:
-                raise ValidationError({'name': 'Há mais de um membro com esse nome. Escolha o certo no campo Membro.'})
-            membro = candidatos[0] if candidatos else None
         if membro is not None:
-            self.member = membro
             if not nome or normaliza(nome) in (normaliza(membro.name), normaliza(membro.citation_name)):
                 # O ajuste de nome fica no cadastro do membro, para não repetir em cada artigo.
                 nome = membro.citation_name or membro.name

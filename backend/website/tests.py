@@ -3076,7 +3076,7 @@ class HomeSectionsAdminTests(TestCase):
 
 
 class ArticleAuthorModelTests(TestCase):
-    """O autor é um nome, vinculado a um membro quando o nome é o dele."""
+    """O autor é um nome, vinculado a um membro quando o editor o escolhe na lista (o model não adivinha pelo nome)."""
 
     def setUp(self):
         self.artigo = Article.objects.create(title="A", description="d")
@@ -3088,22 +3088,27 @@ class ArticleAuthorModelTests(TestCase):
         autor.clean()
         return autor
 
-    def test_a_member_name_links_ignoring_accents_and_case(self):
-        autor = self.autor(name="  ana SILVA ")
+    def test_the_name_of_a_chosen_member_is_normalized_to_the_registered_one(self):
+        autor = self.autor(member=self.ana, name="  ana SILVA ")
 
         self.assertEqual(autor.member, self.ana)
         self.assertEqual(autor.name, "Ana Silva")  # com vínculo, vale o nome do cadastro
 
     def test_the_citation_name_of_the_member_is_used_when_the_name_matches(self):
         for escrito in ("Robert Lucas Jr", "robert lucas jr", "Robert {Lucas Jr}"):
-            autor = self.autor(name=escrito)
-            self.assertEqual(autor.member, self.robert, escrito)
+            autor = self.autor(member=self.robert, name=escrito)
             self.assertEqual(autor.name, "Robert {Lucas Jr}", escrito)
             self.assertEqual(autor.display_name, "Robert Lucas Jr", escrito)
 
     def test_choosing_the_member_without_a_name_fills_the_name(self):
         self.assertEqual(self.autor(member=self.ana).name, "Ana Silva")
         self.assertEqual(self.autor(member=self.robert).name, "Robert {Lucas Jr}")
+
+    def test_a_name_alone_does_not_link_even_when_it_is_a_members_name(self):
+        autor = self.autor(name="Ana Silva")
+
+        self.assertIsNone(autor.member)
+        self.assertEqual(autor.name, "Ana Silva")
 
     def test_an_outside_author_stays_without_a_member_and_keeps_the_braces(self):
         autor = self.autor(name="Maria {da Silva}")
@@ -3122,16 +3127,6 @@ class ArticleAuthorModelTests(TestCase):
         with self.assertRaises(ValidationError):
             self.autor(name="  ")
 
-    def test_two_members_with_the_same_name_are_not_guessed(self):
-        from django.core.exceptions import ValidationError
-
-        Member.objects.create(name="ana silva")
-
-        with self.assertRaises(ValidationError) as erro:
-            self.autor(name="Ana Silva")
-        self.assertIn("mais de um membro", str(erro.exception))
-        self.assertEqual(self.autor(member=self.ana).member, self.ana)  # escolhendo, não há dúvida
-
     def test_unbalanced_braces_are_refused(self):
         from django.core.exceptions import ValidationError
 
@@ -3140,7 +3135,7 @@ class ArticleAuthorModelTests(TestCase):
                 self.autor(name=nome)
 
     def test_deleting_the_member_keeps_the_author_as_a_plain_name(self):
-        autor = self.autor(name="Ana Silva")
+        autor = self.autor(member=self.ana)
         autor.save()
 
         self.ana.delete()
@@ -3205,28 +3200,68 @@ class ArticleAuthorsAdminTests(TestCase):
             "article_authors-MIN_NUM_FORMS": "0", "article_authors-MAX_NUM_FORMS": "1000",
             "images-TOTAL_FORMS": "0", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
         }
-        for i, (nome, ordem) in enumerate(autores):
-            dados.update({f"article_authors-{i}-name": nome, f"article_authors-{i}-member": "", f"article_authors-{i}-order": str(ordem)})
+        for i, (nome, ordem, *membro) in enumerate(autores):
+            dados.update({
+                f"article_authors-{i}-name": nome, f"article_authors-{i}-order": str(ordem),
+                f"article_authors-{i}-member": str(membro[0].pk) if membro else "",
+            })
         dados.update(extra)
         return dados
 
-    def test_the_form_has_the_authors_list_with_member_suggestions_and_no_old_fields(self):
+    def test_the_form_has_the_authors_list_with_the_member_combobox_and_no_old_fields(self):
         html = self.client.get(self.url).content.decode()
 
         self.assertIn('name="article_authors-0-name"', html)
-        self.assertIn('<datalist id="sugestoes-id_article_authors-0-name">', html)
-        self.assertIn('<option value="Ana Silva">', html)
+        self.assertIn('autor-combobox__input', html)
+        self.assertIn('role="combobox"', html)
+        self.assertIn('website/autor_combobox.js', html)
+        self.assertRegex(html, r'<input type="hidden" name="article_authors-0-member"')  # o vínculo vem da escolha na lista
+        self.assertNotIn("<datalist", html)
         self.assertIn('name="institutional"', html)
         for campo in ('name="authors"', 'name="link"', 'name="source"'):
             self.assertNotIn(campo, html)
 
-    def test_saving_links_the_member_by_name_and_keeps_the_outside_author(self):
-        resposta = self.client.post(self.url, self.dados([("ana silva", 0), ("Convidado {de Fora}", 1)], published="on"))
+    def test_the_combobox_carries_the_members_with_the_id_only_for_homonyms_and_marks_former_members(self):
+        import json
+
+        antiga = Member.objects.create(name="ana silva", is_active=False)
+        html = self.client.get(self.url).content.decode()
+        lista = html[html.index('data-membros="') + len('data-membros="'):]
+        lista = lista[:lista.index('"')].replace("&quot;", '"')
+
+        membros = {m["id"]: m for m in json.loads(lista)}
+
+        self.assertEqual(membros[self.ana.pk]["rotulo"], f"Ana Silva (ID {self.ana.pk})")
+        self.assertEqual(membros[antiga.pk]["rotulo"], f"ana silva (ID {antiga.pk})")
+        self.assertEqual((membros[self.ana.pk]["nome"], membros[self.ana.pk]["ex"]), ("Ana Silva", False))
+        self.assertTrue(membros[antiga.pk]["ex"])
+
+    def test_the_chosen_member_links_and_a_typed_name_is_an_outside_author_even_when_it_matches_a_member(self):
+        resposta = self.client.post(
+            self.url, self.dados([("Ana Silva", 0, self.ana), ("Ana Silva", 1), ("Convidado {de Fora}", 2)], published="on"),
+        )
 
         self.assertEqual(resposta.status_code, 302)
         autores = list(self.artigo.article_authors.order_by("order"))
-        self.assertEqual([(a.name, a.member) for a in autores], [("Ana Silva", self.ana), ("Convidado {de Fora}", None)])
+        self.assertEqual(
+            [(a.name, a.member) for a in autores],
+            [("Ana Silva", self.ana), ("Ana Silva", None), ("Convidado {de Fora}", None)],
+        )
         self.assertTrue(Article.objects.get(pk=self.artigo.pk).published)
+
+    def test_a_homonym_is_told_apart_by_the_chosen_member(self):
+        outra = Member.objects.create(name="Ana Silva", is_active=False)
+
+        self.assertEqual(self.client.post(self.url, self.dados([("Ana Silva", 0, outra)])).status_code, 302)
+
+        self.assertEqual(self.artigo.article_authors.get().member, outra)
+
+    def test_an_unknown_member_id_is_refused(self):
+        dados = self.dados([("Ana Silva", 0, self.ana)])
+        dados["article_authors-0-member"] = "99999"
+
+        self.assertEqual(self.client.post(self.url, dados).status_code, 200)
+        self.assertFalse(self.artigo.article_authors.exists())
 
     def test_a_published_article_needs_an_author_or_to_be_institutional(self):
         recusado = self.client.post(self.url, self.dados(published="on"))
@@ -3314,28 +3349,6 @@ class ArticleAuthorsAdminTests(TestCase):
         self.assertEqual(rotulos[arquivado.pk], f"beto  souza (ID {arquivado.pk})")  # arquivado ou não, só o ID
         self.assertEqual(rotulos[outro.pk], f"BETO SOUZA (ID {outro.pk})")
         self.assertEqual(len(set(rotulos.values())), len(rotulos))  # nunca duas linhas iguais
-
-    def test_the_author_form_shows_those_labels_in_the_member_field_and_each_name_once_in_the_suggestions(self):
-        outra = Member.objects.create(name="Ana Silva", is_active=False)
-
-        html = self.client.get(self.url).content.decode()
-
-        self.assertIn(f"Ana Silva (ID {self.ana.pk})", html)
-        self.assertIn(f"Ana Silva (ID {outra.pk})", html)
-        sugestoes = html[html.index("<datalist"):html.index("</datalist>")]
-        self.assertEqual(sugestoes.count('<option value="Ana Silva">'), 1)  # o homônimo não repete a sugestão
-
-    def test_a_homonym_is_resolved_by_choosing_the_member_in_the_form(self):
-        outra = Member.objects.create(name="Ana Silva", is_active=False)
-        dados = self.dados([("Ana Silva", 0)])
-
-        recusado = self.client.post(self.url, dados)
-        self.assertEqual(recusado.status_code, 200)
-        self.assertIn("mais de um membro", recusado.content.decode())
-
-        dados["article_authors-0-member"] = str(outra.pk)
-        self.assertEqual(self.client.post(self.url, dados).status_code, 302)
-        self.assertEqual(self.artigo.article_authors.get().member, outra)
 
     def test_the_member_list_shows_the_id_column(self):
         html = self.client.get("/admin/website/member/").content.decode()

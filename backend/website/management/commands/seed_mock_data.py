@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.text import slugify
 from PIL import Image, ImageDraw, ImageFont
 
+from website.autores import normaliza
 from website.models import (
     Article, ArticleAuthor, ArticleImage, Directorate, DirectorateMembership, Member, MemberTrajectory, NavItem,
     Partner, PartnerCategory, Position, PreparationMaterial, PreparationMaterialItem, Program,
@@ -319,10 +320,14 @@ class Command(BaseCommand):
                     "published": item["publicado"],
                 },
             )
-            # Os autores: o nome que bate com um membro fica vinculado a ele, como no admin.
+            # Os autores: o nome que bate com um membro fica vinculado a ele, como se o editor o escolhesse na lista.
             artigo.article_authors.all().delete()
             for ordem, nome in enumerate(item["autores"]):
-                autor = ArticleAuthor(article=artigo, name=nome, order=ordem)
+                alvo = normaliza(nome)
+                membro = next(
+                    (m for m in Member.objects.order_by("pk") if alvo in (normaliza(m.name), normaliza(m.citation_name))), None,
+                )
+                autor = ArticleAuthor(article=artigo, name=nome, member=membro, order=ordem)
                 autor.clean()
                 autor.save()
             if item["capa"]:
