@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from "react"
 import type { ArticleCitation } from "../types"
 import useTextos from "../hooks/useTextos"
-import { CloseIcon } from "./Icons"
+import { CheckIcon, CloseIcon, CopyIcon } from "./Icons"
 
 // O backend entrega as citações com estes marcadores no lugar da data de acesso, que é a de quem copia.
 const ISO = "__DATA_DE_ACESSO__"
@@ -125,25 +125,30 @@ export default function CitarArtigo({ citacoes }: Props) {
             ))}
           </div>
 
-          <div id="citar-painel" role="tabpanel" aria-labelledby={`aba-${citacao.id}`} className="citar__painel">
-            {citacao.kind === "codigo" ? (
-              <pre tabIndex={0}>
-                <code>{trocaDatas(citacao.texto, hoje)}</code>
-              </pre>
-            ) : (
-              <p tabIndex={0} className="citar__texto">
-                {(citacao.partes ?? []).map(({ t: trecho, e }, i) => {
-                  const texto = trocaDatas(trecho, hoje)
-                  return e === "b" ? <strong key={i}>{texto}</strong> : e === "i" ? <em key={i}>{texto}</em> : texto
-                })}
-              </p>
-            )}
-          </div>
-
-          <div className="citar__acoes">
-            <button type="button" className="btn btn--primary" onClick={copia}>
-              {copiado ? t("artigo.copiado") : t("artigo.copiar")}
+          <div className="citar__bloco">
+            <button
+              type="button"
+              className={`citar__copiar${copiado ? " is-copiado" : ""}`}
+              onClick={copia}
+              aria-label={copiado ? t("artigo.copiado") : t("artigo.copiar")}
+              title={copiado ? t("artigo.copiado") : t("artigo.copiar")}
+            >
+              {copiado ? <CheckIcon /> : <CopyIcon />}
             </button>
+            <div id="citar-painel" role="tabpanel" aria-labelledby={`aba-${citacao.id}`} className="citar__painel">
+              {citacao.kind === "codigo" ? (
+                <pre tabIndex={0}>
+                  <code>{trocaDatas(citacao.texto, hoje)}</code>
+                </pre>
+              ) : (
+                <p tabIndex={0} className="citar__texto">
+                  {(citacao.partes ?? []).map(({ t: trecho, e }, i) => {
+                    const texto = trocaDatas(trecho, hoje)
+                    return e === "b" ? <strong key={i}>{texto}</strong> : e === "i" ? <em key={i}>{texto}</em> : texto
+                  })}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </dialog>

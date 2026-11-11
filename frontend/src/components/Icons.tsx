@@ -99,3 +99,32 @@ export function CloseIcon({ size = 24, className }: IconProps) {
     </svg>
   )
 }
+
+export function CopyIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" className={className} aria-hidden="true">
+      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M5 15V6a2 2 0 0 1 2-2h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function ShareIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" className={className} aria-hidden="true">
+      <circle cx="18" cy="5" r="2.5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="6" cy="12" r="2.5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="18" cy="19" r="2.5" stroke="currentColor" strokeWidth="2" />
+      <path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function WhatsAppIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" className={className} aria-hidden="true">
+      <path d="M20 11.5a8 8 0 0 1-11.9 7L4 20l1.5-4A8 8 0 1 1 20 11.5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M9.2 8.6c.4 2.4 2.6 4.6 5.2 5.2l1.1-1.2-1.9-1-.9.8c-.9-.4-1.7-1.2-2.1-2.1l.8-.9-1-1.9z" fill="currentColor" />
+    </svg>
+  )
+}

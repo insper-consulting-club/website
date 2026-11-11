@@ -5,8 +5,9 @@ import type { Article } from "../../types"
 import ArtigoMarkdown from "../../components/ArtigoMarkdown"
 import AutoresDoArtigo from "../../components/AutoresDoArtigo"
 import CitarArtigo from "../../components/CitarArtigo"
+import CompartilharArtigo from "../../components/CompartilharArtigo"
 import PageHero from "../../components/PageHero"
-import { ArrowLeftIcon, LinkedInIcon } from "../../components/Icons"
+import { ArrowLeftIcon } from "../../components/Icons"
 import usePageTitle from "../../hooks/usePageTitle"
 import useTextos from "../../hooks/useTextos"
 import "./index.css"
@@ -68,15 +69,7 @@ export default function Artigo() {
       >
         {artigo.date && <p className="artigo__data">{formatDate(artigo.date)}</p>}
         <div className="artigo__acoes">
-          <a
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn--secondary btn--sm"
-          >
-            <LinkedInIcon size={16} />
-            {t("artigo.compartilhar")}
-          </a>
+          <CompartilharArtigo titulo={artigo.title} url={url} />
           <CitarArtigo citacoes={artigo.citations} />
         </div>
       </PageHero>

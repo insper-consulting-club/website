@@ -15,7 +15,29 @@ import type { ArticleImage } from "../types"
 // fórmula. Fórmula com erro aparece em vermelho, sem derrubar a página.
 // O texto vem em Markdown. HTML digitado no admin não é executado: o
 // react-markdown o mostra como texto.
-const pluginsRemark: Options["remarkPlugins"] = [remarkGfm, [remarkMath, { singleDollarTextMath: false }]]
+// O texto usa só ##, ### e ####. "#" (o título do artigo já está no topo) e "#####" ou mais não são formatados:
+// a linha sai como texto comum, com os símbolos à vista.
+type No = { type: string; depth?: number; value?: string; children?: No[] }
+
+function semTitulosForaDoPadrao() {
+  return (arvore: No) => {
+    const visita = (no: No) => {
+      if (no.type === "heading" && ![2, 3, 4].includes(no.depth ?? 0)) {
+        no.children = [{ type: "text", value: "#".repeat(no.depth ?? 1) + " " }, ...(no.children ?? [])]
+        no.type = "paragraph"
+        delete no.depth
+      }
+      no.children?.forEach(visita)
+    }
+    visita(arvore)
+  }
+}
+
+const pluginsRemark: Options["remarkPlugins"] = [
+  remarkGfm,
+  [remarkMath, { singleDollarTextMath: false }],
+  semTitulosForaDoPadrao,
+]
 const pluginsRehype: Options["rehypePlugins"] = [[rehypeKatex, { throwOnError: false }]]
 
 function componentesMarkdown(imagens: ArticleImage[]): Components {
