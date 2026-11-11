@@ -144,3 +144,60 @@ fieldset.module {
 .dark .autor-combobox__estado--fora {
   color: #fbbf24;
 }
+
+/* Artigo: o que falta para publicar e a prévia da citação. */
+.pendencias {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .875rem;
+}
+
+.pendencias li::before {
+  margin-right: .375rem;
+  font-weight: 700;
+}
+
+.pendencias--falta {
+  color: #b91c1c;
+}
+
+.pendencias--falta::before {
+  content: "✗";
+}
+
+.pendencias--sugestao {
+  opacity: .8;
+}
+
+.pendencias--sugestao::before {
+  content: "•";
+}
+
+.pendencias--ok {
+  color: #15803d;
+  font-size: .875rem;
+}
+
+.pendencias--ok::before {
+  content: "✓ ";
+  font-weight: 700;
+}
+
+.previa-citacao {
+  max-height: 14rem;
+  overflow: auto;
+  padding: .5rem .75rem;
+  border: 1px solid rgba(127, 127, 127, .3);
+  border-radius: 6px;
+  font-size: .75rem;
+  white-space: pre-wrap;
+}
+
+.dark .pendencias--falta {
+  color: #f87171;
+}
+
+.dark .pendencias--ok {
+  color: #4ade80;
+}

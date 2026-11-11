@@ -14,7 +14,9 @@ import unicodedata
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.html import format_html
+from django.utils import timezone
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action as acao_unfold
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
@@ -24,6 +26,7 @@ from .conteudo import PADRAO as PADRAO_DOS_TEXTOS, PAGINAS, POR_CHAVE, POR_SLUG
 from .autores import normaliza
 from .conteudo.base import Pagina
 from .widgets import MarkdownPreviewWidget
+from . import citacao
 from .models import (
     PartnerCategory, ProgramComponent, SecaoDaHome, ArticleAuthor,
     Partner, Member, Article, ArticleImage, Position, Directorate,
@@ -659,13 +662,15 @@ class AutoresDoArtigoInline(AbaOrdenavelTabular):
 
 
 class FormDaListaDeArtigos(forms.ModelForm):
-    """Publicar pela lista (caixa "Publicado") também exige autor, como no formulário do artigo."""
+    """Publicar pela lista (caixa "Publicado") também exige autor e data, como no formulário do artigo."""
 
     def clean(self):
         dados = super().clean()
         artigo = self.instance
         if dados.get('published') and artigo.pk and not artigo.institutional and not artigo.article_authors.exists():
             self.add_error('published', 'Adicione os autores (ou marque "Artigo institucional") antes de publicar.')
+        if dados.get('published') and artigo.pk and not artigo.date:
+            self.add_error('published', 'Preencha a data de publicação do artigo antes de publicar.')
         return dados
 
 
@@ -675,10 +680,12 @@ class ArticleAdmin(AdminDoSite):
     # O endereço do artigo é sugerido a partir do título (e pode ser trocado).
     prepopulated_fields = {'slug': ('title',)}
     fieldsets = (
-        (None, {'fields': ('title', 'slug', 'institutional', 'topics', 'description', 'content')}),
+        (None, {'fields': ('pendencias', 'title', 'slug', 'institutional', 'topics', 'description', 'content')}),
         ('Publicação', {'fields': ('published', 'date', 'image')}),
+        ('Como será citado', {'fields': ('previa_da_citacao',), 'classes': ('collapse',)}),
         secao_avancada('order'),
     )
+    readonly_fields = ('pendencias', 'previa_da_citacao')
     actions = ['publicar', 'despublicar']
     list_display = ('capa', 'title', 'slug', 'autores', 'published', 'date', 'order')
     list_display_links = ('capa', 'title')
@@ -698,6 +705,54 @@ class ArticleAdmin(AdminDoSite):
     @admin.display(description='Capa')
     def capa(self, obj):
         return miniatura(obj.image)
+
+    @admin.display(description='Para publicar')
+    def pendencias(self, obj):
+        """O que falta no artigo salvo, para o editor não descobrir por erro na hora de publicar."""
+        if obj is None or not obj.pk:
+            return 'Salve o rascunho para ver aqui o que falta para publicar.'
+        itens = []
+        if not obj.institutional and not obj.article_authors.exists():
+            itens.append(('falta', 'Falta ao menos um autor (ou marcar “Artigo institucional”).'))
+        enviadas = set(obj.images.values_list('number', flat=True))
+        citadas = {int(n) for n in re.findall(r'!\[[^\]]*\]\(imagem-(\d+)\)', obj.content or '')}
+        for numero in sorted(citadas - enviadas):
+            itens.append(('falta', f'O texto pede a imagem {numero}, que não foi enviada em “Imagens do artigo”.'))
+        if not obj.image:
+            itens.append(('sugestao', 'Sem imagem de capa, o cartão do artigo na lista mostra só “ICC”.'))
+        if not itens:
+            return mark_safe('<span class="pendencias pendencias--ok">Tudo pronto para publicar.</span>')
+        return format_html(
+            '<ul class="pendencias">{}</ul>',
+            format_html_join('', '<li class="pendencias--{}">{}</li>', itens),
+        )
+
+    @admin.display(description='Citação')
+    def previa_da_citacao(self, obj):
+        """As citações como o site as entrega, para o editor conferir o nome dos autores. Vale para o que está salvo."""
+        if obj is None or not obj.pk:
+            return 'Aparece depois de salvar o artigo.'
+        if not obj.institutional and not obj.article_authors.exists():
+            return 'Adicione ao menos um autor para ver a citação.'
+        hoje = timezone.localdate()
+        por_id = {c['id']: c for c in citacao.citacoes(obj)}
+        corpo = []
+        for id_ in ('abnt', 'apa'):
+            marcas = {'b': 'strong', 'i': 'em'}
+            partes = [
+                (marcas.get(p['e'], 'span'), citacao.com_data_de_hoje(p['t'], hoje), marcas.get(p['e'], 'span'))
+                for p in por_id[id_]['partes']
+            ]
+            corpo.append(format_html(
+                '<p><b>{}</b><br>{}</p>', por_id[id_]['label'], format_html_join('', '<{}>{}</{}>', partes),
+            ))
+        bibtex = citacao.com_data_de_hoje(por_id['bibtex']['texto'], hoje)
+        corpo.append(format_html('<p><b>BibTeX</b></p><pre class="previa-citacao">{}</pre>', bibtex))
+        corpo.append(mark_safe(
+            '<p class="texto-original">Reflete o que está salvo. Se um nome sair errado, ajuste a linha do autor '
+            'ou o “Nome na citação” do membro.</p>'
+        ))
+        return format_html_join('', '{}', ((c,) for c in corpo))
 
     @admin.display(description='Autores')
     def autores(self, obj):

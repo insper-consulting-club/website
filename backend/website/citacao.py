@@ -350,3 +350,13 @@ def citacoes(artigo):
         em_codigo('biblatex', 'BibLaTeX', biblatex(artigo)),
         em_codigo('ris', 'RIS', ris(artigo)),
     ]
+
+
+def com_data_de_hoje(texto, hoje):
+    """Troca os marcadores da data de acesso pela data dada (a prévia do admin usa a de hoje)."""
+    return (
+        texto
+        .replace(DATA_DE_ACESSO_ABNT, f'{hoje.day} {MESES_ABNT[hoje.month - 1]} {hoje.year}')
+        .replace(DATA_DE_ACESSO_RIS, hoje.strftime('%Y/%m/%d'))
+        .replace(DATA_DE_ACESSO, hoje.isoformat())
+    )

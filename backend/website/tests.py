@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 from django.test import override_settings
-from django.utils import translation
+from django.utils import timezone, translation
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
@@ -3195,7 +3195,7 @@ class ArticleAuthorsAdminTests(TestCase):
 
     def dados(self, autores=(), **extra):
         dados = {
-            "title": "A", "slug": "a", "description": "d", "order": "0",
+            "title": "A", "slug": "a", "description": "d", "order": "0", "date": "2026-01-05",
             "article_authors-TOTAL_FORMS": str(len(autores)), "article_authors-INITIAL_FORMS": "0",
             "article_authors-MIN_NUM_FORMS": "0", "article_authors-MAX_NUM_FORMS": "1000",
             "images-TOTAL_FORMS": "0", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
@@ -3312,6 +3312,10 @@ class ArticleAuthorsAdminTests(TestCase):
 
         ArticleAuthor.objects.create(article=self.artigo, name="Ana Silva", member=self.ana)
         self.client.post("/admin/website/article/", dados)
+        self.assertFalse(Article.objects.get(pk=self.artigo.pk).published)  # ainda sem data
+
+        Article.objects.filter(pk=self.artigo.pk).update(date=date(2026, 1, 5))
+        self.client.post("/admin/website/article/", dados)
         self.assertTrue(Article.objects.get(pk=self.artigo.pk).published)
 
     def test_the_publish_action_skips_articles_without_author(self):
@@ -3361,6 +3365,78 @@ class ArticleAuthorsAdminTests(TestCase):
 
         self.assertIn('name="citation_name"', html)
         self.assertGreater(html.index('name="citation_name"'), html.index("Avançado"))
+
+
+@SEM_MANIFESTO
+class ArticleEditingHelpTests(TestCase):
+    """O que ajuda quem edita: o que falta para publicar, a data de hoje ao publicar e a prévia da citação."""
+
+    def setUp(self):
+        self.client.force_login(get_user_model().objects.create_superuser("root", "r@example.com", "senha-de-teste"))
+        self.artigo = Article.objects.create(title="Varejo hoje", description="d", slug="varejo")
+        self.url = f"/admin/website/article/{self.artigo.pk}/change/"
+
+    def dados(self, **extra):
+        dados = {
+            "title": "Varejo hoje", "slug": "varejo", "description": "d", "order": "0", "institutional": "on",
+            "date": "2026-01-05",
+            "article_authors-TOTAL_FORMS": "0", "article_authors-INITIAL_FORMS": "0",
+            "article_authors-MIN_NUM_FORMS": "0", "article_authors-MAX_NUM_FORMS": "1000",
+            "images-TOTAL_FORMS": "0", "images-INITIAL_FORMS": "0", "images-MIN_NUM_FORMS": "0", "images-MAX_NUM_FORMS": "1000",
+        }
+        dados.update(extra)
+        return dados
+
+    def pagina(self):
+        return self.client.get(self.url).content.decode()
+
+    def test_the_publication_date_is_required_in_the_form(self):
+        sem_data = self.client.post(self.url, self.dados(date=""))
+        self.assertEqual(sem_data.status_code, 200)
+        self.assertIn("Este campo é obrigatório", sem_data.content.decode())
+
+        self.assertEqual(self.client.post(self.url, self.dados(date="2026-01-05", published="on")).status_code, 302)
+        self.assertEqual(Article.objects.get(pk=self.artigo.pk).date, date(2026, 1, 5))
+
+    def test_a_new_article_has_no_checklist_yet(self):
+        html = self.client.get("/admin/website/article/add/").content.decode()
+
+        self.assertIn("Salve o rascunho para ver aqui o que falta", html)
+
+    def test_the_checklist_asks_for_an_author_and_suggests_a_cover(self):
+        html = self.pagina()
+
+        self.assertIn("Falta ao menos um autor", html)
+        self.assertIn("Sem imagem de capa", html)
+
+    def test_the_checklist_is_happy_when_nothing_is_missing(self):
+        Article.objects.filter(pk=self.artigo.pk).update(institutional=True, image="news/capa.png")
+
+        self.assertIn("Tudo pronto para publicar", self.pagina())
+
+    def test_the_checklist_points_at_images_the_text_asks_for_but_were_not_sent(self):
+        Article.objects.filter(pk=self.artigo.pk).update(
+            institutional=True, image="news/capa.png", content="Texto\n\n![](imagem-1)\n\n![legenda](imagem-2)",
+        )
+        ArticleImage.objects.create(article=self.artigo, number=1, image="articles/a.png")
+
+        html = self.pagina()
+
+        self.assertIn("pede a imagem 2", html)
+        self.assertNotIn("pede a imagem 1", html)
+
+    @override_settings(FRONTEND_URL="https://exemplo.com.br")
+    def test_the_citation_preview_needs_an_author_and_shows_the_citations_with_todays_access_date(self):
+        self.assertIn("Adicione ao menos um autor", self.pagina())
+
+        ArticleAuthor.objects.create(article=self.artigo, name="Maria da Silva", order=0)
+        Article.objects.filter(pk=self.artigo.pk).update(date=date(2026, 3, 4))
+        html = self.pagina()
+
+        self.assertIn("SILVA, Maria da", html)
+        self.assertIn("@misc", html)
+        self.assertNotIn("__DATA_DE_ACESSO", html)
+        self.assertIn(f"Acesso em: {timezone.localdate().day} ", html)
 
 
 class ArticleAuthorsMigrationTests(TransactionTestCase):

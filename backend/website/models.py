@@ -358,7 +358,8 @@ class Article(models.Model):
                   'abaixo, e escreva aqui, numa linha sozinha, ![](imagem-1), trocando 1 pelo número da imagem.'
     )
     image = LimitedImageField(upload_to='news/', null=True, blank=True, verbose_name='Imagem de capa')
-    date = models.DateField(null=True, blank=True, verbose_name='Data de publicação')
+    # Obrigatório no formulário (a ordem na lista do site depende dela); null só para não exigir dado nos registros antigos.
+    date = models.DateField(null=True, verbose_name='Data de publicação', help_text='A ordem dos artigos no site segue esta data. O calendário tem o botão “Hoje”.')
     order = models.IntegerField(default=0, verbose_name='Ordem de exibição')
     published = models.BooleanField(
         default=False, verbose_name='Publicado',

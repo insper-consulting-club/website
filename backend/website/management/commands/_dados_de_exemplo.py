@@ -453,7 +453,7 @@ ARTIGOS = [
     {
         # Rascunho sem data: aparece no admin, não no site nem na API.
         "titulo": "Rascunho ainda não publicado", "slug": "rascunho-nao-publicado",
-        "autores": ["Mateus Ribeiro"], "temas": "Rascunho", "data": None, "ordem": 7,
+        "autores": ["Mateus Ribeiro"], "temas": "Rascunho", "data": date(2026, 7, 1), "ordem": 7,
         "resumo": "Está com \"Publicado\" desmarcado: aparece no admin, mas não no site.",
         "conteudo": "Texto em construção.",
      "capa": False, "imagens": [], "publicado": False,

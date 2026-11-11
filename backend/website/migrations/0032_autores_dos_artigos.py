@@ -51,6 +51,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterField(
+            model_name='article',
+            name='date',
+            field=models.DateField(help_text='A ordem dos artigos no site segue esta data. O calendário tem o botão “Hoje”.', null=True, verbose_name='Data de publicação'),
+        ),
         migrations.AddField(
             model_name='article',
             name='institutional',
