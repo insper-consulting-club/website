@@ -14,7 +14,9 @@ Entre com o seu usuário e a sua senha. Tudo o que você salva aparece no site a
 
 ## Como a tela está organizada
 
-O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários, grupos e, só para administradores, a atividade recente). Quem tem um login limitado vê só os grupos que pode usar. A busca no topo do menu acha qualquer tela pelo nome. Na página inicial, o conteúdo também aparece no quadro **"Conteúdo do site"**. Em todas as telas o padrão é o mesmo:
+O **menu à esquerda** agrupa o conteúdo por assunto: **Site**, **Equipe**, **Parceiros**, **Programas e projetos**, **Artigos**, **Processo seletivo** e **Acesso** (usuários, grupos e, só para administradores, a atividade recente). Quem tem um login limitado vê só os grupos que pode usar (o editor, por exemplo, não vê **Cargos** nem **Acesso**). A busca no topo do menu acha qualquer tela pelo nome.
+
+A **página inicial** mostra, no alto, com qual nível você entrou (Editor ou Administrador) e um cartão de atalhos por assunto: **Artigos** (com **Escrever um artigo**), **Equipe**, **Parceiros**, **Programas e projetos**, **Processo seletivo** e **Textos do site**. O administrador vê também o cartão **Acesso**, com os usuários e a atividade recente. O botão destacado de cada cartão é a ação mais comum, e o menu à esquerda tem o restante. Em todas as telas o padrão é o mesmo:
 
 - **Adicionar** (botão no canto superior direito da lista) cria um registro novo.
 - Clicar no nome de um registro abre a edição.

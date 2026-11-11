@@ -227,6 +227,8 @@ UNFOLD = {
     'STYLES': [lambda request: static('website/admin.css')],
     # Avisa antes de sair de um formulário com alterações não salvas (ver admin_static/website/avisa_alteracoes.js)
     'SCRIPTS': [lambda request: static('website/avisa_alteracoes.js')],
+    # Página inicial do admin com atalhos (ver config/navigation.py e website/templates/website/admin/painel.html)
+    'DASHBOARD_CALLBACK': 'config.navigation.painel',
     'SIDEBAR': {
         'show_search': True,
         'show_all_applications': False,

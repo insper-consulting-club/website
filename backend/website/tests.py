@@ -678,6 +678,45 @@ class AdminNavigationTests(TestCase):
         self.assertEqual([g["title"] for g in grupos], ["Artigos"])
         self.assertEqual([i["title"] for i in grupos[0]["items"]], ["Artigos"])
 
+    def test_the_editor_does_not_see_cargos_in_the_menu_but_the_administrator_does(self):
+        from django.contrib.auth.models import Group
+        from config.navigation import navegacao
+
+        editor = get_user_model().objects.create_user("editora", "ed@example.com", "senha-de-teste", is_staff=True)
+        editor.groups.add(Group.objects.get(name="Editores"))
+        admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+
+        itens_do_editor = [i["title"] for g in navegacao(mock.Mock(user=get_user_model().objects.get(pk=editor.pk))) for i in g["items"]]
+        itens_do_admin = [i["title"] for g in navegacao(mock.Mock(user=admin)) for i in g["items"]]
+
+        self.assertNotIn("Cargos", itens_do_editor)
+        self.assertIn("Membros", itens_do_editor)
+        self.assertIn("Cargos", itens_do_admin)
+
+    def test_the_home_page_shows_shortcuts_for_what_the_user_can_do(self):
+        from django.contrib.auth.models import Group
+
+        editor = get_user_model().objects.create_user("editora", "ed@example.com", "senha-de-teste", is_staff=True)
+        editor.groups.add(Group.objects.get(name="Editores"))
+        self.client.force_login(editor)
+
+        pagina = self.client.get("/admin/").content.decode()
+
+        self.assertIn("Você entrou como <strong>Editor</strong>", pagina)
+        for atalho in ("Escrever um artigo", "Novo membro", "Novo parceiro", "Editar textos", "Processos seletivos"):
+            self.assertIn(atalho, pagina)
+        self.assertNotIn("Atividade recente", pagina)
+        self.assertNotIn("/admin/auth/user/", pagina)
+        self.assertNotIn('class="painel__titulo">Acesso<', pagina)
+
+        admin = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
+        self.client.force_login(admin)
+        pagina = self.client.get("/admin/").content.decode()
+
+        self.assertIn("Você entrou como <strong>Administrador</strong>", pagina)
+        self.assertIn("/admin/auth/user/", pagina)
+        self.assertIn("Atividade recente", pagina)
+
     def test_sidebar_is_rendered_in_the_admin(self):
         usuario = get_user_model().objects.create_superuser("root", "root@example.com", "senha-de-teste")
         self.client.force_login(usuario)

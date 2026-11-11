@@ -44,6 +44,7 @@ from .models import (
 # Título da página inicial do /admin. O topo (nome e cabeçalho) fica em UNFOLD,
 # no settings.
 admin.site.index_title = 'Conteúdo do site'
+admin.site.index_template = 'website/admin/painel.html'
 
 
 # ---------------------------------------------------------------------------
