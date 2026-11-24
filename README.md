@@ -65,3 +65,7 @@ O passo a passo completo está em [`docs/desenvolvimento.md`](docs/desenvolvimen
 | [Dependências e licenças](docs/dependencias.md) | Desenvolvedores | Bibliotecas, serviços externos e licenças |
 | [Frontend](frontend/README.md) | Desenvolvedores | Estrutura, rotas, design tokens e componentes |
 | [`backend/.env.example`](backend/.env.example) | Desenvolvedores | Variáveis de ambiente do backend, explicadas |
+
+## Licença
+
+O código deste repositório é distribuído sob a [licença BSD de 3 cláusulas](LICENSE). O nome, o logo e a identidade visual do Insper Consulting Club, assim como as fotos de membros e o conteúdo editorial do site, não estão cobertos por essa licença e continuam reservados.

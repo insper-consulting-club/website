@@ -2,6 +2,8 @@
 
 Bibliotecas usadas pelo projeto, com a versão e a licença declaradas por cada pacote. As versões do backend vêm de `backend/requirements.txt` (todas fixadas) e as do frontend vêm do `frontend/package-lock.json`. As licenças do backend foram conferidas em 26/10/2026 nos pacotes instalados, e as do frontend foram lidas do `package-lock.json`.
 
+O código do ICC é distribuído sob a licença BSD de 3 cláusulas (veja o [`LICENSE`](../LICENSE)), compatível com todas as licenças listadas abaixo. O nome, o logo e a identidade visual do ICC não estão cobertos por ela, como explica a seção Licença do [`README`](../README.md#licença).
+
 Todas as licenças são permissivas (MIT, BSD, Apache, PSF) ou LGPL. A LGPL permite usar a biblioteca, sem modificá-la, dentro de um projeto com outra licença, que é o caso do ICC. Ao adicionar uma dependência, confira a licença e inclua uma linha aqui. Para atualizar versões, veja [`desenvolvimento.md`](desenvolvimento.md#atualizar-dependências).
 
 ## Backend (Python)
